@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mandala Unfolding</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- ── Brand screen (shown first) ────────────────────────────────────── -->
+    <div id="brandScreen">
+        <div id="brandLogoWrap">
+            <span id="brandSymbol">✦</span>
+            <div id="brandWordmark">
+                <span class="bLetter" style="--i:0">f</span><span class="bLetter" style="--i:1">l</span><span class="bLetter" style="--i:2">u</span><span class="bLetter" style="--i:3">x</span>
+            </div>
+        </div>
+        <div id="brandTagline">find your<span class="bColon">:</span>self</div>
+        <div id="brandManifesto">
+            <p class="mLine" style="--j:0">in a world designed for speed,</p>
+            <p class="mLine" style="--j:1">distraction is the default.</p>
+            <p class="mLine mSpacer" style="--j:2"></p>
+            <p class="mLine" style="--j:3">screens pull you outward —</p>
+            <p class="mLine" style="--j:4">away from stillness, away from self.</p>
+            <p class="mLine mSpacer" style="--j:5"></p>
+            <p class="mLine mAccent" style="--j:6">can technology hold space instead of fill it?</p>
+            <p class="mLine mAccent" style="--j:7">can it help you go inward, without intruding?</p>
+            <p class="mLine mSpacer" style="--j:8"></p>
+            <p class="mLine" style="--j:9">this is that space.</p>
+        </div>
+        <button id="brandContinueBtn">continue &nbsp;→</button>
+    </div>
+
+    <!-- ── Video intro overlay (plays after begin click) ──────────────────── -->
+    <div id="videoIntroOverlay" class="hidden">
+        <video id="guideVideo" src="guide-video.mp4" playsinline preload="auto"></video>
+        <audio id="guideAudio" src="guide-audio.aac" preload="auto"></audio>
+        <canvas id="irisCanvas"></canvas>
+        <div id="videoCaptions"></div>
+        <button id="videoSkipBtn">skip</button>
+    </div>
+
+    <!-- ── Intro overlay: description (shown after brand screen) ─────────── -->
+    <div id="introOverlay" class="hidden">
+        <div id="introCard">
+            <div id="introLogo">✦</div>
+            <h1 id="introTitle">a space to be still</h1>
+            <p id="introSubtitle">You are about to enter a ten-minute visual journey designed to gently guide your attention inward. There is nothing to do here except notice where your mind wants to go — and, softly, bring it back.</p>
+            <button id="introNextBtn">next &nbsp;→</button>
+        </div>
+    </div>
+
+    <!-- ── Rules overlay (shown after intro description) ──────────────────── -->
+    <div id="rulesOverlay" class="hidden">
+        <div id="rulesCard">
+            <h2 id="rulesHeading">rules</h2>
+            <div id="introRules">
+                <div class="rule"><span>Rest your gaze at the centre of the screen. Your face will appear there.</span></div>
+                <div class="rule"><span>Each blink blooms the mandala. Blinking less deepens the stillness.</span></div>
+                <div class="rule"><span>A small flame appears when it is time to move on. Drag it to the centre of your face to step forward.</span></div>
+                <div class="rule"><span>A glowing orb follows your cursor — it is a gentle distraction. Try not to follow it.</span></div>
+            </div>
+            <p id="introTip">soften your gaze rather than focusing hard. let the images come to you.</p>
+            <button id="beginBtn">begin &nbsp;→</button>
+        </div>
+    </div>
+
+    <!-- ── Pre-experience mood check ──────────────────────────────────────── -->
+    <div id="moodOverlay" class="hidden">
+        <div class="moodCard" id="preMoodCard">
+            <div class="moodCardLogo">✦</div>
+            <p class="moodQ">how are you feeling right now?</p>
+            <div class="moodSliderWrap">
+                <input type="range" class="moodRange" id="preMoodSlider" min="1" max="10" value="5" />
+                <div class="moodNums">
+                    <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                    <span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+                </div>
+                <div class="moodExtremes">
+                    <span>unsettled</span><span>at ease</span>
+                </div>
+            </div>
+            <button class="moodBtn" id="moodStartBtn">begin &nbsp;→</button>
+        </div>
+    </div>
+
+    <!-- ── Post-experience mood check ─────────────────────────────────────── -->
+    <div id="endMoodOverlay" class="hidden">
+        <div class="moodCard" id="postMoodCard">
+            <div class="moodCardLogo">✦</div>
+            <p class="moodQ">how are you feeling now?</p>
+            <div class="moodSliderWrap">
+                <input type="range" class="moodRange" id="postMoodSlider" min="1" max="10" value="5" />
+                <div class="moodNums">
+                    <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                    <span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+                </div>
+                <div class="moodExtremes">
+                    <span>unsettled</span><span>at ease</span>
+                </div>
+            </div>
+            <button class="moodBtn" id="postMoodNextBtn">reflect &nbsp;→</button>
+        </div>
+    </div>
+
+    <!-- ── Reflection overlay ─────────────────────────────────────────────── -->
+    <div id="reflectionOverlay" class="hidden">
+        <div id="reflectionCard">
+            <div id="reflectionLogo">✦</div>
+            <h2 id="reflectionTitle">a moment of reflection</h2>
+
+            <div id="reflectionForm">
+
+                <div class="rq">
+                    <label class="rqLabel">did this experience help you find stillness?</label>
+                    <div class="rqPills" data-name="foundStillness">
+                        <button type="button" data-val="yes">yes</button>
+                        <button type="button" data-val="somewhat">somewhat</button>
+                        <button type="button" data-val="no">no</button>
+                    </div>
+                </div>
+
+                <div class="rq">
+                    <label class="rqLabel">did it bring anything to the surface — a thought, a memory?</label>
+                    <div class="rqPills" data-name="thoughtsSurfaced">
+                        <button type="button" data-val="yes">yes</button>
+                        <button type="button" data-val="a little">a little</button>
+                        <button type="button" data-val="no">no</button>
+                    </div>
+                </div>
+
+                <div class="rq">
+                    <label class="rqLabel">did seeing your own face help — or were you caught in it?</label>
+                    <div class="rqPills" data-name="faceEffect">
+                        <button type="button" data-val="helped">it helped</button>
+                        <button type="button" data-val="distracted">got caught</button>
+                        <button type="button" data-val="neutral">neutral</button>
+                    </div>
+                </div>
+
+                <div class="rq">
+                    <label class="rqLabel">did the mandalas help you focus?</label>
+                    <div class="rqPills" data-name="mandalaHelped">
+                        <button type="button" data-val="yes">yes</button>
+                        <button type="button" data-val="somewhat">somewhat</button>
+                        <button type="button" data-val="no">no</button>
+                    </div>
+                </div>
+
+                <div class="rq">
+                    <label class="rqLabel">would you prefer this as a sound-only experience?</label>
+                    <div class="rqPills" data-name="prefersSound">
+                        <button type="button" data-val="yes">yes</button>
+                        <button type="button" data-val="both">both together</button>
+                        <button type="button" data-val="no">no, visuals matter</button>
+                    </div>
+                </div>
+
+                <div class="rq">
+                    <label class="rqLabel">have you meditated before?</label>
+                    <div class="rqPills" data-name="meditatedBefore">
+                        <button type="button" data-val="regularly">regularly</button>
+                        <button type="button" data-val="sometimes">sometimes</button>
+                        <button type="button" data-val="rarely">rarely</button>
+                        <button type="button" data-val="never">never</button>
+                    </div>
+                </div>
+
+                <div class="rq" id="rqMeditateHow">
+                    <label class="rqLabel">how do you usually meditate?</label>
+                    <input class="rqText" type="text" id="meditateHowInput" placeholder="e.g. guided, breath, movement…" autocomplete="off" spellcheck="false" maxlength="120" />
+                </div>
+
+                <div class="rq">
+                    <label class="rqLabel">would you experience this as a physical installation — a projection in a room?</label>
+                    <div class="rqPills" data-name="asInstallation">
+                        <button type="button" data-val="yes">yes</button>
+                        <button type="button" data-val="maybe">maybe</button>
+                        <button type="button" data-val="no">no</button>
+                    </div>
+                </div>
+
+                <div class="rq">
+                    <label class="rqLabel">which visual stayed with you?</label>
+                    <div class="rqPills rqPillsWrap" data-name="favouriteVisual">
+                        <button type="button" data-val="stillness">stillness</button>
+                        <button type="button" data-val="depth">depth</button>
+                        <button type="button" data-val="form">form</button>
+                        <button type="button" data-val="woven">woven</button>
+                        <button type="button" data-val="forest">forest</button>
+                        <button type="button" data-val="pixel">pixel</button>
+                        <button type="button" data-val="sound garden">sound garden</button>
+                        <button type="button" data-val="breath">breath</button>
+                    </div>
+                </div>
+
+                <div class="rq">
+                    <label class="rqLabel">anything else you'd like to share?</label>
+                    <textarea class="rqText rqTextarea" id="openEndedInput" placeholder="optional" rows="3" maxlength="400" spellcheck="false"></textarea>
+                </div>
+
+            </div><!-- /#reflectionForm -->
+
+            <button id="reflectionSubmitBtn">submit &nbsp;→</button>
+        </div>
+    </div>
+
+    <!-- ── End overlay (shown after reflection is submitted) ──────────────── -->
+    <div id="endOverlay" class="hidden">
+        <div id="endScrollable">
+        <div id="endCard">
+            <div id="endLogo">✦</div>
+            <h2>you have arrived</h2>
+
+            <!-- Mandala snapshot — filled by JS when available -->
+            <div id="endMandalaWrap"></div>
+
+            <p class="endMindfulness">what you felt in here<br>you can return to,<br>any time you close your eyes.</p>
+            <p>You just sat with yourself — really sat. That takes courage. Whatever arose — thoughts, wandering, stillness — all of it is data about your beautiful, restless mind.</p>
+
+            <p class="endMindfulness" style="margin-top:28px">a few ways to carry this with you</p>
+            <p>Take one long, slow breath before you open a new tab. Place a hand on your chest for three seconds when things feel rushed. Notice the first thing you see each morning before reaching for your phone.</p>
+            <p style="margin-top:12px">Stillness is not the absence of thought — it is the space between them. You found it once. You will find it again.</p>
+
+            <!-- Download + email -->
+            <div id="endMandalaActions" style="margin-top:36px; display:none">
+                <button id="saveMandalaBtn">save your mandala &nbsp;↓</button>
+                <div class="endEmailWrap">
+                    <input type="email" id="endEmailInput" placeholder="email it to yourself (optional)" autocomplete="email" />
+                    <p id="endEmailNote">enter your email above and click save — we'll note it with your download</p>
+                </div>
+            </div>
+
+            <p id="endIntention"></p>
+            <button id="restartBtn" style="margin-top:44px">begin again</button>
+        </div>
+        </div>
+    </div>
+
+    <!-- ── Pre-scene card ──────────────────────────────────────────────────── -->
+    <div id="sceneCard" class="hidden">
+        <span class="sceneCardName"></span>
+        <p class="sceneCardHaiku"></p>
+        <span class="sceneCardHint">blink to bloom</span>
+    </div>
+
+    <div id="hint">blink to bloom &nbsp;·&nbsp; click to begin &nbsp;·&nbsp; hover to warp</div>
+
+    <div id="styleToggle">
+        <button id="prevStyle">◀</button>
+        <span id="styleName">Geometric</span>
+        <button id="nextStyle">▶</button>
+    </div>
+
+    <!-- Blink toggle — bottom centre -->
+    <div id="blinkWrap">
+        <button id="blinkBtn" title="Toggle blink detection">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        </button>
+        <span id="blinkLabel">blink to bloom</span>
+    </div>
+
+    <button id="clearBtn" title="Clear canvas">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 20H7L3 16 14 5l7 7-2.5 2.5"/>
+            <line x1="6" y1="11" x2="13" y2="18"/>
+        </svg>
+    </button>
+
+    <canvas id="canvas"></canvas>
+    <canvas id="coinCanvas"></canvas>
+
+    <!-- MediaPipe — blink + hand tracking -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+
+    <script src="mandalaGenerator.js"></script>
+    <script src="cosmicSpiral.js"></script>
+    <script src="coinSystem.js"></script>
+    <script src="liquidEffect.js"></script>
+    <script src="cursorSystem.js?v=2"></script>
+    <script src="soundSystem.js"></script>
+    <script src="blinkDetector.js"></script>
+    <script src="handTracker.js"></script>
+    <script src="waterMode.js"></script>
+    <script src="cosmosMode.js"></script>
+    <script src="watercolorMode.js"></script>
+    <script src="auroraMode.js"></script>
+    <script src="quoteMode.js"></script>
+    <script src="soundGardenMode.js"></script>
+    <script src="videoRoomMode.js"></script>
+    <script src="breathMode.js"></script>
+    <script src="distractionSystem.js"></script>
+    <script src="sessionManager.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>

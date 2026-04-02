@@ -1,0 +1,12 @@
+# Large unused media
+guide-video-alt.mov
+
+# macOS
+.DS_Store
+*.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
