@@ -12,24 +12,17 @@
 
     <!-- ── Brand screen (shown first) ────────────────────────────────────── -->
     <div id="brandScreen">
-        <div id="brandLogoWrap">
-            <span id="brandSymbol">✦</span>
-            <div id="brandWordmark">
-                <span class="bLetter" style="--i:0">f</span><span class="bLetter" style="--i:1">l</span><span class="bLetter" style="--i:2">u</span><span class="bLetter" style="--i:3">x</span>
-            </div>
-        </div>
-        <div id="brandTagline">find your<span class="bColon">:</span>self</div>
         <div id="brandManifesto">
             <p class="mLine" style="--j:0">in a world designed for speed,</p>
             <p class="mLine" style="--j:1">distraction is the default.</p>
             <p class="mLine mSpacer" style="--j:2"></p>
-            <p class="mLine" style="--j:3">screens pull you outward —</p>
+            <p class="mLine" style="--j:3">screens pull you outward.</p>
             <p class="mLine" style="--j:4">away from stillness, away from self.</p>
             <p class="mLine mSpacer" style="--j:5"></p>
             <p class="mLine mAccent" style="--j:6">can technology hold space instead of fill it?</p>
             <p class="mLine mAccent" style="--j:7">can it help you go inward, without intruding?</p>
             <p class="mLine mSpacer" style="--j:8"></p>
-            <p class="mLine" style="--j:9">this is that space.</p>
+            <p class="mLine mLineFinal" style="--j:9">this is that space.</p>
         </div>
         <button id="brandContinueBtn">continue &nbsp;→</button>
     </div>
@@ -40,6 +33,7 @@
         <audio id="guideAudio" src="guide-audio.aac" preload="auto"></audio>
         <canvas id="irisCanvas"></canvas>
         <div id="videoCaptions"></div>
+        <div id="videoTagline">find your<span class="bColon">:</span>self</div>
         <button id="videoSkipBtn">skip</button>
     </div>
 
@@ -48,22 +42,41 @@
         <div id="introCard">
             <div id="introLogo">✦</div>
             <h1 id="introTitle">a space to be still</h1>
-            <p id="introSubtitle">You are about to enter a ten-minute visual journey designed to gently guide your attention inward. There is nothing to do here except notice where your mind wants to go — and, softly, bring it back.</p>
+            <p id="introSubtitle">You are about to enter a ten-minute visual journey designed to gently guide your attention inward. There is nothing to do here except notice where your mind wants to go. Softly, bring it back.</p>
             <button id="introNextBtn">next &nbsp;→</button>
         </div>
     </div>
 
-    <!-- ── Rules overlay (shown after intro description) ──────────────────── -->
+    <!-- ── Rules overlay (shown after brand screen) ───────────────────────── -->
     <div id="rulesOverlay" class="hidden">
+        <!-- Floating distraction GIFs behind the card -->
+        <div class="floatingGifs">
+            <img class="fgif fgif1" src="coin.gif" alt="" />
+            <img class="fgif fgif2" src="pizza.gif" alt="" />
+            <img class="fgif fgif3" src="robot.gif" alt="" />
+            <img class="fgif fgif4" src="eye.gif" alt="" />
+            <img class="fgif fgif5" src="lighter.gif" alt="" />
+        </div>
         <div id="rulesCard">
-            <h2 id="rulesHeading">rules</h2>
+            <p id="rulesEyebrow">18 scenes &nbsp;·&nbsp; about 15 minutes</p>
             <div id="introRules">
-                <div class="rule"><span>Rest your gaze at the centre of the screen. Your face will appear there.</span></div>
-                <div class="rule"><span>Each blink blooms the mandala. Blinking less deepens the stillness.</span></div>
-                <div class="rule"><span>A small flame appears when it is time to move on. Drag it to the centre of your face to step forward.</span></div>
-                <div class="rule"><span>A glowing orb follows your cursor — it is a gentle distraction. Try not to follow it.</span></div>
+                <div class="rule">
+                    <span class="ruleHero">face.</span>
+                    <span class="ruleCaption">your webcam sits at the centre. a mandala grows around it as you watch.</span>
+                </div>
+                <div class="rule">
+                    <span class="ruleHero">blink.</span>
+                    <span class="ruleCaption">every natural blink adds a new layer. each scene also progresses on its own after 30 seconds.</span>
+                </div>
+                <div class="rule">
+                    <span class="ruleHero">flame.</span>
+                    <span class="ruleCaption">a flame cursor appears after 20 seconds. move it to your face to step forward. or press →</span>
+                </div>
+                <div class="rule">
+                    <span class="ruleHero">return.</span>
+                    <span class="ruleCaption">these drift across the screen to steal your attention. when you notice you have looked away, come back.</span>
+                </div>
             </div>
-            <p id="introTip">soften your gaze rather than focusing hard. let the images come to you.</p>
             <button id="beginBtn">begin &nbsp;→</button>
         </div>
     </div>
@@ -84,6 +97,40 @@
                 </div>
             </div>
             <button class="moodBtn" id="moodStartBtn">begin &nbsp;→</button>
+        </div>
+    </div>
+
+    <!-- ── Intention / anchor overlay (shown after pre-mood) ───────────────── -->
+    <div id="intentionOverlay" class="hidden">
+        <div id="intentionCard">
+            <div id="intentionCardLogo">✦</div>
+            <h2 id="intentionCardTitle">before you begin</h2>
+
+            <p class="intentionSectionLabel">something to set down</p>
+            <input type="text" id="intentionWordInput"
+                   placeholder="a word, if anything"
+                   autocomplete="off" spellcheck="false" maxlength="30" />
+
+            <p class="intentionSectionLabel">what calls to you</p>
+            <div id="anchorChoices">
+                <button class="anchorBtn" data-anchor="breath">
+                    <span class="anchorOrb"></span>
+                    <span class="anchorLabel">breath</span>
+                    <span class="anchorSub">body &amp; stillness</span>
+                </button>
+                <button class="anchorBtn" data-anchor="form">
+                    <span class="anchorOrb"></span>
+                    <span class="anchorLabel">form</span>
+                    <span class="anchorSub">pattern &amp; geometry</span>
+                </button>
+                <button class="anchorBtn" data-anchor="sound">
+                    <span class="anchorOrb"></span>
+                    <span class="anchorLabel">sound</span>
+                    <span class="anchorSub">resonance &amp; silence</span>
+                </button>
+            </div>
+
+            <button id="intentionContinueBtn">continue &nbsp;→</button>
         </div>
     </div>
 
@@ -124,7 +171,7 @@
                 </div>
 
                 <div class="rq">
-                    <label class="rqLabel">did it bring anything to the surface — a thought, a memory?</label>
+                    <label class="rqLabel">did it bring anything to the surface, a thought or a memory?</label>
                     <div class="rqPills" data-name="thoughtsSurfaced">
                         <button type="button" data-val="yes">yes</button>
                         <button type="button" data-val="a little">a little</button>
@@ -133,7 +180,7 @@
                 </div>
 
                 <div class="rq">
-                    <label class="rqLabel">did seeing your own face help — or were you caught in it?</label>
+                    <label class="rqLabel">did seeing your own face help, or were you caught in it?</label>
                     <div class="rqPills" data-name="faceEffect">
                         <button type="button" data-val="helped">it helped</button>
                         <button type="button" data-val="distracted">got caught</button>
@@ -175,7 +222,16 @@
                 </div>
 
                 <div class="rq">
-                    <label class="rqLabel">would you experience this as a physical installation — a projection in a room?</label>
+                    <label class="rqLabel">did your chosen anchor — breath, form, or sound — shape how you moved through the experience?</label>
+                    <div class="rqPills" data-name="anchorEffect">
+                        <button type="button" data-val="yes">yes</button>
+                        <button type="button" data-val="not sure">not sure</button>
+                        <button type="button" data-val="no">not really</button>
+                    </div>
+                </div>
+
+                <div class="rq">
+                    <label class="rqLabel">would you experience this as a physical installation, a projection in a room?</label>
                     <div class="rqPills" data-name="asInstallation">
                         <button type="button" data-val="yes">yes</button>
                         <button type="button" data-val="maybe">maybe</button>
@@ -189,9 +245,19 @@
                         <button type="button" data-val="stillness">stillness</button>
                         <button type="button" data-val="depth">depth</button>
                         <button type="button" data-val="form">form</button>
+                        <button type="button" data-val="embers">embers</button>
                         <button type="button" data-val="woven">woven</button>
                         <button type="button" data-val="forest">forest</button>
+                        <button type="button" data-val="mirror">mirror</button>
                         <button type="button" data-val="pixel">pixel</button>
+                        <button type="button" data-val="flow">flow</button>
+                        <button type="button" data-val="gaze">gaze</button>
+                        <button type="button" data-val="nature">nature</button>
+                        <button type="button" data-val="mycelium">mycelium</button>
+                        <button type="button" data-val="cymatics">cymatics</button>
+                        <button type="button" data-val="tide">tide</button>
+                        <button type="button" data-val="recursion">recursion</button>
+                        <button type="button" data-val="void">void</button>
                         <button type="button" data-val="sound garden">sound garden</button>
                         <button type="button" data-val="breath">breath</button>
                     </div>
@@ -218,19 +284,14 @@
             <!-- Mandala snapshot — filled by JS when available -->
             <div id="endMandalaWrap"></div>
 
-            <p class="endMindfulness">what you felt in here<br>you can return to,<br>any time you close your eyes.</p>
-            <p>You just sat with yourself — really sat. That takes courage. Whatever arose — thoughts, wandering, stillness — all of it is data about your beautiful, restless mind.</p>
-
-            <p class="endMindfulness" style="margin-top:28px">a few ways to carry this with you</p>
-            <p>Take one long, slow breath before you open a new tab. Place a hand on your chest for three seconds when things feel rushed. Notice the first thing you see each morning before reaching for your phone.</p>
-            <p style="margin-top:12px">Stillness is not the absence of thought — it is the space between them. You found it once. You will find it again.</p>
+            <p class="endMindfulness">you completed all 8 scenes.</p>
 
             <!-- Download + email -->
             <div id="endMandalaActions" style="margin-top:36px; display:none">
                 <button id="saveMandalaBtn">save your mandala &nbsp;↓</button>
                 <div class="endEmailWrap">
                     <input type="email" id="endEmailInput" placeholder="email it to yourself (optional)" autocomplete="email" />
-                    <p id="endEmailNote">enter your email above and click save — we'll note it with your download</p>
+                    <p id="endEmailNote">enter your email above and click save. we'll note it with your download</p>
                 </div>
             </div>
 
@@ -242,12 +303,10 @@
 
     <!-- ── Pre-scene card ──────────────────────────────────────────────────── -->
     <div id="sceneCard" class="hidden">
-        <span class="sceneCardName"></span>
         <p class="sceneCardHaiku"></p>
-        <span class="sceneCardHint">blink to bloom</span>
     </div>
 
-    <div id="hint">blink to bloom &nbsp;·&nbsp; click to begin &nbsp;·&nbsp; hover to warp</div>
+    <div id="hint">blink to bloom &nbsp;·&nbsp; hover to warp</div>
 
     <div id="styleToggle">
         <button id="prevStyle">◀</button>
@@ -275,6 +334,7 @@
 
     <canvas id="canvas"></canvas>
     <canvas id="coinCanvas"></canvas>
+    <canvas id="cursorCanvas"></canvas>
 
     <!-- MediaPipe — blink + hand tracking -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
@@ -297,7 +357,18 @@
     <script src="soundGardenMode.js"></script>
     <script src="videoRoomMode.js"></script>
     <script src="breathMode.js"></script>
+    <script src="embersMode.js"></script>
+    <script src="mirrorMode.js"></script>
+    <script src="flowMode.js"></script>
+    <script src="gazeMode.js"></script>
+    <script src="voidMode.js"></script>
+    <script src="recursionMode.js"></script>
+    <script src="myceliumMode.js"></script>
+    <script src="cymaticsMode.js"></script>
+    <script src="tideMode.js"></script>
+    <script src="naturalWorldMode.js"></script>
     <script src="distractionSystem.js"></script>
+    <script src="fluidShader.js"></script>
     <script src="sessionManager.js"></script>
     <script src="main.js"></script>
 </body>

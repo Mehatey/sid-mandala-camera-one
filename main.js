@@ -10,7 +10,9 @@ const GUIDE_CAPTIONS = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 let canvas, ctx, coinCanvas, coinCtx;
+let cursorCanvas, cursorCtx, globalCursorSystem;
 let mandalaGenerator, coinSystem, liquidEffect, cursorSystem, soundSystem;
+let embersMode, mirrorMode, flowMode, gazeMode, voidMode, recursionMode, myceliumMode, cymaticsMode, tideMode, naturalWorldMode;
 let foldCount = 0;
 let centerX = 0, centerY = 0;
 let mouseX = 0, mouseY = 0;
@@ -20,6 +22,7 @@ let styleNames = ['Geometric', 'Thread Lines', 'Interwoven', 'Ocean Depths', 'Em
 let activeMode = null; // null = mandala; 'water'/'cosmos'/'watercolor'/'aurora'/'quotes'/'garden'
 let waterMode, cosmosMode, watercolorMode, auroraMode, quoteMode, soundGardenMode, videoRoomMode, breathMode;
 let distractionSystem;
+let fluidShader = null;
 
 // ── Background void dust ──────────────────────────────────────────────────────
 let bgDust = [];
@@ -81,6 +84,7 @@ let _sceneHaikuShowing = false;
 
 // Canvas snapshot (captured after enough mandala layers built)
 let _experienceSnapshot = null;
+
 
 // Head-shake gaze detection → prev/next scene
 let _gazeLeft = 0, _gazeRight = 0, _gazeXLastTime = null;
@@ -165,7 +169,7 @@ function _submitReflection() {
     if (!msg) {
         msg = document.createElement('p');
         msg.id = 'submittedMsg';
-        msg.textContent = 'responses saved — thank you';
+        msg.textContent = 'responses saved. thank you';
         submitBtn?.parentNode.appendChild(msg);
     }
     msg.style.opacity = '0';
@@ -186,6 +190,18 @@ function _populateEndCard() {
     const wrap = document.getElementById('endMandalaWrap');
     const actions = document.getElementById('endMandalaActions');
     if (!wrap) return;
+
+    // Surface intention word if they set one
+    const intentionEl = document.getElementById('endIntention');
+    if (intentionEl) {
+        const word   = window._studyData && window._studyData.intention;
+        const anchor = window._studyData && window._studyData.anchor;
+        if (word) {
+            intentionEl.textContent = `you brought: ${word}`;
+        } else if (anchor) {
+            intentionEl.textContent = `your anchor: ${anchor}`;
+        }
+    }
 
     if (_experienceSnapshot) {
         // Show the circular snapshot
@@ -254,16 +270,53 @@ function init() {
     canvas.classList.add('intro-hidden');
     coinCanvas.classList.add('intro-hidden');
 
+    // Dedicated cursor canvas — always visible, z-index 9999, above all overlays
+    cursorCanvas = document.getElementById('cursorCanvas');
+    cursorCtx = cursorCanvas.getContext('2d');
+    cursorCanvas.width  = window.innerWidth;
+    cursorCanvas.height = window.innerHeight;
+    globalCursorSystem = new CursorSystem(cursorCtx, cursorCanvas);
+
+    // Global mousemove so cursor works on overlays too
+    window.addEventListener('mousemove', e => {
+        globalCursorSystem.setPosition(e.clientX, e.clientY);
+    });
+
+    // Dedicated cursor RAF loop — always runs
+    (function cursorLoop() {
+        cursorCtx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+        // Show mandala cursor only when flame is not active
+        if (!session || !session.isFlameActive()) {
+            globalCursorSystem.draw();
+        }
+        requestAnimationFrame(cursorLoop);
+    })();
+
     resizeCanvas();
+    window.addEventListener('resize', () => {
+        cursorCanvas.width  = window.innerWidth;
+        cursorCanvas.height = window.innerHeight;
+    });
     window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', () => { if (fluidShader) fluidShader.resize(); });
 
     // Initialize systems
     mandalaGenerator = new MandalaGenerator(ctx);
     coinSystem = new CoinSystem(coinCtx, coinCanvas);
     liquidEffect = new LiquidEffect(ctx, canvas);
     cursorSystem = new CursorSystem(coinCtx, coinCanvas);
-    soundSystem = new SoundSystem();
-    cosmicSpiral = new CosmicSpiral(ctx, canvas);
+    soundSystem   = new SoundSystem();
+    cosmicSpiral  = new CosmicSpiral(ctx, canvas);
+    embersMode    = new EmbersMode(ctx, canvas);
+    mirrorMode    = new MirrorMode(ctx, canvas);
+    flowMode      = new FlowMode(ctx, canvas);
+    gazeMode      = new GazeMode(ctx, canvas);
+    voidMode      = new VoidMode(ctx, canvas);
+    recursionMode = new RecursionMode(ctx, canvas);
+    myceliumMode  = new MyceliumMode(ctx, canvas);
+    cymaticsMode  = new CymaticsMode(ctx, canvas);
+    tideMode         = new TideMode(ctx, canvas);
+    naturalWorldMode = new NaturalWorldMode(ctx, canvas);
 
     // Session manager — controls 10-min guided experience
     session = new SessionManager(canvas, coinCanvas, coinCtx, (stage) => {
@@ -281,25 +334,14 @@ function init() {
         _playFlameBloom(proceed);
     };
 
-    // ── Brand screen → intro description ────────────────────────────────────
+    // ── Brand screen → rules (intro overlay removed) ────────────────────────
     document.getElementById('brandContinueBtn').addEventListener('click', () => {
         const brand = document.getElementById('brandScreen');
         brand.classList.add('fading');
         setTimeout(() => {
             brand.classList.add('hidden');
-            document.getElementById('introOverlay').classList.remove('hidden');
-        }, 1100);
-    });
-
-    // ── Intro description → rules screen ────────────────────────────────────
-    document.getElementById('introNextBtn').addEventListener('click', () => {
-        const intro = document.getElementById('introOverlay');
-        intro.classList.add('fading');
-        setTimeout(() => {
-            intro.classList.add('hidden');
-            intro.classList.remove('fading');
             document.getElementById('rulesOverlay').classList.remove('hidden');
-        }, 900);
+        }, 650);
     });
 
     // ── Rules → pre-experience mood slider ──────────────────────────────────
@@ -311,7 +353,7 @@ function init() {
             rules.classList.remove('fading');
             document.getElementById('moodOverlay').classList.remove('hidden');
             _initMoodSlider('preMoodSlider');
-        }, 900);
+        }, 500);
     });
 
     // ── Pre-mood → video intro (actual begin) ────────────────────────────────
@@ -324,12 +366,38 @@ function init() {
         setTimeout(() => {
             mood.classList.add('hidden');
             mood.classList.remove('fading');
+            // Show intention / anchor overlay before entering session
+            document.getElementById('intentionOverlay').classList.remove('hidden');
+        }, 500);
+    });
+
+    // ── Anchor button selection ──────────────────────────────────────────────
+    document.querySelectorAll('.anchorBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.anchorBtn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        });
+    });
+
+    // ── Intention continue → video intro ────────────────────────────────────
+    document.getElementById('intentionContinueBtn').addEventListener('click', () => {
+        window._studyData = window._studyData || {};
+        const word     = document.getElementById('intentionWordInput').value.trim();
+        const selected = document.querySelector('.anchorBtn.selected');
+        window._studyData.intention = word || null;
+        window._studyData.anchor    = selected ? selected.dataset.anchor : null;
+
+        const el = document.getElementById('intentionOverlay');
+        el.classList.add('fading');
+        setTimeout(() => {
+            el.classList.add('hidden');
+            el.classList.remove('fading');
             initAudio();
             initBlink();
             const bw = document.getElementById('blinkWrap');
             if (bw) bw.style.display = 'none';
             _startVideoIntro();
-        }, 900);
+        }, 700);
     });
 
     // ── Session end → post-mood → reflection → end card ─────────────────────
@@ -349,7 +417,7 @@ function init() {
             el.classList.remove('fading');
             document.getElementById('reflectionOverlay').classList.remove('hidden');
             _initPillButtons();
-        }, 900);
+        }, 500);
     });
 
     document.getElementById('reflectionSubmitBtn').addEventListener('click', () => {
@@ -381,8 +449,9 @@ function init() {
         mandalaGenerator.setStyle(0);
         foldCount = 0;
 
-        // Stop ambient sound
-        soundSystem.startModeAmbient('__none__'); // hits default: break, stops nodes
+        // Stop all sound
+        soundSystem.stopBaseAmbient();
+        soundSystem.startModeAmbient('__none__');
         if (soundGardenMode) soundGardenMode._stopLoop();
         if (distractionSystem) distractionSystem.stop();
 
@@ -422,6 +491,7 @@ function init() {
     videoRoomMode    = new VideoRoomMode(ctx, canvas);
     breathMode       = new BreathMode(ctx, canvas);
     distractionSystem = new DistractionSystem();
+    fluidShader = new FluidShader();
     initBgDust();
 
     // Style toggle
@@ -467,7 +537,6 @@ function init() {
         }
 
         liquidEffect.setMousePosition(mouseX, mouseY, centerX, centerY, actualRadius);
-        cursorSystem.setPosition(e.clientX, e.clientY);
 
         // Check if we're actually liquifying (cursor affecting geometry)
         const isLiquifying = liquidEffect.isLiquifying() && foldCount > 0;
@@ -480,17 +549,9 @@ function init() {
         soundSystem.updateLiquifyState(false);
     });
 
-    // Click to add fold
+    // Click only initialises audio — blinking adds folds
     canvas.addEventListener('click', (e) => {
         initAudio();
-        addFold();
-        if (cosmicSpiral && !activeMode) cosmicSpiral.onBlink();
-        // Hide hint on first click
-        if (hintVisible) {
-            hintVisible = false;
-            const hint = document.getElementById('hint');
-            if (hint) hint.classList.add('hidden');
-        }
     });
 
     // Clear button (eraser)
@@ -542,6 +603,7 @@ function clearCanvas() {
     foldCount = 0;
     bloomRings = [];
     spiralBlobs = [];
+
     spiralTheta  = 0;
     centerX = canvas.width / 2;
     centerY = canvas.height / 2;
@@ -570,10 +632,6 @@ function addFold() {
         return;
     }
     foldCount++;
-    // Bloom: inner ring + outer ring radiating from center
-    const hue = (time * 22 + foldCount * 31) % 360;
-    bloomRings.push({ r: 0,            maxR: clipR * 0.92, alpha: 0.55, hue });
-    bloomRings.push({ r: clipR * 0.08, maxR: clipR * 0.55, alpha: 0.30, hue: (hue + 40) % 360 });
     soundSystem.playFoldTone(foldCount - 1);
     // Capture mandala snapshot when enough layers have built
     if (foldCount === 5) _maybeCaptureSnapshot();
@@ -585,14 +643,24 @@ function updateModeHint() {
 
 // ── Per-scene haiku ───────────────────────────────────────────────────────────
 const SCENE_HAIKUS = {
-    stillness: 'still water reflects\nwhat the wandering mind hides —\nlook without blinking',
-    depth:     'deeper than language\nthe ocean holds no questions —\nonly what is here',
-    form:      'from point to pattern\nform emerges from the void —\nas thought from silence',
-    woven:     "threads the eye can't trace\nweave the cloth you sit upon —\nwhich thread are you now",
-    forest:    'the forest forgets\nthe name you came here with — so\nperhaps you can too',
-    pixel:     'zoom out far enough\nand every face is pixels —\nzoom in: you are here',
-    sound:     'silence is a sound\nthe body does not forget —\nlet it remember',
-    breath:    'one breath in, one out —\nthe universe exhales you\nthen breathes you back in',
+    stillness: 'still water reflects\nwhat the wandering mind hides\nlook without blinking',
+    depth:     'deeper than language\nthe ocean holds no questions\nonly what is here',
+    mycelium:  'beneath the forest\na mind that speaks without words\nroots reaching for light',
+    form:      'from point to pattern\nform emerges from the void\nas thought from silence',
+    embers:    'each ember carries\nthe memory of its flame\nrising, becoming',
+    tide:      'the water holds both\nthe push and the pull at once\nstill it stays itself',
+    woven:     "threads the eye can't trace\nweave the cloth you sit upon\nwhich thread are you now",
+    mirror:    'one face, eight faces\nthe self that looks back at you\nwhich one is the real',
+    cymatics:  'sound finds its own face\nwhere the vibration goes still\nform writes its own name',
+    forest:    'the forest forgets\nthe name you came here with\nperhaps you can too',
+    flow:      'the river does not\nask where it is going next\nit simply moves on',
+    gaze:      'ten thousand eyes watch\nnot one of them is judging\nthey are also you',
+    nature:    'you did not arrive\nthe path was already yours\nstep without landing',
+    pixel:     'zoom out far enough\nand every face is pixels\nzoom in: you are here',
+    recursion: 'look once, then again\nthe hall you stand in is you\nit ends where you do',
+    void:      'before the first thought\na point of light in the dark\nyou are both of these',
+    sound:     'silence is a sound\nthe body does not forget\nlet it remember',
+    breath:    'one breath in, one out\nthe universe exhales you\nthen breathes you back in',
 };
 
 function _showSceneCard(sceneName) {
@@ -658,6 +726,16 @@ function _setupNewScene(stage) {
     if (soundGardenMode) soundGardenMode._stopLoop();
     if (stage.mode === 'sound'  && soundGardenMode) soundGardenMode.startScene();
     if (stage.mode === 'breath' && breathMode)      breathMode.startScene();
+    if (stage.mode === 'embers' && embersMode)      embersMode.startScene();
+    if (stage.mode === 'mirror' && mirrorMode)      mirrorMode.startScene();
+    if (stage.mode === 'flow'   && flowMode)        flowMode.startScene();
+    if (stage.mode === 'gaze'      && gazeMode)      gazeMode.startScene();
+    if (stage.mode === 'void'      && voidMode)      voidMode.startScene();
+    if (stage.mode === 'recursion' && recursionMode) recursionMode.startScene();
+    if (stage.mode === 'mycelium'  && myceliumMode)  myceliumMode.startScene();
+    if (stage.mode === 'cymatics'  && cymaticsMode)  cymaticsMode.startScene();
+    if (stage.mode === 'tide'      && tideMode)      tideMode.startScene();
+    if (stage.mode === 'nature'    && naturalWorldMode) naturalWorldMode.startScene();
     soundSystem.startModeAmbient(stage.mode || stage.name);
     // Distraction queued here; fires after haiku timer (so it doesn't appear on black screen)
     _pendingDistractionScene = stage.name;
@@ -743,9 +821,12 @@ function _getSceneClipShape() {
         stillness: 'petal',
         depth:     'circle',
         form:      'hexagon',
+        embers:    'circle',
         woven:     'star',
         forest:    'leaf',
+        mirror:    'octagon',
         pixel:     'octagon',
+        flow:      'circle',
     };
     return shapes[session.getCurrentStage().name] || 'circle';
 }
@@ -843,6 +924,16 @@ function _beginSession() {
     canvas.classList.remove('intro-hidden');
     coinCanvas.classList.remove('intro-hidden');
 
+    // Start fluid colour shader — apply anchor palette if chosen
+    if (fluidShader) {
+        const anchor = window._studyData && window._studyData.anchor;
+        if (anchor) fluidShader.setAnchor(anchor);
+        fluidShader.start();
+    }
+
+    // Start persistent base ambient (nature + choir) — runs entire experience
+    soundSystem.startBaseAmbient();
+
     session.start();
     const firstStage = session.getCurrentStage();
     activeMode = firstStage.mode;
@@ -933,10 +1024,36 @@ async function startBlinkDetection() {
         blinkDetector = new BlinkDetector(
             // onBlink
             () => {
+                // Fluid shader ripple — fires on every blink, all modes
+                if (fluidShader) fluidShader.onBlink(0.5, 0.5);
+
+                // Mode-specific blink tone — fires for all non-mandala modes
+                if (soundSystem && activeMode) soundSystem.playBlinkTone(activeMode);
+
                 if (activeMode === 'sound') {
                     soundGardenMode.onBlink();
                 } else if (activeMode === 'breath') {
                     breathMode.onBlink();
+                } else if (activeMode === 'embers') {
+                    embersMode.onBlink();
+                } else if (activeMode === 'mirror') {
+                    mirrorMode.onBlink();
+                } else if (activeMode === 'flow') {
+                    flowMode.onBlink();
+                } else if (activeMode === 'gaze') {
+                    gazeMode.onBlink();
+                } else if (activeMode === 'void') {
+                    voidMode.onBlink();
+                } else if (activeMode === 'recursion') {
+                    recursionMode.onBlink();
+                } else if (activeMode === 'mycelium') {
+                    myceliumMode.onBlink();
+                } else if (activeMode === 'cymatics') {
+                    cymaticsMode.onBlink();
+                } else if (activeMode === 'tide') {
+                    tideMode.onBlink();
+                } else if (activeMode === 'nature') {
+                    naturalWorldMode.onBlink();
                 } else {
                     addFold();
                     if (cosmicSpiral) cosmicSpiral.onBlink();
@@ -1083,7 +1200,7 @@ function _drawStillnessSpiral(cx, cy) {
     const maxRadius = Math.min(canvas.width, canvas.height) * 0.42;
     const b = maxRadius / maxTheta;
 
-    spiralTheta = Math.min(maxTheta, spiralTheta + 0.010);
+    spiralTheta = Math.min(maxTheta, spiralTheta + 0.025);
     if (spiralTheta < 0.05) return;
 
     const steps = Math.max(60, Math.floor(spiralTheta * 28));
@@ -1152,9 +1269,9 @@ function animate() {
         const p = fb.progress;
         const { cx, cy, maxR } = fb;
 
-        if (p < 0.50) {
+        if (p < 0.65) {
             // Phase 1: golden-white light expands from centre
-            const ep  = p / 0.50;
+            const ep  = p / 0.65;
             const eR  = maxR * Math.pow(ep, 0.6);
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1180,33 +1297,16 @@ function animate() {
                 ctx.stroke();
             }
             ctx.restore();
-        } else if (p < 0.70) {
-            // Phase 2: peak brightness — full white glow
-            const ep = (p - 0.50) / 0.20;
-            const alpha = 0.92 + ep * 0.08;
+        } else {
+            // Phase 2: peak brightness — full white flash then fade to black
+            const ep = (p - 0.65) / 0.35;
+            const alpha = ep < 0.4 ? ep / 0.4 : 1 - (ep - 0.4) / 0.6;
             ctx.fillStyle = `rgba(255,252,240,${Math.min(1, alpha)})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-        } else {
-            // Phase 3: TV collapse — squish to horizontal line then vanish
-            const ep = (p - 0.70) / 0.30; // 0→1
-            const ease = Math.pow(ep, 1.8);
-            const scaleY = Math.max(0, 1 - ease);
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            if (scaleY > 0.002) {
-                const lineH = Math.max(2, canvas.height * scaleY);
-                const brightness2 = 1 - Math.pow(ep, 0.5);
-                ctx.save();
-                ctx.translate(cx, cy);
-                const lg = ctx.createLinearGradient(-cx, 0, cx, 0);
-                lg.addColorStop(0,   'rgba(0,0,0,0)');
-                lg.addColorStop(0.25,`rgba(255,240,200,${brightness2 * 0.7})`);
-                lg.addColorStop(0.5, `rgba(255,255,255,${brightness2})`);
-                lg.addColorStop(0.75,`rgba(255,240,200,${brightness2 * 0.7})`);
-                lg.addColorStop(1,   'rgba(0,0,0,0)');
-                ctx.fillStyle = lg;
-                ctx.fillRect(-cx, -lineH / 2, canvas.width, lineH);
-                ctx.restore();
+            if (ep > 0.7) {
+                const darkAlpha = (ep - 0.7) / 0.3;
+                ctx.fillStyle = `rgba(0,0,0,${darkAlpha})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
         }
 
@@ -1264,32 +1364,47 @@ function animate() {
     const videoReady  = showNucleus && blinkDetector?.video?.readyState >= 2;
 
     if (activeMode === 'sound') {
-        // Face first, sound garden on top
-        if (videoReady) _drawVideoNucleus();
         soundGardenMode.setCursor(mouseX, mouseY);
         soundGardenMode.draw(time);
     } else if (activeMode === 'video') {
         videoRoomMode.draw(time);
     } else if (activeMode === 'breath') {
-        // Face first, breath mode on top
-        if (videoReady) _drawVideoNucleus();
         breathMode.draw(time);
+    } else if (activeMode === 'embers') {
+        embersMode.draw(time);
+    } else if (activeMode === 'mirror') {
+        mirrorMode.draw(time);
+    } else if (activeMode === 'flow') {
+        flowMode.draw(time);
+    } else if (activeMode === 'gaze') {
+        gazeMode.draw(time);
+    } else if (activeMode === 'void') {
+        voidMode.draw(time);
+    } else if (activeMode === 'recursion') {
+        recursionMode.draw(time);
+    } else if (activeMode === 'mycelium') {
+        myceliumMode.draw(time);
+    } else if (activeMode === 'cymatics') {
+        cymaticsMode.draw(time);
+    } else if (activeMode === 'tide') {
+        tideMode.draw(time);
+    } else if (activeMode === 'nature') {
+        naturalWorldMode.draw(time);
     } else {
         const isStillness = session && session.active && session.stageIndex === 0;
         const clipR       = Math.min(canvas.width, canvas.height) * 0.50;
 
         if (isStillness) {
-            // Face first, spiral on top
-            if (videoReady) _drawVideoNucleus();
+            // Scene 1 only: spiral liquefaction of camera feed
+            cosmicSpiral.draw(time, foldCount, blinkDetector?.video);
             _drawStillnessScene();
         } else {
-            const isCurrentlyWarping = liquidEffect.isLiquifying() && foldCount > 0;
-            const fadeAlpha = isCurrentlyWarping ? 0.018 : 0.05;
-            ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Face FIRST — mandala accumulates on top
-            if (videoReady) _drawVideoNucleus();
+            if (foldCount > 0) {
+                const isCurrentlyWarping = liquidEffect.isLiquifying();
+                const fadeAlpha = isCurrentlyWarping ? 0.018 : 0.05;
+                ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
 
             if (foldCount > 0) {
                 ctx.save();
@@ -1303,13 +1418,12 @@ function animate() {
 
                 const vig = ctx.createRadialGradient(centerX, centerY, clipR * 0.62, centerX, centerY, clipR);
                 vig.addColorStop(0, 'rgba(0,0,0,0)');
-                vig.addColorStop(1, 'rgba(0,0,0,0.78)');
+                vig.addColorStop(1, 'rgba(0,0,0,0.55)');
                 ctx.fillStyle = vig;
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, clipR, 0, Math.PI * 2);
                 ctx.fill();
-            } else if (videoReady) {
-                _drawVideoNucleus(); // refresh face when no mandala yet
+
             }
         }
     }
@@ -1331,37 +1445,9 @@ function animate() {
         coinSystem.draw();
     }
 
-    // ── Mandala overlay: bloom rings + breathing boundary + layer dots ───
+    // ── Layer progress dots at mandala boundary ───────────────────────────────
     if (!activeMode && foldCount > 0) {
-        const clipR  = Math.min(canvas.width, canvas.height) * 0.50;
-        const breath = 1.0 + 0.006 * Math.sin(time * 0.55);  // ~11s breathing cycle
-
-        // Breathing sacred-circle boundary
-        coinCtx.save();
-        coinCtx.beginPath();
-        coinCtx.arc(centerX, centerY, clipR * breath, 0, Math.PI * 2);
-        const glowA = 0.035 + 0.018 * Math.sin(time * 0.55);
-        coinCtx.strokeStyle = `rgba(130, 170, 255, ${glowA})`;
-        coinCtx.lineWidth = 0.8;
-        coinCtx.stroke();
-        coinCtx.restore();
-
-        // Bloom rings (blink / click feedback)
-        for (let i = bloomRings.length - 1; i >= 0; i--) {
-            const ring = bloomRings[i];
-            ring.r    += (ring.maxR - ring.r) * 0.048;
-            ring.alpha -= 0.010;
-            if (ring.alpha <= 0) { bloomRings.splice(i, 1); continue; }
-            coinCtx.save();
-            coinCtx.beginPath();
-            coinCtx.arc(centerX, centerY, ring.r, 0, Math.PI * 2);
-            coinCtx.strokeStyle = `hsla(${ring.hue}, 65%, 78%, ${ring.alpha})`;
-            coinCtx.lineWidth = 1.2;
-            coinCtx.stroke();
-            coinCtx.restore();
-        }
-
-        // Layer progress dots — arc of small dots at boundary edge
+        const clipR = Math.min(canvas.width, canvas.height) * 0.50;
         const maxFolds   = mandalaGenerator.getStyleConfig().maxLayers;
         const dotRadius  = clipR + 16;
         const startAngle = -Math.PI / 2;
@@ -1402,10 +1488,7 @@ function animate() {
         }
     }
 
-    // Eye cursor — hidden when flame takes over
-    if (!session || !session.isFlameActive()) {
-        cursorSystem.draw();
-    }
+    // Cursor drawn by dedicated globalCursorSystem loop on cursorCanvas (z-index 9999)
 
     // ── Countdown arc around cursor + fixed bottom-bar timer ─────────────────
     if (session && session.active && !activeMode && !session.isFlameActive()) {
@@ -1414,7 +1497,7 @@ function animate() {
         const remaining = Math.max(0, 1 - elapsed / total);
 
         // Arc around cursor
-        const cx = cursorSystem.x, cy = cursorSystem.y;
+        const cx = globalCursorSystem.x, cy = globalCursorSystem.y;
         if (cx > -100 && remaining > 0) {
             coinCtx.save();
             coinCtx.strokeStyle = `rgba(190, 200, 248, ${0.55 * remaining + 0.12})`;
@@ -1443,6 +1526,17 @@ function animate() {
     if (session && session.active) {
         if (session.isFlameActive()) {
             session.drawFlameCursor(coinCtx, mouseX, mouseY, time);
+            // Arrow hint — fades in 2s after flame appears
+            const hintA = Math.min(1, (session.stageElapsed - session.FLAME_APPEAR_TIME - 2) / 1.5) * 0.55;
+            if (hintA > 0.01) {
+                coinCtx.save();
+                coinCtx.font      = '200 13px Helvetica Neue, Helvetica, Arial, sans-serif';
+                coinCtx.textAlign = 'center';
+                coinCtx.fillStyle = `rgba(220, 210, 175, ${hintA})`;
+                coinCtx.letterSpacing = '0.25em';
+                coinCtx.fillText('press → to continue', coinCanvas.width / 2, coinCanvas.height - 32);
+                coinCtx.restore();
+            }
         } else if (session.stageIndex === 0) {
             // Coin glints only in the first scene — that's the coin cursor experience
             if (cursorSystem && cursorSystem.x > 0) {
@@ -1451,36 +1545,35 @@ function animate() {
         }
     }
 
-    // ── Scene 1 text overlays ────────────────────────────────────────────────
-    if (session && session.active && session.stageIndex === 0) {
-        const el = session.stageElapsed;
+    // ── "are you bored yet?" — typewriter, mid scene 4 (stageIndex 3, woven) ──
+    if (session && session.active && session.stageIndex === 3) {
+        const el   = session.stageElapsed;
+        const TEXT = 'are you bored yet?';
+        // appears at 10s, types over 3s, holds, fades at 24s
+        if (el >= 10 && el < 29) {
+            const typeP   = Math.min(1, (el - 10) / 3.0);
+            const chars   = Math.floor(typeP * TEXT.length);
+            const display = TEXT.slice(0, chars);
+            let alpha = 1;
+            if (el > 24) alpha = Math.max(0, 1 - (el - 24) / 5);
 
-        // "are you getting bored" — fades in 15→17s, holds 17→28s, fades out 28→32s
-        let boredA = 0;
-        if (el >= 15 && el < 32) {
-            if      (el < 17) boredA = (el - 15) / 2;
-            else if (el < 28) boredA = 1.0;
-            else              boredA = 1 - (el - 28) / 4;
-        }
-        boredA = Math.max(0, Math.min(1, boredA)) * 0.42;
-        if (boredA > 0.01) {
+            const fontSize = 32;
             coinCtx.save();
-            coinCtx.font          = '200 12px Helvetica Neue, Helvetica, Arial, sans-serif';
+            coinCtx.font          = `100 ${fontSize}px Helvetica Neue, Helvetica, Arial, sans-serif`;
             coinCtx.textAlign     = 'center';
-            coinCtx.letterSpacing = '0.30em';
-            coinCtx.fillStyle     = `rgba(180, 175, 210, ${boredA})`;
-            coinCtx.fillText('are you getting bored', canvas.width / 2, canvas.height - 52);
-            coinCtx.restore();
-        }
+            coinCtx.fillStyle     = `rgba(210, 218, 248, ${alpha * 0.88})`;
+            coinCtx.letterSpacing = '0.14em';
 
-        // "drag to centre" — appears when flame is visible (scene 1 only)
-        if (session.tipAlpha > 0.01) {
-            coinCtx.save();
-            coinCtx.font          = '200 12px Helvetica Neue, Helvetica, Arial, sans-serif';
-            coinCtx.textAlign     = 'center';
-            coinCtx.letterSpacing = '0.30em';
-            coinCtx.fillStyle     = `rgba(220, 200, 160, ${session.tipAlpha * 0.55})`;
-            coinCtx.fillText('drag to centre', canvas.width / 2, canvas.height - 34);
+            const ty = canvas.height * 0.72;
+            coinCtx.fillText(display, canvas.width / 2, ty);
+
+            // blinking cursor while typing or just after
+            const cursorOn = chars < TEXT.length || Math.floor(time * 2) % 2 === 0;
+            if (cursorOn && alpha > 0.05) {
+                const tw = coinCtx.measureText(display).width;
+                coinCtx.fillStyle = `rgba(180, 195, 240, ${alpha * 0.65})`;
+                coinCtx.fillRect(canvas.width / 2 + tw / 2 + 5, ty - fontSize * 0.78, 2, fontSize * 0.9);
+            }
             coinCtx.restore();
         }
     }

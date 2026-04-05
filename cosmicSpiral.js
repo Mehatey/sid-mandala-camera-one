@@ -1,5 +1,6 @@
-// Cosmic Camera Spiral — infinite logarithmic spiral of live camera feed.
-// Each blink adds more copies spiraling toward the void.
+// Cosmic Spiral — one continuous ribbon wound from the video feed into an Archimedean spiral.
+// The face sits at the centre. The image slowly liquefies outward as time passes.
+// Each blink adds more turns (the spiral grows). No circles — one unbroken form.
 class CosmicSpiral {
     constructor(ctx, canvas) {
         this.ctx    = ctx;
@@ -7,8 +8,14 @@ class CosmicSpiral {
         this.w      = canvas.width;
         this.h      = canvas.height;
         this.stars  = [];
-        this.pulses = [];   // blink pulse rings
+        this.pulses = [];
         this._seedStars();
+
+        // Tiny offscreen canvas for reading video pixels efficiently
+        this._vOff  = document.createElement('canvas');
+        this._vOff.width  = 160;
+        this._vOff.height = 160;
+        this._vCtx  = this._vOff.getContext('2d', { willReadFrequently: true });
     }
 
     resize() {
@@ -18,184 +25,193 @@ class CosmicSpiral {
     }
 
     onBlink() {
-        // Wide ripple from center on each blink
-        this.pulses.push({ r: 0, maxR: Math.min(this.w, this.h) * 0.65, alpha: 0.55 });
-        this.pulses.push({ r: 0, maxR: Math.min(this.w, this.h) * 0.30, alpha: 0.35 });
+        // A bright wash travels inward along the spiral on each blink
+        this.pulses.push({ phase: 0, speed: 1.2 });
     }
 
-    // Main draw — called every frame from main.js
-    // foldCount: how many "rings" of the spiral are visible (grows with each blink)
-    // video: the live webcam HTMLVideoElement (may be null if camera not ready)
+    // ─── Main draw ───────────────────────────��────────────────────────────────────
     draw(time, foldCount, video) {
         const ctx = this.ctx;
-        const cx  = this.w / 2;
-        const cy  = this.h / 2;
+        const W   = this.w, H = this.h;
+        const cx  = W / 2, cy = H / 2;
 
-        // ── Deep space fade (creates trailing ghost echoes) ─────────────────────
-        ctx.fillStyle = 'rgba(2, 3, 20, 0.16)';
-        ctx.fillRect(0, 0, this.w, this.h);
+        // Deep-space fade — ghost trails
+        ctx.fillStyle = 'rgba(2, 3, 20, 0.13)';
+        ctx.fillRect(0, 0, W, H);
 
-        // ── Breathing nebula hazes ───────────────────────────────────────────────
         this._drawNebula(ctx, time);
+        this._drawStars(ctx, time);
 
-        // ── Star field ──────────────────────────────────────────────────────────
-        for (const s of this.stars) {
-            const tw    = 0.5 + 0.5 * Math.sin(time * s.ts + s.tw);
-            const alpha = (0.15 + tw * 0.65) * s.lum;
+        // ── Blink wash pulses ─────────────────��──────────────────────────────────
+        this.pulses = this.pulses.filter(p => p.phase < 1);
+        for (const p of this.pulses) {
+            p.phase += 0.016 * p.speed;
+            // Ring that expands from centre
+            const ring_r = Math.min(W, H) * 0.45 * p.phase;
+            const a      = (1 - p.phase) * 0.22;
             ctx.beginPath();
-            ctx.arc(s.x, s.y, s.r * (0.55 + tw * 0.45), 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(210, 225, 255, ${alpha})`;
-            ctx.fill();
-        }
-
-        // ── Blink pulse rings ────────────────────────────────────────────────────
-        for (let i = this.pulses.length - 1; i >= 0; i--) {
-            const p = this.pulses[i];
-            p.r    += (p.maxR - p.r) * 0.042;
-            p.alpha -= 0.007;
-            if (p.alpha <= 0) { this.pulses.splice(i, 1); continue; }
-            ctx.beginPath();
-            ctx.arc(cx, cy, p.r, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(100, 150, 255, ${p.alpha * 0.45})`;
-            ctx.lineWidth = 0.9;
+            ctx.arc(cx, cy, ring_r, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(160, 200, 255, ${a})`;
+            ctx.lineWidth   = 1.0;
             ctx.stroke();
         }
 
-        // ── Spiral requires camera feed ──────────────────────────────────────────
+        // ── Spiral video ribbon ──────────────────────────────────────────────────
         const hasVideo = video && video.readyState >= 2 && video.videoWidth > 0;
-        if (!hasVideo || foldCount === 0) return;
 
-        const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ≈137.5° — sunflower spiral
-        const N           = Math.min(36, 3 + foldCount * 3);
-        const maxR        = Math.min(this.w, this.h) * 0.43;
-        const baseSize    = maxR * 0.21;  // radius of outermost/largest copy
-        const vw          = video.videoWidth;
-        const vh          = video.videoHeight;
+        const N_TURNS  = 2.5 + Math.min(foldCount, 9) * 0.50; // blinks add turns
+        const maxR     = Math.min(W, H) * 0.46;
+        const N_POINTS = 1600;
 
-        // Draw from outermost (largest) → innermost (smallest) so small ones sit on top
-        for (let i = N - 1; i >= 0; i--) {
-            const t    = N > 1 ? i / (N - 1) : 0;          // 0 = outermost
-            const ang  = i * goldenAngle + time * 0.007;    // slow rotation
-            const r    = maxR * Math.pow(0.87, i);          // spiral radius (shrinks inward)
-            const size = baseSize * Math.pow(0.87, i);      // circle radius
-            if (size < 2) continue;
+        // Liquefaction grows from 0 → 0.44 over ~30s
+        const liquify  = Math.min(0.44, time * 0.0145);
 
-            const px = cx + Math.cos(ang) * r;
-            const py = cy + Math.sin(ang) * r;
-
-            // Per-copy hue shifts through cosmic palette over time
-            const hue   = (i * 24 + time * 16) % 360;
-            const alpha = 0.88 * (1 - t * 0.55);  // outermost more opaque
-
-            // ── Glow halo ────────────────────────────────────────────────────────
-            const haloR = size * 2.0;
-            const halo  = ctx.createRadialGradient(px, py, size * 0.6, px, py, haloR);
-            halo.addColorStop(0, `hsla(${hue}, 78%, 62%, 0.14)`);
-            halo.addColorStop(1, `hsla(${hue}, 78%, 62%, 0)`);
-            ctx.fillStyle = halo;
-            ctx.beginPath();
-            ctx.arc(px, py, haloR, 0, Math.PI * 2);
-            ctx.fill();
-
-            // ── Camera circle ─────────────────────────────────────────────────────
-            ctx.save();
-            ctx.globalAlpha = alpha;
-
-            // Clip to circle
-            ctx.beginPath();
-            ctx.arc(px, py, size, 0, Math.PI * 2);
-            ctx.clip();
-
-            // Position at circle center, rotate slightly to follow spiral arm
-            ctx.translate(px, py);
-            ctx.rotate(ang * 0.18);
-
-            // Scale video to fill circle (mirrored — natural selfie orientation)
-            const scale = (size * 2.4) / Math.min(vw, vh);
-            ctx.scale(-1, 1);
-            ctx.drawImage(video, -vw * scale / 2, -vh * scale / 2, vw * scale, vh * scale);
-
-            // Cosmic colour overlay — additive screen blend
-            ctx.globalCompositeOperation = 'screen';
-            ctx.fillStyle = `hsla(${hue}, 72%, 36%, 0.44)`;
-            ctx.beginPath();
-            ctx.arc(0, 0, size, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Soft vignette (darkens edges smoothly to black — erases hard circle border)
-            ctx.globalCompositeOperation = 'source-over';
-            const vg = ctx.createRadialGradient(0, 0, size * 0.38, 0, 0, size);
-            vg.addColorStop(0,    'rgba(0,0,0,0)');
-            vg.addColorStop(0.60, 'rgba(0,0,0,0.08)');
-            vg.addColorStop(0.85, 'rgba(0,0,0,0.55)');
-            vg.addColorStop(1,    'rgba(0,0,0,0.97)');
-            ctx.fillStyle = vg;
-            ctx.beginPath();
-            ctx.arc(0, 0, size, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
+        // ── Capture video pixels ─────────────────────────────────────────────────
+        const VW = this._vOff.width, VH = this._vOff.height;
+        let pxData = null;
+        if (hasVideo) {
+            this._vCtx.save();
+            this._vCtx.translate(VW, 0);
+            this._vCtx.scale(-1, 1);                          // mirror (selfie)
+            this._vCtx.drawImage(video, 0, 0, VW, VH);
+            this._vCtx.restore();
+            pxData = this._vCtx.getImageData(0, 0, VW, VH).data;
         }
 
-        // ── Central convergence glow — the "eye of god" ──────────────────────────
-        const cHue = (time * 22) % 360;
-        const cg   = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 0.14);
-        cg.addColorStop(0,   `hsla(${cHue}, 65%, 85%, 0.18)`);
-        cg.addColorStop(0.5, `hsla(${cHue}, 65%, 65%, 0.06)`);
-        cg.addColorStop(1,   'rgba(0,0,0,0)');
+        // ── Draw ribbon as connected line segments ───────────────────────────────
+        ctx.save();
+        ctx.lineCap = 'round';
+
+        let prevX = cx, prevY = cy;
+        let prevColor = null;
+
+        for (let i = 0; i < N_POINTS; i++) {
+            const s   = i / (N_POINTS - 1);              // 0 = centre, 1 = outer edge
+            const θ   = s * N_TURNS * Math.PI * 2 + time * 0.022;
+            const r   = s * maxR;
+            const px  = cx + r * Math.cos(θ);
+            const py  = cy + r * Math.sin(θ);
+
+            // Segment thickness: thin at centre, grows outward, extra thick when liquefying
+            const lineW = 0.4 + s * 3.2 + liquify * 5.0;
+
+            // ── UV mapping: face (video centre) → spiral centre ──────────────────
+            // The spiral's polar coordinates map back into the video frame
+            const drift = time * 0.016;
+            let u = 0.5 + (r / maxR) * 0.50 * Math.cos(θ - drift);
+            let v = 0.5 + (r / maxR) * 0.50 * Math.sin(θ - drift);
+
+            // Liquefaction distortion (increases over time)
+            u += liquify * Math.sin(v * 8.2 + θ * 1.5 + time * 0.75);
+            v += liquify * Math.cos(u * 6.8 + θ * 1.8 + time * 0.58);
+
+            // Secondary chaos at high liquefaction
+            if (liquify > 0.20) {
+                const extra = (liquify - 0.20) * 2.2;
+                u += extra * 0.14 * Math.sin(s * 14 + time * 1.5);
+                v += extra * 0.12 * Math.cos(s * 11 + time * 1.3);
+            }
+
+            u = Math.max(0, Math.min(0.999, u));
+            v = Math.max(0, Math.min(0.999, v));
+
+            // ── Sample pixel ────────────────────────────��────────────────────────
+            let color, alpha;
+            if (pxData) {
+                const vx  = Math.floor(u * VW);
+                const vy  = Math.floor(v * VH);
+                const idx = (vy * VW + vx) * 4;
+                const pr  = pxData[idx];
+                const pg  = pxData[idx + 1];
+                const pb  = pxData[idx + 2];
+                // Alpha: vivid near centre, fades as video liquefies away
+                alpha     = (0.62 + s * 0.28) * (1 - liquify * 0.55);
+                color     = `rgb(${pr},${pg},${pb})`;
+            } else {
+                // No video — render as shifting colour spectrum
+                const hue = (θ * 28 + time * 18) % 360;
+                alpha     = 0.35 + s * 0.45;
+                color     = `hsl(${hue}, 75%, 58%)`;
+            }
+
+            // ── Draw segment from previous point ─────────────────────────────────
+            if (i > 0) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth   = lineW;
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                ctx.moveTo(prevX, prevY);
+                ctx.lineTo(px, py);
+                ctx.stroke();
+            }
+
+            prevX = px;
+            prevY = py;
+        }
+
+        ctx.globalAlpha = 1;
+        ctx.restore();
+
+        // ── Convergence glow at centre ────────────────────────────────────────────
+        const cHue = (time * 16) % 360;
+        const pullR = maxR * 0.12 + liquify * maxR * 0.06;
+        const cg    = ctx.createRadialGradient(cx, cy, 0, cx, cy, pullR);
+        cg.addColorStop(0,    `hsla(${cHue}, 65%, 90%, ${0.20 + liquify * 0.12})`);
+        cg.addColorStop(0.45, `hsla(${cHue}, 65%, 70%, 0.06)`);
+        cg.addColorStop(1,    'rgba(0,0,0,0)');
         ctx.fillStyle = cg;
         ctx.beginPath();
-        ctx.arc(cx, cy, maxR * 0.14, 0, Math.PI * 2);
+        ctx.arc(cx, cy, pullR, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // ── Nebula clouds — slow-breathing cosmic hazes ──────────────────────────────
+    // ─── Nebula clouds ──────────────────────────────────────────────────���─────────
     _drawNebula(ctx, time) {
         const pulse = 0.5 + 0.5 * Math.sin(time * 0.055);
 
-        // Purple cloud — upper-left
         const n1 = ctx.createRadialGradient(
             this.w * 0.22, this.h * 0.28, 0,
             this.w * 0.22, this.h * 0.28, this.w * 0.38
         );
-        n1.addColorStop(0, `rgba(70, 25, 130, ${0.05 * pulse})`);
-        n1.addColorStop(1, 'rgba(0,0,0,0)');
+        n1.addColorStop(0,   `rgba(55, 30, 100, ${0.10 + pulse * 0.05})`);
+        n1.addColorStop(0.5, `rgba(30, 15,  65, ${0.05 + pulse * 0.02})`);
+        n1.addColorStop(1,   'rgba(0,0,0,0)');
         ctx.fillStyle = n1;
         ctx.fillRect(0, 0, this.w, this.h);
 
-        // Teal cloud — lower-right
         const n2 = ctx.createRadialGradient(
-            this.w * 0.78, this.h * 0.72, 0,
-            this.w * 0.78, this.h * 0.72, this.w * 0.32
+            this.w * 0.74, this.h * 0.68, 0,
+            this.w * 0.74, this.h * 0.68, this.w * 0.35
         );
-        n2.addColorStop(0, `rgba(15, 70, 110, ${0.06 * (1 - pulse * 0.4)})`);
-        n2.addColorStop(1, 'rgba(0,0,0,0)');
+        n2.addColorStop(0,   `rgba(18, 45, 90, ${0.08 + pulse * 0.04})`);
+        n2.addColorStop(0.5, `rgba(10, 24, 55, ${0.04 + pulse * 0.02})`);
+        n2.addColorStop(1,   'rgba(0,0,0,0)');
         ctx.fillStyle = n2;
-        ctx.fillRect(0, 0, this.w, this.h);
-
-        // Rose cloud — upper-right (slow counter-oscillation)
-        const pulse2 = 0.5 + 0.5 * Math.sin(time * 0.038 + 2.1);
-        const n3 = ctx.createRadialGradient(
-            this.w * 0.80, this.h * 0.22, 0,
-            this.w * 0.80, this.h * 0.22, this.w * 0.28
-        );
-        n3.addColorStop(0, `rgba(110, 20, 80, ${0.04 * pulse2})`);
-        n3.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = n3;
         ctx.fillRect(0, 0, this.w, this.h);
     }
 
-    // ── Background star field ────────────────────────────────────────────────────
+    // ─── Stars ────────────────────────────────────────────────────────────────────
+    _drawStars(ctx, time) {
+        for (const s of this.stars) {
+            const tw    = 0.5 + 0.5 * Math.sin(time * s.ts + s.tw);
+            const alpha = (0.12 + tw * 0.55) * s.lum;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r * (0.5 + tw * 0.5), 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(210, 225, 255, ${alpha})`;
+            ctx.fill();
+        }
+    }
+
     _seedStars() {
         this.stars = [];
-        for (let i = 0; i < 160; i++) {
+        for (let i = 0; i < 120; i++) {
             this.stars.push({
                 x:   Math.random() * this.w,
                 y:   Math.random() * this.h,
-                r:   0.2 + Math.random() * 1.1,
-                lum: 0.3 + Math.random() * 0.7,
+                r:   0.3 + Math.random() * 1.1,
+                lum: 0.2 + Math.random() * 0.8,
+                ts:  0.3 + Math.random() * 1.5,
                 tw:  Math.random() * Math.PI * 2,
-                ts:  0.25 + Math.random() * 0.6,
             });
         }
     }

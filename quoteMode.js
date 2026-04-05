@@ -138,7 +138,7 @@ class QuoteMode {
         if (q.attr) {
             ctx.font      = `italic 12px Georgia, serif`;
             ctx.fillStyle = `rgba(155, 178, 225, ${alpha * 0.68})`;
-            ctx.fillText(`— ${q.attr}`, 0, totalH / 2 + 28);
+            ctx.fillText(q.attr, 0, totalH / 2 + 28);
         }
 
         // Decorative line below
@@ -155,20 +155,20 @@ class QuoteMode {
         return [
             { text: "Be here now.", attr: "Ram Dass" },
             { text: "The present moment\nis the only moment\navailable to us.", attr: "Thich Nhất Hạnh" },
-            { text: "An old silent pond—\na frog jumps into the pond.\nSplash! Silence again.", attr: "Matsuo Bashō" },
+            { text: "An old silent pond.\na frog jumps into the pond.\nSplash! Silence again.", attr: "Matsuo Bashō" },
             { text: "You are the sky.\nEverything else\nis just the weather.", attr: "Pema Chödrön" },
             { text: "Over the wintry forest,\nwinds howl in rage\nwith no leaves to blow.", attr: "Natsume Sōseki" },
             { text: "Wherever you are,\nbe there totally.", attr: "Eckhart Tolle" },
             { text: "The quieter you become,\nthe more you can hear.", attr: "Ram Dass" },
             { text: "Not knowing\nis most intimate.", attr: "Dizang Guichen" },
             { text: "The obstacle\nis the path.", attr: "Zen proverb" },
-            { text: "Before enlightenment —\nchop wood, carry water.\nAfter — the same.", attr: "Zen proverb" },
+            { text: "Before enlightenment\nchop wood, carry water.\nAfter, the same.", attr: "Zen proverb" },
             { text: "Between stimulus\nand response there is a space.\nIn that space: freedom.", attr: "Viktor Frankl" },
             { text: "This too shall pass.", attr: "Persian proverb" },
             { text: "When you realize\nnothing is lacking,\nthe whole world belongs to you.", attr: "Lao Tzu" },
-            { text: "In the beginner's mind\nthere are many possibilities.\nIn the expert's — few.", attr: "Shunryu Suzuki" },
+            { text: "In the beginner's mind\nthere are many possibilities.\nIn the expert's, few.", attr: "Shunryu Suzuki" },
             { text: "Feelings come and go\nlike clouds in a windy sky.\nBreathing is my anchor.", attr: "Thich Nhất Hạnh" },
-            { text: "Autumn moonlight—\na worm digs silently\ninto the dark.", attr: "Matsuo Bashō" },
+            { text: "Autumn moonlight.\na worm digs silently\ninto the dark.", attr: "Matsuo Bashō" },
             { text: "Do not dwell in the past,\ndo not dream of the future.\nConcentrate the mind on now.", attr: "The Buddha" },
             { text: "What you seek\nis seeking\nyou.", attr: "Rumi" },
             { text: "Empty your mind.\nBe formless. Shapeless.\nLike water.", attr: "Bruce Lee" },

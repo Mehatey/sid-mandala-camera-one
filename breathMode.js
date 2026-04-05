@@ -113,14 +113,14 @@ class BreathMode {
         // Memory phrase — fades in with expansion, out near hold
         if (label) {
             const prog  = phase < this.INHALE ? phase / this.INHALE : 1 - (phase - this.INHALE - this.HOLD_IN) / this.EXHALE;
-            const wordA = Math.min(1, Math.min(prog * 2.5, (1 - prog) * 2.5 + 0.1)) * 0.50;
+            const wordA = Math.min(1, Math.min(prog * 2.5, (1 - prog) * 2.5 + 0.1)) * 0.72;
             if (wordA > 0.01) {
                 ctx.save();
-                ctx.font          = '200 13px Helvetica Neue, Helvetica, Arial, sans-serif';
+                ctx.font          = '300 16px Helvetica Neue, Helvetica, Arial, sans-serif';
                 ctx.textAlign     = 'center';
-                ctx.letterSpacing = '0.30em';
-                ctx.fillStyle     = `hsla(${hue + 10}, ${sat - 5}%, 84%, ${wordA})`;
-                ctx.fillText(label.toLowerCase(), cx, cy + r + 36);
+                ctx.letterSpacing = '0.28em';
+                ctx.fillStyle     = `hsla(${hue + 10}, ${sat - 5}%, 88%, ${wordA})`;
+                ctx.fillText(label.toLowerCase(), cx, cy + r + 44);
                 ctx.restore();
             }
         }

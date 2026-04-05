@@ -39,20 +39,31 @@ class SessionManager {
 
         // Timing constants
         this.GAZE_FADE_THRESHOLD = 18;
-        this.FLAME_APPEAR_TIME   = 30;
-        this.MIN_STAGE_TIME      = 30;
+        this.FLAME_APPEAR_TIME   = 20;
+        this.MIN_STAGE_TIME      = 20;
 
         // Scene sequence — arranged by intensity, calm → immersive
         // mode: null = geometric mandala; style = mandala style index
+        // Arc: geometric → organic → wave → particle → watching → corridor → void → guided
         this.sequence = [
-            { mode: null,    style: 1, name: 'stillness' },  // Thread Lines
-            { mode: null,    style: 3, name: 'depth'     },  // Ocean Depths
-            { mode: null,    style: 0, name: 'form'      },  // Geometric
-            { mode: null,    style: 2, name: 'woven'     },  // Interwoven
-            { mode: null,    style: 4, name: 'forest'    },  // Emerald Forest
-            { mode: null,    style: 5, name: 'pixel'     },  // Pixel Art
-            { mode: 'sound', style: null, name: 'sound'  },  // Sound garden
-            { mode: 'breath',style: null, name: 'breath' },  // Breath guide
+            { mode: null,        style: 1,    name: 'stillness'  },  // Thread Lines — quiet geometric entry
+            { mode: null,        style: 3,    name: 'depth'      },  // Ocean Depths — deeper geometry
+            { mode: 'mycelium',  style: null, name: 'mycelium'   },  // Neural Growth — first organic surprise
+            { mode: null,        style: 0,    name: 'form'       },  // Geometric — return to precision
+            { mode: 'embers',    style: null, name: 'embers'     },  // Embers — ascending particles
+            { mode: 'tide',      style: null, name: 'tide'       },  // Tide — interference wave field
+            { mode: null,        style: 2,    name: 'woven'      },  // Interwoven — complex interlace
+            { mode: 'mirror',    style: null, name: 'mirror'     },  // Mirror — kaleidoscope
+            { mode: 'cymatics',  style: null, name: 'cymatics'   },  // Cymatics — math made visible
+            { mode: null,        style: 4,    name: 'forest'     },  // Emerald Forest — organic midpoint
+            { mode: 'flow',      style: null, name: 'flow'       },  // Flow Field — particle rivers
+            { mode: 'gaze',      style: null, name: 'gaze'       },  // Eye World — watching eyes
+            { mode: 'nature',    style: null, name: 'nature'     },  // Natural World — first-person 3D walk
+            { mode: null,        style: 5,    name: 'pixel'      },  // Pixel Art — brief lightness break
+            { mode: 'recursion', style: null, name: 'recursion'  },  // Recursion — infinite corridor
+            { mode: 'void',      style: null, name: 'void'       },  // Void — singularity
+            { mode: 'sound',     style: null, name: 'sound'      },  // Sound Garden
+            { mode: 'breath',    style: null, name: 'breath'     },  // Breath Guide — closing
         ];
 
         this._onKey = this._onKey.bind(this);

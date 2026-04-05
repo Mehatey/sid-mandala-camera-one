@@ -7,28 +7,13 @@
 body {
     background: #000;
     overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     color: white;
-    cursor: crosshair;
+    cursor: none;
 }
 
 #hint {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: rgba(255, 255, 255, 0.25);
-    font-size: 13px;
-    letter-spacing: 0.35em;
-    text-transform: lowercase;
-    pointer-events: none;
-    z-index: 50;
-    transition: opacity 1.2s ease;
-    white-space: nowrap;
-}
-
-#hint.hidden {
-    opacity: 0;
+    display: none;
 }
 
 #styleToggle {
@@ -81,6 +66,7 @@ body {
 }
 
 #blinkWrap {
+    display: none !important;
     position: fixed;
     bottom: 22px;
     left: 50%;
@@ -112,12 +98,6 @@ body {
 }
 
 #blinkBtn {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(5px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -215,7 +195,7 @@ body.flame-cursor * {
     align-items: center;
     justify-content: center;
     gap: 0;
-    transition: opacity 1.1s ease;
+    transition: opacity 0.65s ease;
     padding: 48px 32px;
     overflow: hidden;
 }
@@ -280,48 +260,59 @@ body.flame-cursor * {
 
 #brandManifesto {
     text-align: center;
-    margin-bottom: 52px;
+    margin-bottom: 56px;
 }
 
 .mLine {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 12px;
+    font-size: 24px;
     font-weight: 300;
-    letter-spacing: 0.12em;
-    color: rgba(175, 182, 215, 0.48);
-    line-height: 2.1;
+    letter-spacing: 0.04em;
+    color: rgba(215, 222, 248, 0.88);
+    line-height: 1.85;
     text-transform: lowercase;
     opacity: 0;
     animation: gentleFade 1.1s ease forwards;
-    animation-delay: calc(3.0s + var(--j) * 0.28s);
+    animation-delay: calc(0.2s + var(--j) * 0.18s);
 }
 
-.mSpacer { line-height: 0.9; }
+.mSpacer { line-height: 0.8; }
 
 .mAccent {
-    color: rgba(195, 200, 235, 0.62);
+    color: rgba(235, 238, 255, 0.98);
     font-style: italic;
+    font-weight: 300;
+}
+
+.mLineFinal {
+    font-size: 36px;
+    font-weight: 200;
+    letter-spacing: 0.10em;
+    color: rgba(245, 246, 255, 1.0);
+    text-shadow: 0 0 55px rgba(180, 200, 255, 0.40);
+    line-height: 1.4;
+    margin-top: 6px;
 }
 
 #brandContinueBtn {
     opacity: 0;
-    animation: gentleFade 1.2s ease 6.6s forwards;
+    animation: gentleFade 1.2s ease 3.2s forwards;
     background: transparent;
     border: none;
-    border-bottom: 1px solid rgba(160, 170, 215, 0.22);
-    padding: 8px 0;
-    color: rgba(190, 200, 235, 0.50);
+    border-bottom: 1px solid rgba(170, 180, 225, 0.32);
+    padding: 10px 0;
+    color: rgba(205, 213, 245, 0.72);
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 10px;
-    letter-spacing: 0.42em;
+    font-size: 13px;
+    letter-spacing: 0.38em;
     text-transform: lowercase;
     cursor: pointer;
-    transition: color 0.5s, border-color 0.5s;
+    transition: color 0.4s, border-color 0.4s;
 }
 
 #brandContinueBtn:hover {
-    color: rgba(220, 225, 248, 0.85);
-    border-bottom-color: rgba(185, 195, 235, 0.45);
+    color: rgba(232, 236, 255, 0.95);
+    border-bottom-color: rgba(200, 210, 248, 0.55);
 }
 
 /* ── Video intro overlay ─────────────────────────────────────────────────── */
@@ -405,6 +396,24 @@ body.flame-cursor * {
     border-bottom-color: rgba(255,255,255,0.42);
 }
 
+#videoTagline {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    letter-spacing: 0.48em;
+    text-transform: lowercase;
+    color: rgba(210, 215, 235, 0.70);
+    white-space: nowrap;
+    opacity: 0;
+    animation: gentleFade 1.4s ease 1.5s forwards;
+    pointer-events: none;
+    z-index: 10;
+}
+
 /* ── Intro overlay — spiritual, minimal ──────────────────────────────────── */
 #introOverlay {
     position: fixed;
@@ -429,7 +438,7 @@ body.flame-cursor * {
 
 #introLogo {
     font-size: 18px;
-    color: rgba(160, 175, 220, 0.28);
+    color: rgba(175, 190, 230, 0.52);
     letter-spacing: 0.6em;
     margin-bottom: 52px;
     animation: gentleFade 3s ease forwards;
@@ -501,56 +510,70 @@ body.flame-cursor * {
 }
 
 #introRules {
-    margin-bottom: 36px;
+    margin-bottom: 52px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 42px;
+    text-align: left;
 }
 
 .rule {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ruleHero {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 11.5px;
-    color: rgba(155, 165, 205, 0.42);
-    letter-spacing: 0.10em;
+    font-size: 62px;
+    font-weight: 100;
+    letter-spacing: 0.06em;
+    color: rgba(234, 238, 255, 0.94);
+    line-height: 1.0;
     text-transform: lowercase;
-    line-height: 1.8;
-    text-align: center;
+}
+
+.ruleCaption {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 300;
+    color: rgba(188, 196, 232, 0.72);
+    line-height: 1.65;
+    letter-spacing: 0.02em;
+    max-width: 430px;
 }
 
 .ruleIcon { display: none; }
 
-#introTip {
+#rulesEyebrow {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 11px;
-    color: rgba(140, 150, 195, 0.32);
-    letter-spacing: 0.09em;
-    line-height: 1.9;
-    margin-bottom: 48px;
-    font-style: italic;
-    text-align: center;
-    border: none;
-    padding: 0;
+    letter-spacing: 0.42em;
+    color: rgba(155, 165, 215, 0.62);
     text-transform: lowercase;
+    text-align: center;
+    margin-bottom: 54px;
 }
 
 #beginBtn {
-    display: inline-block;
+    display: block;
+    margin: 0 auto;
     background: transparent;
     border: none;
-    border-bottom: 1px solid rgba(160, 170, 215, 0.22);
-    padding: 8px 0;
-    color: rgba(190, 200, 235, 0.55);
+    border-bottom: 1px solid rgba(175, 185, 228, 0.42);
+    padding: 12px 0;
+    color: rgba(218, 225, 252, 0.88);
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 11px;
+    font-size: 15px;
     letter-spacing: 0.38em;
     text-transform: lowercase;
     cursor: pointer;
-    transition: color 0.6s, border-color 0.6s;
+    transition: color 0.4s, border-color 0.4s;
 }
 
 #beginBtn:hover {
-    color: rgba(215, 220, 245, 0.88);
-    border-bottom-color: rgba(180, 190, 230, 0.5);
+    color: rgba(235, 240, 255, 1.0);
+    border-bottom-color: rgba(200, 210, 245, 0.7);
 }
 
 /* "next →" on intro description card */
@@ -614,27 +637,27 @@ body.flame-cursor * {
 
 #endLogo {
     font-size: 16px;
-    color: rgba(200, 180, 120, 0.28);
+    color: rgba(210, 190, 130, 0.52);
     margin-bottom: 44px;
     letter-spacing: 0.5em;
 }
 
 #endCard h2 {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 22px;
+    font-size: 30px;
     font-weight: 200;
-    letter-spacing: 0.28em;
+    letter-spacing: 0.18em;
     text-transform: lowercase;
-    color: rgba(215, 220, 240, 0.75);
+    color: rgba(225, 230, 250, 0.92);
     margin-bottom: 28px;
 }
 
 #endCard p {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 12px;
-    line-height: 2.0;
-    color: rgba(155, 165, 205, 0.42);
-    letter-spacing: 0.06em;
+    font-size: 17px;
+    line-height: 1.8;
+    color: rgba(205, 212, 242, 0.88);
+    letter-spacing: 0.03em;
     margin-bottom: 16px;
 }
 
@@ -694,33 +717,43 @@ body.flame-cursor * {
 }
 
 .sceneCardName {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 15px;
-    font-weight: 200;
-    letter-spacing: 0.45em;
-    text-transform: lowercase;
-    color: rgba(210, 218, 245, 0.55);
+    display: none;
 }
 
 .sceneCardHaiku {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 11.5px;
+    font-size: 24px;
     font-weight: 300;
     font-style: italic;
-    letter-spacing: 0.06em;
-    color: rgba(155, 165, 215, 0.35);
-    line-height: 2.1;
+    letter-spacing: 0.04em;
+    color: rgba(228, 234, 255, 0.94);
+    line-height: 1.85;
     text-align: center;
-    margin: 16px 0 8px;
-    max-width: 320px;
+    margin: 0;
+    max-width: 520px;
+    text-shadow: 0 0 55px rgba(160, 180, 255, 0.50), 0 0 18px rgba(210, 225, 255, 0.28);
 }
 
 .sceneCardHint {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 10px;
-    letter-spacing: 0.32em;
-    text-transform: lowercase;
-    color: rgba(150, 160, 205, 0.20);
+    display: none;
+}
+
+/* ── Fluid shader canvas ─────────────────────────────────────────────────── */
+#shaderCanvas {
+    display: block;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 95;           /* above mandala (1), below coin overlays (100) */
+    pointer-events: none;
+    mix-blend-mode: screen; /* dark → transparent; colour → adds to mandala */
+    opacity: 0;
+    transition: opacity 2.4s ease;
+}
+
+#shaderCanvas.active {
+    opacity: 1;
 }
 
 #canvas {
@@ -737,6 +770,15 @@ body.flame-cursor * {
     top: 0;
     left: 0;
     z-index: 100;
+    pointer-events: none;
+}
+
+#cursorCanvas {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
     pointer-events: none;
 }
 
@@ -783,6 +825,48 @@ body.flame-cursor * {
     }
 }
 
+/* ── Floating GIFs on rules screen ──────────────────────────────────────── */
+.floatingGifs {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes gifFloat1 {
+    0%   { transform: translate(0,   0)   rotate(-4deg) scale(1.0); }
+    25%  { transform: translate(18px,-22px) rotate(3deg)  scale(1.05); }
+    50%  { transform: translate(-10px,16px) rotate(-2deg) scale(0.97); }
+    75%  { transform: translate(22px, 8px) rotate(5deg)  scale(1.03); }
+    100% { transform: translate(0,   0)   rotate(-4deg) scale(1.0); }
+}
+@keyframes gifFloat2 {
+    0%   { transform: translate(0,  0)    rotate(6deg)  scale(1.0); }
+    33%  { transform: translate(-20px,14px) rotate(-3deg) scale(1.06); }
+    66%  { transform: translate(12px,-18px) rotate(7deg)  scale(0.96); }
+    100% { transform: translate(0,  0)    rotate(6deg)  scale(1.0); }
+}
+@keyframes gifFloat3 {
+    0%   { transform: translate(0, 0)     rotate(-2deg) scale(1.0); }
+    40%  { transform: translate(16px,20px) rotate(4deg)  scale(1.04); }
+    80%  { transform: translate(-14px,-10px) rotate(-5deg) scale(0.98); }
+    100% { transform: translate(0, 0)     rotate(-2deg) scale(1.0); }
+}
+
+.fgif {
+    position: absolute;
+    width: 112px;
+    height: 112px;
+    object-fit: contain;
+    opacity: 0.65;
+}
+
+.fgif1 { top: 10%; left: 6%;   animation: gifFloat1 7s ease-in-out infinite; animation-delay: 0s; }
+.fgif2 { top: 62%; left: 4%;   animation: gifFloat2 9s ease-in-out infinite; animation-delay: -2s; }
+.fgif3 { top: 14%; right: 5%;  animation: gifFloat3 8s ease-in-out infinite; animation-delay: -1s; }
+.fgif4 { top: 70%; right: 7%;  animation: gifFloat1 10s ease-in-out infinite; animation-delay: -3.5s; }
+.fgif5 { top: 38%; right: 3%;  animation: gifFloat2 6.5s ease-in-out infinite; animation-delay: -0.8s; }
+
 /* ── Rules overlay ───────────────────────────────────────────────────────── */
 #rulesOverlay {
     position: fixed;
@@ -792,28 +876,20 @@ body.flame-cursor * {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.9s ease;
+    transition: opacity 0.45s ease;
 }
 
 #rulesOverlay.hidden  { display: none; }
 #rulesOverlay.fading  { opacity: 0; pointer-events: none; }
 
 #rulesCard {
-    max-width: 420px;
+    position: relative;
+    z-index: 2;
+    max-width: 580px;
     width: 88%;
-    padding: 0 20px;
-    text-align: center;
-    animation: gentleFade 1.4s ease forwards;
-}
-
-#rulesHeading {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 42px;
-    font-weight: 100;
-    letter-spacing: 0.32em;
-    color: rgba(215, 220, 245, 0.72);
-    text-transform: lowercase;
-    margin-bottom: 52px;
+    padding: 0 28px;
+    text-align: left;
+    animation: gentleFade 1.4s 0.2s ease both;
 }
 
 /* ── Mood slider overlay ─────────────────────────────────────────────────── */
@@ -826,7 +902,7 @@ body.flame-cursor * {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.9s ease;
+    transition: opacity 0.45s ease;
 }
 
 #moodOverlay.hidden,
@@ -845,20 +921,20 @@ body.flame-cursor * {
 
 .moodCardLogo {
     font-size: 16px;
-    color: rgba(200, 180, 120, 0.28);
+    color: rgba(210, 190, 130, 0.52);
     margin-bottom: 52px;
     letter-spacing: 0.5em;
 }
 
 .moodQ {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 14px;
+    font-size: 24px;
     font-weight: 300;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.10em;
     text-transform: lowercase;
-    color: rgba(195, 202, 235, 0.62);
+    color: rgba(220, 226, 248, 0.92);
     margin-bottom: 52px;
-    line-height: 1.9;
+    line-height: 1.7;
 }
 
 .moodSliderWrap {
@@ -870,8 +946,8 @@ body.flame-cursor * {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 1px;
-    background: rgba(120, 130, 180, 0.20);
+    height: 3px;
+    background: rgba(130, 142, 195, 0.28);
     outline: none;
     border-radius: 2px;
     cursor: pointer;
@@ -914,9 +990,9 @@ body.flame-cursor * {
 
 .moodNums span {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 10px;
+    font-size: 14px;
     font-weight: 300;
-    color: rgba(120, 130, 175, 0.30);
+    color: rgba(190, 198, 235, 0.78);
     letter-spacing: 0.05em;
     width: 10%;
     text-align: center;
@@ -931,30 +1007,211 @@ body.flame-cursor * {
 
 .moodExtremes span {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 9.5px;
+    font-size: 13px;
     font-weight: 300;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.12em;
     text-transform: lowercase;
-    color: rgba(140, 150, 195, 0.28);
+    color: rgba(175, 182, 225, 0.72);
 }
 
 .moodBtn {
     background: transparent;
     border: none;
-    border-bottom: 1px solid rgba(160, 170, 215, 0.22);
-    padding: 8px 0;
-    color: rgba(190, 200, 235, 0.50);
+    border-bottom: 1px solid rgba(160, 170, 215, 0.40);
+    padding: 10px 0;
+    color: rgba(210, 218, 248, 0.82);
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.38em;
+    font-size: 15px;
+    letter-spacing: 0.32em;
     text-transform: lowercase;
     cursor: pointer;
     transition: color 0.6s, border-color 0.6s;
 }
 
 .moodBtn:hover {
-    color: rgba(220, 225, 248, 0.85);
-    border-bottom-color: rgba(185, 195, 235, 0.45);
+    color: rgba(235, 238, 255, 1.0);
+    border-bottom-color: rgba(200, 210, 248, 0.65);
+}
+
+/* ── Intention / anchor overlay ─────────────────────────────────────────── */
+#intentionOverlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.7s ease;
+}
+
+#intentionOverlay.hidden  { display: none; }
+#intentionOverlay.fading  { opacity: 0; pointer-events: none; }
+
+#intentionCard {
+    max-width: 540px;
+    width: 88%;
+    padding: 0 20px;
+    text-align: center;
+    animation: gentleFade 1.6s ease forwards;
+}
+
+#intentionCardLogo {
+    font-size: 16px;
+    color: rgba(210, 190, 130, 0.52);
+    letter-spacing: 0.5em;
+    margin-bottom: 48px;
+}
+
+#intentionCardTitle {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 22px;
+    font-weight: 200;
+    letter-spacing: 0.28em;
+    text-transform: lowercase;
+    color: rgba(215, 222, 248, 0.82);
+    margin-bottom: 52px;
+}
+
+.intentionSectionLabel {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.44em;
+    text-transform: lowercase;
+    color: rgba(145, 155, 205, 0.48);
+    margin-bottom: 20px;
+}
+
+#intentionWordInput {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(140, 152, 210, 0.20);
+    padding: 10px 0;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 300;
+    color: rgba(200, 210, 240, 0.78);
+    outline: none;
+    text-align: center;
+    letter-spacing: 0.08em;
+    transition: border-color 0.6s;
+    margin-bottom: 52px;
+}
+
+#intentionWordInput::placeholder {
+    color: rgba(120, 130, 178, 0.28);
+    font-style: italic;
+}
+
+#intentionWordInput:focus {
+    border-bottom-color: rgba(155, 165, 215, 0.42);
+}
+
+/* ── Anchor choice buttons ─────────────────────────────────────────────── */
+#anchorChoices {
+    display: flex;
+    justify-content: center;
+    gap: 36px;
+    margin-bottom: 58px;
+}
+
+.anchorBtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    opacity: 0.52;
+    transition: opacity 0.4s;
+}
+
+.anchorBtn:hover { opacity: 0.82; }
+.anchorBtn.selected { opacity: 1.0; }
+
+.anchorOrb {
+    display: block;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    transition: box-shadow 0.5s, transform 0.5s;
+}
+
+/* Orb colours */
+.anchorBtn[data-anchor="breath"] .anchorOrb {
+    background: radial-gradient(circle at 38% 36%,
+        rgba(255, 215, 130, 0.70), rgba(215, 140, 55, 0.28) 62%, transparent);
+    box-shadow: 0 0 20px rgba(220, 160, 55, 0.24), 0 0 6px rgba(255, 205, 100, 0.20);
+}
+.anchorBtn[data-anchor="form"] .anchorOrb {
+    background: radial-gradient(circle at 38% 36%,
+        rgba(148, 188, 255, 0.70), rgba(75, 118, 235, 0.28) 62%, transparent);
+    box-shadow: 0 0 20px rgba(95, 138, 255, 0.24), 0 0 6px rgba(140, 178, 255, 0.20);
+}
+.anchorBtn[data-anchor="sound"] .anchorOrb {
+    background: radial-gradient(circle at 38% 36%,
+        rgba(128, 222, 180, 0.70), rgba(50, 168, 118, 0.28) 62%, transparent);
+    box-shadow: 0 0 20px rgba(50, 188, 128, 0.24), 0 0 6px rgba(95, 212, 155, 0.20);
+}
+
+/* Selected — stronger glow + slow pulse */
+.anchorBtn.selected[data-anchor="breath"] .anchorOrb {
+    box-shadow: 0 0 36px rgba(220, 160, 55, 0.68), 0 0 14px rgba(255, 200, 90, 0.48);
+    animation: orbPulse 3s ease-in-out infinite;
+}
+.anchorBtn.selected[data-anchor="form"] .anchorOrb {
+    box-shadow: 0 0 36px rgba(95, 138, 255, 0.68), 0 0 14px rgba(140, 178, 255, 0.48);
+    animation: orbPulse 3s ease-in-out infinite;
+}
+.anchorBtn.selected[data-anchor="sound"] .anchorOrb {
+    box-shadow: 0 0 36px rgba(50, 188, 128, 0.68), 0 0 14px rgba(95, 212, 155, 0.48);
+    animation: orbPulse 3s ease-in-out infinite;
+}
+
+@keyframes orbPulse {
+    0%, 100% { transform: scale(1.00); }
+    50%       { transform: scale(1.09); }
+}
+
+.anchorLabel {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 17px;
+    font-weight: 200;
+    letter-spacing: 0.24em;
+    text-transform: lowercase;
+    color: rgba(215, 222, 248, 0.90);
+}
+
+.anchorSub {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.16em;
+    text-transform: lowercase;
+    color: rgba(160, 168, 215, 0.42);
+    white-space: nowrap;
+}
+
+#intentionContinueBtn {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(162, 172, 222, 0.35);
+    padding: 10px 0;
+    color: rgba(205, 215, 248, 0.78);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.36em;
+    text-transform: lowercase;
+    cursor: pointer;
+    transition: color 0.5s, border-color 0.5s;
+}
+
+#intentionContinueBtn:hover {
+    color: rgba(230, 236, 255, 1.0);
+    border-bottom-color: rgba(195, 205, 245, 0.58);
 }
 
 /* ── Reflection overlay ──────────────────────────────────────────────────── */
@@ -982,17 +1239,17 @@ body.flame-cursor * {
 
 #reflectionLogo {
     font-size: 16px;
-    color: rgba(200, 180, 120, 0.28);
+    color: rgba(210, 190, 130, 0.52);
     letter-spacing: 0.5em;
     margin-bottom: 40px;
 }
 
 #reflectionTitle {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 18px;
+    font-size: 26px;
     font-weight: 200;
-    letter-spacing: 0.32em;
-    color: rgba(210, 218, 245, 0.55);
+    letter-spacing: 0.22em;
+    color: rgba(220, 226, 248, 0.90);
     text-transform: lowercase;
     margin-bottom: 54px;
 }
@@ -1005,19 +1262,19 @@ body.flame-cursor * {
 .rqLabel {
     display: block;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 11.5px;
+    font-size: 18px;
     font-weight: 300;
-    letter-spacing: 0.10em;
+    letter-spacing: 0.03em;
     text-transform: lowercase;
-    color: rgba(160, 168, 210, 0.48);
-    line-height: 1.8;
-    margin-bottom: 16px;
+    color: rgba(215, 222, 248, 0.92);
+    line-height: 1.65;
+    margin-bottom: 18px;
 }
 
 .rqPills {
     display: flex;
-    gap: 12px;
-    flex-wrap: nowrap;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .rqPillsWrap {
@@ -1027,50 +1284,50 @@ body.flame-cursor * {
 
 .rqPills button {
     background: transparent;
-    border: 1px solid rgba(120, 130, 185, 0.18);
-    border-radius: 2px;
-    padding: 6px 14px;
+    border: 1px solid rgba(150, 162, 218, 0.38);
+    border-radius: 20px;
+    padding: 9px 20px;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 10.5px;
+    font-size: 14px;
     font-weight: 300;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.10em;
     text-transform: lowercase;
-    color: rgba(150, 158, 205, 0.40);
+    color: rgba(195, 202, 238, 0.84);
     cursor: pointer;
-    transition: border-color 0.35s, color 0.35s, background 0.35s;
+    transition: border-color 0.25s, color 0.25s, background 0.25s;
     white-space: nowrap;
 }
 
 .rqPills button:hover {
-    border-color: rgba(155, 165, 215, 0.38);
-    color: rgba(185, 192, 235, 0.68);
+    border-color: rgba(170, 180, 235, 0.60);
+    color: rgba(215, 220, 248, 0.92);
 }
 
 .rqPills button.selected {
-    border-color: rgba(170, 180, 235, 0.52);
-    color: rgba(200, 208, 248, 0.82);
-    background: rgba(120, 130, 200, 0.08);
+    border-color: rgba(190, 205, 255, 0.82);
+    color: rgba(232, 236, 255, 1.0);
+    background: rgba(120, 135, 210, 0.22);
 }
 
 .rqText {
     width: 100%;
     background: transparent;
     border: none;
-    border-bottom: 1px solid rgba(120, 130, 185, 0.18);
-    padding: 9px 0;
+    border-bottom: 1px solid rgba(140, 152, 210, 0.35);
+    padding: 10px 0;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 300;
-    color: rgba(180, 188, 230, 0.65);
+    color: rgba(200, 208, 240, 0.85);
     outline: none;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     transition: border-color 0.4s;
     resize: none;
 }
 
 .rqText::placeholder {
-    color: rgba(110, 120, 165, 0.28);
-    font-style: italic;
+    color: rgba(130, 140, 185, 0.46);
+    font-style: normal;
 }
 
 .rqText:focus { border-bottom-color: rgba(155, 165, 215, 0.38); }
@@ -1080,9 +1337,9 @@ body.flame-cursor * {
 #reflectionSubmitBtn {
     background: transparent;
     border: none;
-    border-bottom: 1px solid rgba(155, 165, 215, 0.22);
-    padding: 8px 0;
-    color: rgba(185, 195, 235, 0.48);
+    border-bottom: 1px solid rgba(160, 172, 225, 0.45);
+    padding: 10px 0;
+    color: rgba(210, 218, 248, 0.85);
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 11px;
     letter-spacing: 0.38em;
@@ -1114,19 +1371,6 @@ body.flame-cursor * {
 #coinCanvas.intro-hidden {
     opacity: 0;
     transition: opacity 1.2s ease;
-}
-
-/* ── Haiku / scene card — higher contrast on black background ────────────── */
-.sceneCardName {
-    color: rgba(215, 222, 248, 0.72) !important;
-    letter-spacing: 0.52em;
-}
-
-.sceneCardHaiku {
-    color: rgba(170, 180, 225, 0.55) !important;
-    font-size: 12.5px !important;
-    line-height: 2.3 !important;
-    max-width: 380px !important;
 }
 
 /* ── End card: mandala snapshot ──────────────────────────────────────────── */
@@ -1219,11 +1463,11 @@ body.flame-cursor * {
 
 .endMindfulness {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 11.5px;
-    line-height: 2.1;
-    color: rgba(155, 165, 205, 0.38);
-    letter-spacing: 0.05em;
-    margin-bottom: 14px;
-    font-style: italic;
+    font-size: 16px;
+    line-height: 1.85;
+    color: rgba(195, 205, 238, 0.72);
+    letter-spacing: 0.06em;
+    margin-bottom: 18px;
+    font-weight: 300;
 }
 
