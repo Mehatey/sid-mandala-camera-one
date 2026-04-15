@@ -97,7 +97,7 @@ class CosmosMode {
                 ctx.strokeStyle = s.sat > 0
                     ? `hsla(${s.hue}, ${s.sat}%, 92%, ${sa})`
                     : `rgba(245, 248, 255, ${sa})`;
-                ctx.lineWidth = 0.4;
+                ctx.lineWidth = 0.85;
                 ctx.beginPath();
                 ctx.moveTo(x - sl, y); ctx.lineTo(x + sl, y);
                 ctx.moveTo(x, y - sl); ctx.lineTo(x, y + sl);

@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>journey</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    background: #000;
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: rgba(215, 225, 255, 0.88);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Canvas ──────────────────────────────────────────────────── */
+#c {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    z-index: 0;
+}
+
+/* ── Base overlay utility ────────────────────────────────────── */
+.layer {
+    position: fixed; inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.9s ease;
+}
+.layer.hidden { opacity: 0; pointer-events: none; }
+
+/* ── Conversation overlay ────────────────────────────────────── */
+#convo {
+    background: rgba(0, 0, 4, 0.72);
+    padding: 0 clamp(32px, 8vw, 120px);
+    gap: 0;
+}
+
+#question-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 580px;
+    width: 100%;
+    min-height: 120px;
+    justify-content: flex-end;
+}
+
+#question-text {
+    font-size: clamp(17px, 2.2vw, 22px);
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    line-height: 1.55;
+    color: rgba(215, 225, 255, 0.90);
+    min-height: 1.6em;
+}
+
+#question-sub {
+    font-size: clamp(11px, 1.2vw, 13px);
+    letter-spacing: 0.14em;
+    color: rgba(150, 168, 215, 0.42);
+    text-transform: lowercase;
+    min-height: 1.2em;
+}
+
+/* ── Answer area ─────────────────────────────────────────────── */
+#answer-area {
+    max-width: 580px;
+    width: 100%;
+    margin-top: 36px;
+}
+
+/* Multiple choice */
+#choices {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.choice-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 11px 0;
+    color: rgba(190, 205, 250, 0.55);
+    font-family: inherit;
+    font-size: clamp(12px, 1.4vw, 14px);
+    letter-spacing: 0.08em;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    width: 100%;
+}
+.choice-btn:hover { color: rgba(215, 228, 255, 0.88); }
+.choice-btn.selected {
+    color: rgba(215, 228, 255, 0.96);
+    border-bottom-color: rgba(140, 185, 255, 0.35);
+}
+.choice-btn .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(140, 185, 255, 0.70);
+    opacity: 0;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+.choice-btn.selected .dot { opacity: 1; }
+
+/* Continue button (after choice selected) */
+#continue-btn {
+    display: inline-block;
+    width: auto;
+    margin-top: 24px;
+    background: none;
+    border: none;
+    color: rgba(140, 185, 255, 0.42);
+    font-family: inherit;
+    font-size: 18px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    padding: 4px 2px;
+    transition: color 0.2s, opacity 0.3s, transform 0.2s;
+    opacity: 0;
+    pointer-events: none;
+    line-height: 1;
+}
+#continue-btn.visible { opacity: 1; pointer-events: auto; }
+#continue-btn:hover { color: rgba(180, 215, 255, 0.82); transform: translateX(4px); }
+
+/* Text input */
+#text-input-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    padding-bottom: 8px;
+}
+#text-in {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: clamp(14px, 1.8vw, 17px);
+    font-weight: 300;
+    letter-spacing: 0.03em;
+    color: rgba(215, 225, 255, 0.88);
+    caret-color: rgba(140, 185, 255, 0.8);
+    padding: 4px 0;
+}
+#text-in::placeholder { color: rgba(140, 160, 215, 0.28); }
+#text-submit {
+    background: none;
+    border: none;
+    color: rgba(130, 180, 255, 0.45);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s, transform 0.15s;
+    line-height: 1;
+}
+#text-submit:hover { color: rgba(180, 215, 255, 0.80); transform: translateX(3px); }
+
+/* Progress dots */
+#progress {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 20;
+    transition: opacity 0.5s;
+}
+#progress.hidden { opacity: 0; }
+.prog-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: rgba(140, 185, 255, 0.20);
+    transition: background 0.4s;
+}
+.prog-dot.active { background: rgba(140, 185, 255, 0.65); }
+.prog-dot.done   { background: rgba(140, 185, 255, 0.35); }
+
+/* ── Thinking overlay ────────────────────────────────────────── */
+#thinking {
+    background: rgba(0, 0, 4, 0.85);
+    gap: 16px;
+}
+#thinking-word {
+    font-size: clamp(13px, 1.6vw, 16px);
+    letter-spacing: 0.28em;
+    text-transform: lowercase;
+    color: rgba(140, 185, 255, 0.45);
+    min-height: 1.4em;
+    text-align: center;
+}
+#thinking-sub {
+    font-size: 10px;
+    letter-spacing: 0.20em;
+    color: rgba(120, 155, 210, 0.22);
+    text-transform: uppercase;
+}
+
+/* ── Reveal overlay ──────────────────────────────────────────── */
+#reveal {
+    background: rgba(0, 0, 4, 0.80);
+    gap: 0;
+    padding: 0 clamp(32px, 8vw, 120px);
+}
+#reveal-wrap {
+    max-width: 580px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+#arc-name {
+    font-size: clamp(26px, 3.5vw, 38px);
+    font-weight: 200;
+    letter-spacing: 0.12em;
+    color: rgba(215, 228, 255, 0.92);
+    text-transform: lowercase;
+    line-height: 1.1;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+}
+#arc-name.visible { opacity: 1; }
+#reflection-text {
+    font-size: clamp(14px, 1.7vw, 17px);
+    font-weight: 300;
+    line-height: 1.7;
+    color: rgba(180, 200, 245, 0.62);
+    letter-spacing: 0.02em;
+    min-height: 4em;
+}
+#guidance-text {
+    font-size: clamp(12px, 1.4vw, 14px);
+    letter-spacing: 0.16em;
+    color: rgba(140, 170, 230, 0.38);
+    text-transform: lowercase;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+#begin-btn {
+    margin-top: 8px;
+    display: inline-block;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.30em;
+    text-transform: uppercase;
+    color: rgba(140, 185, 255, 0.45);
+    cursor: pointer;
+    padding: 10px 0;
+    transition: color 0.2s, letter-spacing 0.3s;
+    opacity: 0;
+    transition: opacity 0.8s ease, color 0.2s;
+}
+#begin-btn.visible { opacity: 1; }
+#begin-btn:hover { color: rgba(185, 215, 255, 0.80); letter-spacing: 0.38em; }
+
+/* ── Journey HUD ─────────────────────────────────────────────── */
+#journey-hud {
+    position: fixed; inset: 0;
+    z-index: 15;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.8s;
+}
+#journey-hud.visible { opacity: 1; }
+
+#scene-intro {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    font-size: clamp(18px, 2.6vw, 28px);
+    font-weight: 200;
+    letter-spacing: 0.14em;
+    color: rgba(215, 228, 255, 0.88);
+    text-transform: lowercase;
+    pointer-events: none;
+    transition: opacity 1.6s ease;
+    max-width: 600px;
+    line-height: 1.4;
+}
+
+#journey-progress {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+}
+.j-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(140, 185, 255, 0.18);
+    transition: background 0.5s;
+}
+.j-dot.active  { background: rgba(140, 185, 255, 0.60); }
+.j-dot.done    { background: rgba(140, 185, 255, 0.28); }
+
+#skip-btn {
+    position: absolute;
+    bottom: 24px;
+    right: 32px;
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(140, 185, 255, 0.22);
+    cursor: pointer;
+    pointer-events: all;
+    transition: color 0.2s;
+    padding: 8px;
+}
+#skip-btn:hover { color: rgba(180, 215, 255, 0.55); }
+
+#back-to-scenes {
+    position: absolute;
+    bottom: 24px;
+    left: 32px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(120, 155, 210, 0.18);
+    cursor: pointer;
+    pointer-events: all;
+    transition: color 0.2s;
+    padding: 8px;
+    text-decoration: none;
+}
+#back-to-scenes:hover { color: rgba(160, 195, 255, 0.45); }
+
+/* ── Outro ────────────────────────────────────────────────────── */
+#outro {
+    background: rgba(0, 0, 4, 0.88);
+    gap: 24px;
+}
+#outro-title {
+    font-size: clamp(15px, 1.9vw, 20px);
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    color: rgba(215, 228, 255, 0.60);
+    text-transform: lowercase;
+}
+#outro-sub {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: rgba(140, 170, 230, 0.28);
+    text-transform: uppercase;
+}
+#restart-btn {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(140, 185, 255, 0.38);
+    cursor: pointer;
+    padding: 10px 0;
+    transition: color 0.2s;
+}
+#restart-btn:hover { color: rgba(185, 215, 255, 0.70); }
+
+/* ── API key settings ────────────────────────────────────────── */
+#key-btn {
+    position: fixed;
+    top: 18px; right: 20px;
+    z-index: 30;
+    background: none;
+    border: none;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(120, 155, 210, 0.22);
+    cursor: pointer;
+    padding: 6px 8px;
+    transition: color 0.2s;
+}
+#key-btn:hover { color: rgba(160, 195, 255, 0.55); }
+#key-btn.ai-on { color: rgba(120, 200, 150, 0.40); }
+
+#key-panel {
+    position: fixed;
+    top: 44px; right: 16px;
+    z-index: 40;
+    background: rgba(4, 5, 20, 0.92);
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 18px 20px 16px;
+    width: 300px;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+}
+#key-panel.open { display: flex; }
+#key-panel-label {
+    font-size: 10px;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: rgba(140, 170, 230, 0.45);
+}
+#key-panel-sub {
+    font-size: 10px;
+    color: rgba(120, 150, 210, 0.30);
+    line-height: 1.55;
+    letter-spacing: 0.01em;
+}
+#key-input {
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    outline: none;
+    font-family: 'Helvetica Neue', monospace;
+    font-size: 11px;
+    color: rgba(200, 220, 255, 0.70);
+    caret-color: rgba(140, 185, 255, 0.8);
+    padding: 5px 0;
+    letter-spacing: 0.02em;
+}
+#key-input::placeholder { color: rgba(120, 150, 210, 0.25); }
+#key-save {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(140, 185, 255, 0.45);
+    cursor: pointer;
+    padding: 4px 0;
+    text-align: left;
+    transition: color 0.2s;
+}
+#key-save:hover { color: rgba(185, 215, 255, 0.80); }
+#key-status {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    color: rgba(120, 200, 140, 0.40);
+    min-height: 1.2em;
+}
+
+/* ── Transition veil ─────────────────────────────────────────── */
+#veil {
+    position: fixed; inset: 0;
+    background: #000;
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+#veil.dark { opacity: 1; }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<!-- Conversation -->
+<div id="convo" class="layer">
+    <div id="question-wrap">
+        <div id="question-text"></div>
+        <div id="question-sub"></div>
+    </div>
+    <div id="answer-area">
+        <div id="choices"></div>
+        <button id="continue-btn">→</button>
+        <div id="text-input-wrap" style="display:none">
+            <input id="text-in" type="text" autocomplete="off" spellcheck="false">
+            <button id="text-submit">→</button>
+        </div>
+    </div>
+</div>
+
+<!-- Progress -->
+<div id="progress" class="hidden"></div>
+
+<!-- Thinking -->
+<div id="thinking" class="layer hidden">
+    <div id="thinking-word"></div>
+    <div id="thinking-sub">shaping your journey</div>
+</div>
+
+<!-- Reveal -->
+<div id="reveal" class="layer hidden">
+    <div id="reveal-wrap">
+        <div id="arc-name"></div>
+        <div id="reflection-text"></div>
+        <div id="guidance-text"></div>
+        <div id="ai-indicator" style="font-size:9px;letter-spacing:0.18em;color:rgba(120,200,140,0.28);text-transform:uppercase;margin-top:4px;"></div>
+        <button id="begin-btn">begin</button>
+    </div>
+</div>
+
+<!-- Journey HUD -->
+<div id="journey-hud">
+    <div id="scene-intro"></div>
+    <div id="journey-progress"></div>
+    <button id="skip-btn">skip →</button>
+    <a id="back-to-scenes" href="scenes.html">← scenes</a>
+</div>
+
+<!-- Outro -->
+<div id="outro" class="layer hidden">
+    <div id="outro-title">your journey is complete</div>
+    <div id="outro-sub">rest here as long as you like</div>
+    <button id="restart-btn">begin again</button>
+</div>
+
+<!-- Transition veil -->
+<div id="veil"></div>
+
+<!-- API key settings -->
+<button id="key-btn">ai</button>
+<div id="key-panel">
+    <div id="key-panel-label">Claude API key</div>
+    <div id="key-panel-sub">paste your Anthropic key — stored only in this browser, never sent anywhere except api.anthropic.com via the local server</div>
+    <input id="key-input" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    <button id="key-save">save key →</button>
+    <div id="key-status"></div>
+</div>
+
+<!-- MediaPipe (for modes that use hand/face) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+
+<!-- All scene modes -->
+<script src="voidMode.js"></script>
+<script src="embersMode.js"></script>
+<script src="myceliumMode.js"></script>
+<script src="cymaticsMode.js"></script>
+<script src="tideMode.js"></script>
+<script src="flowMode.js"></script>
+<script src="mirrorMode.js"></script>
+<script src="recursionMode.js"></script>
+<script src="gazeMode.js"></script>
+<script src="naturalWorldMode.js"></script>
+<script src="breathMode.js"></script>
+<script src="sandMode.js"></script>
+<script src="driftMode.js"></script>
+<script src="webMode.js"></script>
+<script src="bloomMode.js"></script>
+<script src="prismMode.js"></script>
+<script src="attractorMode.js"></script>
+<script src="reactionMode.js"></script>
+<script src="fourierMode.js"></script>
+<script src="storiesMode.js"></script>
+<script src="omMode.js"></script>
+<script src="stillnessMode.js"></script>
+<script src="swarmMode.js"></script>
+<script src="gravityMode.js"></script>
+<script src="inkMode.js"></script>
+<script src="fabricMode.js"></script>
+<script src="sandpileMode.js"></script>
+<script src="fluidMode.js"></script>
+<script src="auroraMode.js"></script>
+<script src="harmonographMode.js"></script>
+<script src="brushMode.js"></script>
+<script src="plasmaMode.js"></script>
+<script src="stardustMode.js"></script>
+<script src="neurogenesisMode.js"></script>
+<script src="cosmosMode.js"></script>
+<script src="waterMode.js"></script>
+<script src="rainMode.js"></script>
+<script src="membraneMode.js"></script>
+<script src="constellationMode.js"></script>
+<script src="heartMode.js"></script>
+<script src="jellyMode.js"></script>
+<script src="causticMode.js"></script>
+<script src="lavaMode.js"></script>
+<script src="irisMode.js"></script>
+<script src="frostMode.js"></script>
+<script src="orreryMode.js"></script>
+<script src="meridianMode.js"></script>
+<script src="fieldMode.js"></script>
+<script src="vortexMode.js"></script>
+<script src="terrainMode.js"></script>
+<script src="newtonMode.js"></script>
+<script src="marbleMode.js"></script>
+<script src="waxMode.js"></script>
+<script src="patinaMode.js"></script>
+<script src="humansMode.js"></script>
+<script src="livingMandalaMode.js"></script>
+<script src="nacreMode.js"></script>
+<script src="abyssMode.js"></script>
+<script src="nebulaMode.js"></script>
+<script src="mandalaGenerator.js"></script>
+<script src="mandalaMode.js"></script>
+<script src="goldenMode.js"></script>
+<script src="juliaMode.js"></script>
+<script src="psychedelicMode.js"></script>
+
+<script>
+'use strict';
+
+// ── Canvas setup ──────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── Mode registry (key → instance) ───────────────────────────────────────────
+const MODES = {
+    void:        new VoidMode(ctx, canvas),
+    embers:      new EmbersMode(ctx, canvas),
+    mycelium:    new MyceliumMode(ctx, canvas),
+    cymatics:    new CymaticsMode(ctx, canvas),
+    tide:        new TideMode(ctx, canvas),
+    flow:        new FlowMode(ctx, canvas),
+    mirror:      new MirrorMode(ctx, canvas),
+    recursion:   new RecursionMode(ctx, canvas),
+    gaze:        new GazeMode(ctx, canvas),
+    nature:      new NaturalWorldMode(ctx, canvas),
+    breath:      new BreathMode(ctx, canvas),
+    sand:        new SandMode(ctx, canvas),
+    drift:       new DriftMode(ctx, canvas),
+    web:         new WebMode(ctx, canvas),
+    bloom:       new BloomMode(ctx, canvas),
+    prism:       new PrismMode(ctx, canvas),
+    attractor:   new AttractorMode(ctx, canvas),
+    reaction:    new ReactionMode(ctx, canvas),
+    fourier:     new FourierMode(ctx, canvas),
+    stories:     new StoriesMode(ctx, canvas),
+    om:          new OmMode(ctx, canvas),
+    stillness:   new StillnessMode(ctx, canvas),
+    swarm:       new SwarmMode(ctx, canvas),
+    gravity:     new GravityMode(ctx, canvas),
+    ink:         new InkMode(ctx, canvas),
+    fabric:      new FabricMode(ctx, canvas),
+    sandpile:    new SandpileMode(ctx, canvas),
+    fluid:       new FluidMode(ctx, canvas),
+    aurora:      new AuroraMode(ctx, canvas),
+    harmonograph: new HarmonographMode(ctx, canvas),
+    brush:       new BrushMode(ctx, canvas),
+    plasma:      new PlasmaMode(ctx, canvas),
+    stardust:    new StardustMode(ctx, canvas),
+    neurogenesis: new NeurogenesisMode(ctx, canvas),
+    cosmos:      new CosmosMode(ctx, canvas),
+    water:       new WaterMode(ctx, canvas),
+    rain:        new RainMode(ctx, canvas),
+    membrane:    new MembraneMode(ctx, canvas),
+    constellation: new ConstellationMode(ctx, canvas),
+    heart:       new HeartMode(ctx, canvas),
+    jelly:       new JellyMode(ctx, canvas),
+    caustic:     new CausticMode(ctx, canvas),
+    lava:        new LavaMode(ctx, canvas),
+    iris:        new IrisMode(ctx, canvas),
+    frost:       new FrostMode(ctx, canvas),
+    orrery:      new OrreryMode(ctx, canvas),
+    meridian:    new MeridianMode(ctx, canvas),
+    field:       new FieldMode(ctx, canvas),
+    vortex:      new VortexMode(ctx, canvas),
+    terrain:     new TerrainMode(ctx, canvas),
+    newton:      new NewtonMode(ctx, canvas),
+    marble:      new MarbleMode(ctx, canvas),
+    wax:         new WaxMode(ctx, canvas),
+    patina:      new PatinaMode(ctx, canvas),
+    humans:      new HumansMode(ctx, canvas),
+    livingMandala: new LivingMandalaMode(ctx, canvas),
+    nacre:         new NacreMode(ctx, canvas),
+    abyss:         new AbyssMode(ctx, canvas),
+    nebula:        new NebulaMode(ctx, canvas),
+    mandala:       new MandalaMode(ctx, canvas),
+    golden:        new GoldenMode(ctx, canvas),
+    julia:         new JuliaMode(ctx, canvas),
+    psychedelic:   new PsychedelicMode(ctx, canvas),
+};
+
+// ── Questions ─────────────────────────────────────────────────────────────────
+const QUESTIONS = [
+    {
+        text:    'before we begin — how are you arriving today?',
+        sub:     'the texture of your mind right now',
+        type:    'text',
+        placeholder: 'just type whatever comes',
+    },
+    {
+        text:    'what are you most hungry for right now?',
+        type:    'choice',
+        choices: [
+            'rest and stillness',
+            'something to wonder at',
+            'to feel moved or unsettled',
+            'to make something with my hands',
+            'to disappear for a while',
+            "i don't know yet",
+        ],
+    },
+    {
+        text:    'where does your attention live in your body?',
+        type:    'choice',
+        choices: [
+            'in my breath',
+            'in my chest — tight, or full',
+            'in my hands, restless',
+            'nowhere — i feel scattered',
+            'everywhere at once',
+        ],
+    },
+    {
+        text:    'how open are you to being changed by this?',
+        type:    'choice',
+        choices: [
+            'very little — i need something gentle',
+            'somewhat — i\'m okay',
+            'completely — i\'m ready for anything',
+        ],
+    },
+    {
+        text:    'one last thing —',
+        sub:     'a word, colour, or texture that\'s been with you lately',
+        type:    'text',
+        placeholder: 'whatever comes first',
+    },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let phase        = 'intro';   // intro | questions | thinking | reveal | journey | outro
+let qIndex       = 0;
+let answers      = [];
+let selectedChoice = null;
+let journey      = null;      // { reflection, arc, guidance, scenes }
+let sceneIndex   = 0;
+let sceneStart   = 0;
+let activeKey    = 'void';
+let ambientT     = 0;
+let journeyStarted = false;
+
+// ── Ambient background (runs during non-journey phases) ───────────────────────
+function drawAmbient(t) {
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = 'rgba(0, 0, 4, 0.10)';
+    ctx.fillRect(0, 0, W, H);
+
+    const cx = W / 2, cy = H / 2;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.6);
+    const r = Math.min(W, H) * (0.004 + pulse * 0.006);
+
+    // Outer glow
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 18);
+    g.addColorStop(0,   `rgba(100, 160, 255, ${0.06 + pulse * 0.04})`);
+    g.addColorStop(0.5, `rgba(60, 100, 200, ${0.02 + pulse * 0.015})`);
+    g.addColorStop(1,   'rgba(0, 0, 0, 0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 18, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    // Breathing dot
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(170, 210, 255, ${0.45 + pulse * 0.55})`;
+    ctx.fill();
+}
+
+// ── Render loop ───────────────────────────────────────────────────────────────
+let lastTs = 0;
+function animate(ts) {
+    requestAnimationFrame(animate);
+    const dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+
+    ambientT += 0.016;
+
+    if (phase === 'journey' && journey && activeKey) {
+        MODES[activeKey]?.draw(ts / 1000);
+
+        // Auto-advance scene when duration expires
+        const scene = journey.scenes[sceneIndex];
+        if (scene && ts / 1000 - sceneStart > scene.duration) {
+            advanceScene();
+        }
+    } else {
+        // Ambient pulse behind conversation UI
+        drawAmbient(ambientT);
+    }
+}
+requestAnimationFrame(animate);
+
+// ── Typewriter ────────────────────────────────────────────────────────────────
+function typewrite(el, text, wordDelay = 55) {
+    return new Promise(resolve => {
+        el.textContent = '';
+        const words = text.split(' ');
+        let i = 0;
+        function next() {
+            if (i >= words.length) { resolve(); return; }
+            el.textContent += (i > 0 ? ' ' : '') + words[i++];
+            setTimeout(next, wordDelay + Math.random() * 20);
+        }
+        next();
+    });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Phase: intro ──────────────────────────────────────────────────────────────
+async function startIntro() {
+    phase = 'intro';
+    document.getElementById('progress').classList.add('hidden');
+
+    await sleep(1200);
+    await typewrite(document.getElementById('question-text'), 'before we begin.', 70);
+    await sleep(900);
+    document.getElementById('question-sub').textContent = 'take a breath.';
+    await sleep(2200);
+
+    document.getElementById('question-sub').textContent = '';
+    await typewrite(document.getElementById('question-text'), 'this will take about two minutes.', 52);
+    await sleep(600);
+    document.getElementById('question-sub').textContent = 'five questions.';
+    await sleep(2000);
+
+    startQuestions();
+}
+
+// ── Phase: questions ──────────────────────────────────────────────────────────
+function buildProgressDots() {
+    const el = document.getElementById('progress');
+    el.innerHTML = '';
+    QUESTIONS.forEach((_, i) => {
+        const d = document.createElement('div');
+        d.className = 'prog-dot' + (i === 0 ? ' active' : '');
+        d.id = `pdot-${i}`;
+        el.appendChild(d);
+    });
+    el.classList.remove('hidden');
+}
+
+async function startQuestions() {
+    phase = 'questions';
+    qIndex = 0;
+    answers = [];
+    selectedChoice = null;
+    buildProgressDots();
+    await sleep(400);
+    showQuestion(0);
+}
+
+async function showQuestion(idx) {
+    qIndex = idx;
+    selectedChoice = null;
+    const q = QUESTIONS[idx];
+
+    // Update progress dots
+    QUESTIONS.forEach((_, i) => {
+        const d = document.getElementById(`pdot-${i}`);
+        if (!d) return;
+        d.className = 'prog-dot' + (i < idx ? ' done' : i === idx ? ' active' : '');
+    });
+
+    // Clear & type question
+    const qtEl  = document.getElementById('question-text');
+    const qsEl  = document.getElementById('question-sub');
+    const ansEl = document.getElementById('answer-area');
+
+    qtEl.textContent = '';
+    qsEl.textContent = '';
+    ansEl.style.opacity = '0';
+    ansEl.style.transition = 'opacity 0.4s';
+
+    await sleep(200);
+    await typewrite(qtEl, q.text, 48);
+    if (q.sub) {
+        await sleep(180);
+        qsEl.textContent = q.sub;
+    }
+    await sleep(320);
+
+    // Build answer UI
+    buildAnswerUI(q);
+    ansEl.style.opacity = '1';
+}
+
+function buildAnswerUI(q) {
+    const choicesEl = document.getElementById('choices');
+    const contBtn   = document.getElementById('continue-btn');
+    const textWrap  = document.getElementById('text-input-wrap');
+    const textIn    = document.getElementById('text-in');
+
+    choicesEl.innerHTML = '';
+    contBtn.classList.remove('visible');
+
+    if (q.type === 'choice') {
+        textWrap.style.display = 'none';
+        q.choices.forEach((c, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerHTML = `<span>${c}</span><span class="dot"></span>`;
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedChoice = c;
+                contBtn.classList.add('visible');
+            });
+            choicesEl.appendChild(btn);
+        });
+    } else {
+        textWrap.style.display = 'flex';
+        textIn.value = '';
+        textIn.placeholder = q.placeholder || '';
+        setTimeout(() => textIn.focus(), 100);
+    }
+}
+
+async function submitAnswer(answer) {
+    answers.push(answer.trim());
+    const nextIdx = qIndex + 1;
+
+    // Mark dot done
+    const d = document.getElementById(`pdot-${qIndex}`);
+    if (d) d.className = 'prog-dot done';
+
+    if (nextIdx < QUESTIONS.length) {
+        await sleep(300);
+        showQuestion(nextIdx);
+    } else {
+        // All answered
+        await sleep(400);
+        startThinking();
+    }
+}
+
+// Text input submit
+document.getElementById('text-submit').addEventListener('click', () => {
+    const val = document.getElementById('text-in').value.trim();
+    if (val) submitAnswer(val);
+});
+document.getElementById('text-in').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        const val = e.target.value.trim();
+        if (val) submitAnswer(val);
+    }
+});
+
+// Choice continue
+document.getElementById('continue-btn').addEventListener('click', () => {
+    if (selectedChoice) submitAnswer(selectedChoice);
+});
+
+// ── Phase: thinking ───────────────────────────────────────────────────────────
+const THINKING_WORDS = [
+    'reading', 'sitting with this', 'considering', 'tracing the shape',
+    'listening', 'arranging', 'finding the thread', 'almost there',
+];
+let thinkingInterval = null;
+
+async function startThinking() {
+    phase = 'thinking';
+
+    // Hide convo, show thinking
+    document.getElementById('convo').classList.add('hidden');
+    document.getElementById('progress').classList.add('hidden');
+    await sleep(600);
+    document.getElementById('thinking').classList.remove('hidden');
+
+    // Cycle poetic thinking words
+    let wi = 0;
+    const wordEl = document.getElementById('thinking-word');
+    async function nextWord() {
+        wordEl.style.opacity = '0';
+        wordEl.style.transition = 'opacity 0.5s';
+        await sleep(520);
+        wordEl.textContent = THINKING_WORDS[wi % THINKING_WORDS.length];
+        wi++;
+        wordEl.style.opacity = '1';
+    }
+    nextWord();
+    thinkingInterval = setInterval(nextWord, 2200);
+
+    // Call AI (or fallback)
+    const result = await generateJourney(answers);
+    journey = result;
+
+    // Minimum thinking time for the experience to feel intentional
+    await sleep(1200);
+    clearInterval(thinkingInterval);
+
+    showReveal();
+}
+
+// ── Phase: reveal ─────────────────────────────────────────────────────────────
+async function showReveal() {
+    phase = 'reveal';
+
+    document.getElementById('thinking').classList.add('hidden');
+    await sleep(400);
+
+    const revealEl     = document.getElementById('reveal');
+    const arcEl        = document.getElementById('arc-name');
+    const reflEl       = document.getElementById('reflection-text');
+    const guidanceEl   = document.getElementById('guidance-text');
+    const aiEl         = document.getElementById('ai-indicator');
+    const beginEl      = document.getElementById('begin-btn');
+
+    arcEl.textContent      = '';
+    reflEl.textContent     = '';
+    guidanceEl.textContent = '';
+    aiEl.textContent       = '';
+    beginEl.classList.remove('visible');
+    arcEl.classList.remove('visible');
+
+    revealEl.classList.remove('hidden');
+    await sleep(500);
+
+    // Arc name appears large
+    arcEl.textContent = journey.arc;
+    arcEl.classList.add('visible');
+    await sleep(1400);
+
+    // Reflection text typewriters in
+    await typewrite(reflEl, journey.reflection, 38);
+    await sleep(600);
+
+    // Guidance
+    guidanceEl.textContent = journey.guidance;
+    await sleep(800);
+
+    // AI / local indicator
+    aiEl.textContent = journey._aiGenerated ? 'crafted by claude' : 'locally generated';
+
+    // Begin button
+    beginEl.classList.add('visible');
+}
+
+document.getElementById('begin-btn').addEventListener('click', beginJourney);
+
+// ── Phase: journey ────────────────────────────────────────────────────────────
+async function beginJourney() {
+    phase = 'journey';
+    sceneIndex = 0;
+    journeyStarted = true;
+
+    // Start ambient drone
+    startAudio();
+
+    // Hide reveal
+    document.getElementById('reveal').classList.add('hidden');
+
+    // Build journey dots
+    const jpEl = document.getElementById('journey-progress');
+    jpEl.innerHTML = '';
+    journey.scenes.forEach((_, i) => {
+        const d = document.createElement('div');
+        d.className = 'j-dot' + (i === 0 ? ' active' : '');
+        d.id = `jdot-${i}`;
+        jpEl.appendChild(d);
+    });
+
+    // Show HUD
+    document.getElementById('journey-hud').classList.add('visible');
+
+    await playScene(0);
+}
+
+async function playScene(idx) {
+    if (idx >= journey.scenes.length) {
+        showOutro();
+        return;
+    }
+
+    sceneIndex = idx;
+    const scene = journey.scenes[idx];
+
+    // Update journey dots
+    journey.scenes.forEach((_, i) => {
+        const d = document.getElementById(`jdot-${i}`);
+        if (!d) return;
+        d.className = 'j-dot' + (i < idx ? ' done' : i === idx ? ' active' : '');
+    });
+
+    // Veil down
+    const veil = document.getElementById('veil');
+    veil.classList.add('dark');
+    await sleep(650);
+
+    // Switch mode
+    if (MODES[scene.key]) {
+        activeKey = scene.key;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        MODES[scene.key].startScene();
+    }
+    sceneStart = performance.now() / 1000;
+
+    // Show intro text
+    const introEl = document.getElementById('scene-intro');
+    introEl.textContent = scene.intro;
+    introEl.style.opacity = '1';
+    introEl.style.transition = 'opacity 0s';
+
+    // Veil up
+    veil.classList.remove('dark');
+    await sleep(700);
+
+    // Fade intro text after a moment
+    await sleep(scene.duration > 60 ? 5500 : 3500);
+    introEl.style.transition = 'opacity 2.5s ease';
+    introEl.style.opacity = '0';
+}
+
+async function advanceScene() {
+    sceneStart = Infinity; // prevent re-triggering
+    const nextIdx = sceneIndex + 1;
+    await playScene(nextIdx);
+}
+
+document.getElementById('skip-btn').addEventListener('click', async () => {
+    if (phase !== 'journey') return;
+    sceneStart = Infinity;
+    await advanceScene();
+});
+
+// ── Mouse interactivity during journey ───────────────────────────────────────
+window.addEventListener('mousemove', e => {
+    if (phase !== 'journey' || !activeKey) return;
+    const m = MODES[activeKey];
+    if (m && m.onMouseMove) m.onMouseMove(e.clientX, e.clientY);
+});
+
+// Space bar triggers blink during journey
+window.addEventListener('keydown', e => {
+    if (e.code === 'Space' && phase === 'journey' && activeKey) {
+        e.preventDefault();
+        const m = MODES[activeKey];
+        if (m && m.onBlink) m.onBlink();
+    }
+});
+window.addEventListener('mousedown', e => {
+    if (phase !== 'journey' || !activeKey) return;
+    const m = MODES[activeKey];
+    if (m && m.onMouseDown) m.onMouseDown(e.clientX, e.clientY);
+});
+window.addEventListener('mouseup', () => {
+    if (phase !== 'journey' || !activeKey) return;
+    const m = MODES[activeKey];
+    if (m && m.onMouseUp) m.onMouseUp();
+});
+
+// ── Ambient audio drone ───────────────────────────────────────────────────────
+let _audioCtx  = null;
+let _droneGain = null;
+let _oscs      = [];
+
+function _initAudio() {
+    if (_audioCtx) return;
+    _audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+    _droneGain = _audioCtx.createGain();
+    _droneGain.gain.setValueAtTime(0, _audioCtx.currentTime);
+    _droneGain.connect(_audioCtx.destination);
+
+    // Master low-pass — warm, removes harshness
+    const master = _audioCtx.createBiquadFilter();
+    master.type            = 'lowpass';
+    master.frequency.value = 320;
+    master.Q.value         = 0.5;
+    master.connect(_droneGain);
+
+    // Harmonics: A1=55, A2=110, E3=165, A3=220
+    const harmonics = [
+        { freq: 55,  gain: 0.28, lfoFreq: 0.055 },
+        { freq: 110, gain: 0.18, lfoFreq: 0.081 },
+        { freq: 165, gain: 0.10, lfoFreq: 0.063 },
+        { freq: 220, gain: 0.06, lfoFreq: 0.042 },
+    ];
+    harmonics.forEach(h => {
+        const osc  = _audioCtx.createOscillator();
+        const gain = _audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = h.freq;
+        gain.gain.value     = h.gain;
+
+        // Slow LFO for organic drift
+        const lfo     = _audioCtx.createOscillator();
+        const lfoGain = _audioCtx.createGain();
+        lfo.type            = 'sine';
+        lfo.frequency.value = h.lfoFreq;
+        lfoGain.gain.value  = h.freq * 0.0018;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        lfo.start();
+
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start();
+        _oscs.push(osc);
+    });
+}
+
+function startAudio() {
+    _initAudio();
+    _droneGain.gain.cancelScheduledValues(_audioCtx.currentTime);
+    _droneGain.gain.setValueAtTime(_droneGain.gain.value, _audioCtx.currentTime);
+    _droneGain.gain.linearRampToValueAtTime(0.22, _audioCtx.currentTime + 4.0);
+}
+
+function fadeOutAudio() {
+    if (!_droneGain) return;
+    _droneGain.gain.cancelScheduledValues(_audioCtx.currentTime);
+    _droneGain.gain.setValueAtTime(_droneGain.gain.value, _audioCtx.currentTime);
+    _droneGain.gain.linearRampToValueAtTime(0, _audioCtx.currentTime + 3.5);
+}
+
+// ── Phase: outro ──────────────────────────────────────────────────────────────
+async function showOutro() {
+    phase = 'outro';
+    fadeOutAudio();
+    const veil = document.getElementById('veil');
+    veil.classList.add('dark');
+    await sleep(700);
+
+    document.getElementById('journey-hud').classList.remove('visible');
+    document.getElementById('outro').classList.remove('hidden');
+    drawAmbient(ambientT); // reset canvas to ambient
+
+    veil.classList.remove('dark');
+}
+
+document.getElementById('restart-btn').addEventListener('click', async () => {
+    const veil = document.getElementById('veil');
+    veil.classList.add('dark');
+    await sleep(600);
+
+    // Reset everything
+    document.getElementById('outro').classList.add('hidden');
+    document.getElementById('convo').classList.remove('hidden');
+    document.getElementById('question-text').textContent = '';
+    document.getElementById('question-sub').textContent  = '';
+    document.getElementById('choices').innerHTML = '';
+    document.getElementById('continue-btn').classList.remove('visible');
+    document.getElementById('text-input-wrap').style.display = 'none';
+    answers    = [];
+    journey    = null;
+    sceneIndex = 0;
+    activeKey  = null;
+
+    veil.classList.remove('dark');
+    await sleep(300);
+    startIntro();
+});
+
+// ── AI: call Claude via local server ──────────────────────────────────────────
+const SYSTEM_PROMPT = `You are the guide of a meditative visual installation built for a design thesis.
+
+A person has answered five questions about their current state. Design a personalised journey through generative art experiences.
+
+AVAILABLE SCENES (key : what it offers):
+void : absolute stillness, a single breathing point of light
+breath : guided breathing rings, inhale and exhale, grounding
+tide : deep wave interference, oceanic, rhythmic dissolution
+embers : rising fire sparks, gentle warmth, upward energy
+mycelium : organic growing threads, slow connection, underground
+cymatics : ripple interference from three sources, mathematical water
+flow : continuous particle river, going with the current
+mirror : 8-fold kaleidoscope, hypnotic symmetry
+gaze : watching eyes, presence, being seen
+nature : bioluminescent 3D forest, life, organic beauty
+sand : particles shaped by your presence, tactile impermanence
+drift : drifting through a starfield, navigation, spaciousness
+web : string-art circle mandala, sacred geometry, mathematical beauty
+bloom : hand opens a flower mandala, growth and opening
+prism : nested rotating polygons, geometric meditation
+attractor : strange attractor density fields, emergence from chaos
+reaction : gray-scott chemistry, self-organising life
+fourier : epicycles drawing hidden shapes, cycles within cycles
+stories : the rest of the human condition, emotional narrative
+om : sustained tone builds a mandala, sound becomes form
+stillness : hold still and something forms, patience rewarded
+swarm : murmuration, collective intelligence, one mind many bodies
+gravity : spacetime fabric warped by mass, awe and scale
+ink : inks bleeding on warm paper, colour and patience
+fabric : silk in wind, softness and texture
+sandpile : fractal avalanche at the tipping point, order in chaos
+fluid : Navier-Stokes smoke, dissolution and formlessness
+aurora : northern lights above a frozen forest, vast and otherworldly
+harmonograph : damped pendulums drawing one infinite decaying line
+brush : sumi-e ink brush painting on warm paper, mark-making and presence
+plasma : paint with living light, motion direction becomes colour
+stardust : sculpt the cosmos with particles, making marks that drift
+rain : rainfall pools on a dark surface, ripple rings, cozy and settling
+membrane : elastic glowing grid you press and deform, tactile and present
+constellation : 130 stars slowly appear then connect, meaning from randomness
+heart : a heartbeat gradually slowing from 80 to 48 bpm, intimate surrender
+jelly : bioluminescent jellyfish floating upward through dark water, otherworldly
+caustic : wet glass at night, water drops bend street lamplight into amber pools, hyper-real and calming
+lava : midnight-indigo metaball blobs slowly merging and separating in dark liquid, quiet dissolution
+iris : dark oiled silk iridescence, subtle shimmer at constructive interference bands, understated colour
+frost : ice crystal branches growing across a cold surface, hexagonal geometry, patient and precise
+orrery : six planets in elliptical orbits around a central star, Kepler's third law, the quiet mechanics of celestial time
+meridian : a seated meditating figure in fine white lines, seven chakra points pulsing along the spine, aura rings breathing
+field : electromagnetic dipole field lines traced between two orbiting charges, blink inverts polarity and the whole topology rearranges
+vortex : five-arm logarithmic spiral galaxy in sandy ochre, cobalt blue and forest green, blink reverses rotation and fires a brightness surge
+terrain : domain-warped topographic terrain seen from orbit, colour-coded geology ocean to snow-cap, slow tectonic drift, blink jumps the landscape
+newton : Newton basin fractal for z^n−1, five symmetry roots in jewel colours, the whole mandala precesses, blink cycles to a new symmetry order
+marble : polished stone slab slowly panning, geological veins in turbulence-displaced layers, three variants (white Carrara / green forest / black nero), raking specular light, mouse steers the light source
+wax : encaustic beeswax panel, translucent amber and ivory layers pooling with hexagonal crystal structure, subsurface glow, mouse melts nearby wax, blink pours fresh hot wax
+patina : oxidised copper surface, verdigris blooms spreading from corrosion centres with crystalline texture and powdery bloom, mouse polishes copper back, blink fires a new corrosion event
+humans : 44 human lives arranged as a mandala — joy and grief and insomnia and new babies and lost hope, all happening simultaneously right now, radiating from a shared centre, blink surges all windows at once
+nacre : thin-film iridescence — the Newton's rings colour sequence (black→silver→yellow→orange→red→purple→blue→green) cycles across a domain-warped surface, like mother of pearl, soap bubble, beetle wing, oil on water, touch sends ripples across the film, blink rearranges the colours completely
+abyss : the hadal zone, 6000 metres deep — near-total darkness, organic bioluminescent forms with irregular amorphous shapes drifting in absolute cold, marine snow falling from the world above, blink triggers a mass bioluminescent event
+nebula : stellar nursery in Hubble false-colour — H-alpha crimson hydrogen clouds, electric teal O-III oxygen emission, dark dust lanes, embedded hot blue-white stars with ionisation halos, blink ignites a new star with an expanding shockwave ring
+livingMandala : your camera feed transformed beyond recognition — two-level domain warp, kaleidoscope sector folding, chromatic aberration, temporal feedback trails, slowly shifting hue — you become sacred geometry, blink cycles the symmetry order (4 / 6 / 8 / 10 / 12 sectors)
+mandala : the original seven study mandalas cycling through: geometric polygons, silver string-art thread lines, black-and-white interwoven ribbons, ocean-depth layered petals, emerald organic twisting, pixel-art gold, and sparse luminous rings — blink advances to the next style
+golden : the mathematics of life — phyllotaxis seeds accumulating at the golden angle (137.5°), Fibonacci logarithmic spiral arms, nested golden rectangles; amber to yellow-green colour field; blink erupts 89 seeds outward and cycles between seed field, spiral arms, and hybrid
+julia : animated Julia set fractal — eight c-parameter waypoints (Douady rabbit, dendrite, sea creature, lightning tree, classical arms, cauliflower, parabolic cusp), smooth continuous colouring removes banding, hue shifts with waypoint and time, blink jumps to next fractal
+psychedelic : infinite mirror tunnel — N-fold kaleidoscope fold (6/8/10/12-way) combined with log-spiral depth illusion, two-level domain warp, and full spectral HSL colour cycling; sacred geometry patterns emerge and morph from pure interference mathematics; blink cycles symmetry and shifts colour phase
+
+Respond ONLY with valid JSON. No other text before or after:
+{
+  "reflection": "2-3 sentences that mirror their emotional state. Poetic and empathetic, not clinical. Second person. Begin mid-thought — not with 'I hear' or 'It sounds like'.",
+  "arc": "2-4 word poetic name for this journey's shape",
+  "guidance": "one sentence of permission or intention for the whole journey",
+  "scenes": [
+    { "key": "scene_key", "duration": 90, "intro": "whispered 4-8 word invitation for this scene" }
+  ]
+}
+
+RULES FOR SCENE SELECTION:
+- Choose 3-5 scenes. Build a shape: opening → deepening → resolution or expansion.
+- Durations: 45-180 seconds. Match scene weight and emotional intensity.
+- If Q4 mentions 'very little' or 'gentle': start with breath or void. Maximum 3 scenes. Nothing complex.
+- If Q2 mentions 'make something': include brush, plasma, or stardust near the end.
+- If Q2 mentions 'disappear': use fluid, harmonograph, mycelium, or aurora.
+- If Q2 mentions 'wonder': use gravity, attractor, aurora, or stardust.
+- If Q1 suggests anxious/scattered/overwhelmed: ALWAYS begin with breath.
+- If Q1 suggests sad/heavy/numb: begin gently with tide or void. End somewhere luminous (aurora, stardust).
+- If Q1 suggests tired/exhausted: short journey (3 scenes), gentle, not too much stimulus.
+- If Q1 suggests curious/open/excited: include something complex and beautiful. Longer durations okay.
+- If Q1 suggests heavy/sad/grief: consider tide, void, rain, constellation, or jelly — scenes that hold without demanding.
+- If Q2 mentions 'rest': consider rain, heart, void, breath, caustic — scenes of gentle arrival.
+- If Q1 suggests nostalgic/melancholy/wistful/night: caustic is perfect — street light through rain, warm and present.
+- If Q1 suggests warm/cosy/heavy/sleepy: lava is perfect — slow, warm, viscous, no demands.
+- If Q2 mentions 'wonder' or 'beauty': iris or frost offer pure optical wonder without complexity.
+- For journeys needing a quiet close: frost (geometric patience) or lava (slow dissolution).
+- If Q1 suggests awe/cosmic/vast/mystical: vortex or newton offer mandala-level visual depth without interactivity demands.
+- If Q2 mentions 'see something vast' or 'pattern': terrain (geology from orbit) or newton (fractal basin) for contemplative wonder.
+- If Q1 mentions spiral/sacred/geometry: vortex is the centrepiece — logarithmic spiral is the shamanic visual form.
+- If Q1 mentions stone/still/mineral/weight: marble is perfect — slow, heavy, geological presence.
+- If Q1 suggests warmth/golden/honey/candle: wax offers deep amber material warmth and crystal structure.
+- If Q1 mentions age/time/decay/beautiful ruin: patina — copper becoming something more beautiful than it started.
+- If Q1 suggests feeling isolated, invisible, or disconnected: humans is the antidote — a reminder that 44 different lives are happening simultaneously right next to you.
+- If Q1 suggests overwhelm with other people's pain: humans reframes it as mandala, equidistant from the source.
+- If Q2 mentions 'perspective' or 'bigger than me': humans is exactly that — the full breadth of the human condition at once.
+- If Q1 mentions self-critical / ugly / disconnected from body: livingMandala — your presence becomes beautiful geometry, you become the pattern.
+- If Q2 mentions 'dissolve' or 'lose myself': livingMandala transforms identity into sacred symmetry.
+- IMPORTANT: livingMandala requires camera permission. Only recommend it if the context is clearly reflective or identity-dissolving.
+- If Q1 mentions geometry/sacred/pattern/mathematics/spiral: golden or psychedelic are the primary scenes — one is natural and grounded, the other is pure optical mathematics.
+- If Q2 mentions 'fractal' or 'infinite' or 'depth': julia is perfect — the fractal is genuinely infinite, each blink reveals a new region.
+- If Q1 mentions psychedelic / visionary / ceremony / altered: psychedelic mode is the centrepiece — the infinite mirror tunnel is exactly that visual register.
+- If Q2 mentions 'the original' or 'beginning' or 'return to start': mandala brings back the foundational forms the whole installation started from.
+- golden and julia work well together: golden → natural mathematics, julia → pure mathematics, a pairing of two kinds of infinite pattern.
+- If Q2 mentions 'make something': consider brush, plasma, stardust, membrane — interactive scenes.
+- If Q3 mentions 'breath': breath or heart are natural entries. Rain and void for scattered states.
+- The intro for each scene should feel like a whisper from your own deeper knowing, not an instruction.
+- The arc name should feel earned — it names the actual shape of their experience.`;
+
+// ── API key management ────────────────────────────────────────────────────────
+let _clientKey = localStorage.getItem('journey_api_key') || '';
+
+function _updateKeyBtn() {
+    const btn = document.getElementById('key-btn');
+    if (_clientKey) {
+        btn.textContent = 'ai ✓';
+        btn.classList.add('ai-on');
+    } else {
+        btn.textContent = 'ai';
+        btn.classList.remove('ai-on');
+    }
+}
+_updateKeyBtn();
+
+document.getElementById('key-btn').addEventListener('click', () => {
+    const panel = document.getElementById('key-panel');
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) {
+        const input = document.getElementById('key-input');
+        input.value = _clientKey ? '••••••••••••••••' : '';
+        input.placeholder = _clientKey ? 'key saved — paste new to replace' : 'sk-ant-...';
+    }
+});
+
+document.getElementById('key-save').addEventListener('click', () => {
+    const val = document.getElementById('key-input').value.trim();
+    if (val && !val.startsWith('•')) {
+        _clientKey = val;
+        localStorage.setItem('journey_api_key', val);
+        document.getElementById('key-status').textContent = 'key saved. claude is ready.';
+        _updateKeyBtn();
+        setTimeout(() => {
+            document.getElementById('key-panel').classList.remove('open');
+        }, 1200);
+    }
+});
+
+// Close panel on click outside
+document.addEventListener('click', e => {
+    const panel = document.getElementById('key-panel');
+    const btn   = document.getElementById('key-btn');
+    if (panel.classList.contains('open') && !panel.contains(e.target) && e.target !== btn) {
+        panel.classList.remove('open');
+    }
+});
+
+async function generateJourney(ans) {
+    const userMsg = `Question 1 (texture of mind): ${ans[0]}
+Question 2 (hungry for): ${ans[1]}
+Question 3 (body attention): ${ans[2]}
+Question 4 (openness): ${ans[3]}
+Question 5 (word/colour): ${ans[4]}`;
+
+    // Try API server — send client key header if env key not set on server
+    try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (_clientKey) headers['X-Client-Key'] = _clientKey;
+
+        const res = await fetch('http://localhost:3000/api/journey', {
+            method:  'POST',
+            headers,
+            body: JSON.stringify({
+                model:      'claude-sonnet-4-6',
+                max_tokens: 900,
+                system:     SYSTEM_PROMPT,
+                messages:   [{ role: 'user', content: userMsg }],
+            }),
+        });
+
+        if (!res.ok) throw new Error('server error');
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+
+        // Extract text content from Claude response
+        const text   = data.content?.[0]?.text || '';
+        const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || text);
+
+        // Validate: ensure all scene keys exist
+        parsed.scenes = parsed.scenes.filter(s => MODES[s.key]);
+        if (parsed.scenes.length === 0) throw new Error('no valid scenes');
+
+        // Mark as AI-generated
+        parsed._aiGenerated = true;
+        return parsed;
+
+    } catch (e) {
+        console.log('Using local journey generation:', e.message);
+        return getLocalJourney(ans);
+    }
+}
+
+// ── Local journey generation (fallback) ───────────────────────────────────────
+function getLocalJourney(ans) {
+    const text = ans.join(' ').toLowerCase();
+    const q1   = (ans[0] || '').toLowerCase();
+    const q2   = (ans[1] || '').toLowerCase();
+    const q3   = (ans[2] || '').toLowerCase();
+    const q4   = (ans[3] || '').toLowerCase();
+
+    // Score needs
+    let fragile   = 0;
+    let anxious   = 0;
+    let sad       = 0;
+    let creation  = 0;
+    let wonder    = 0;
+    let dissolve  = 0;
+    let energy    = 0;
+
+    if (/anxious|anxiety|stress|racing|overwhelm|panic|scatter|fragment|busy|noise|too much/.test(q1)) anxious += 3;
+    if (/sad|low|heavy|numb|empty|depress|grief|hollow|flat|lost/.test(q1))   { sad += 3; fragile += 1; }
+    if (/tired|exhaust|drain|weary|fog|slow/.test(q1))                         { fragile += 3; sad += 1; }
+    if (/curious|excit|alive|vibrant|open|ready|wonder/.test(q1))              { wonder += 3; energy += 1; }
+    if (/calm|peace|still|okay|settled|good|fine/.test(q1))                    { wonder += 2; creation += 1; }
+    if (/tight|chest|breath/.test(q1))                                         { anxious += 2; fragile += 1; }
+
+    if (/rest|still/.test(q2))              { fragile += 2; wonder += 1; }
+    if (/wonder|to wonder/.test(q2))        { wonder += 4; }
+    if (/moved|unsettl/.test(q2))           { dissolve += 3; energy += 2; }
+    if (/make|hands|creat/.test(q2))        { creation += 5; }
+    if (/disappear|dissolve|float/.test(q2)) { dissolve += 5; fragile += 1; }
+    if (/don't know/.test(q2))              { wonder += 2; fragile += 1; }
+
+    if (/breath/.test(q3))                  { anxious += 1; }
+    if (/chest|tight|full/.test(q3))        { fragile += 2; anxious += 2; }
+    if (/hands|restless/.test(q3))          { creation += 3; energy += 2; }
+    if (/scatter|nowhere/.test(q3))         { anxious += 3; fragile += 2; }
+    if (/everywhere/.test(q3))              { dissolve += 2; }
+
+    if (/very little|gentle/.test(q4))      { fragile += 4; }
+    if (/completely|ready|anything/.test(q4)) { wonder += 3; energy += 1; }
+
+    const isFragile  = fragile >= 3;
+    const isMaker    = creation >= 4;
+    const isWonder   = wonder > sad && wonder > anxious && wonder >= 3;
+    const isDissolve = dissolve >= 4;
+    const isEnergy   = energy >= 3 && !isFragile;
+
+    // ── Preset journeys ────────────────────────────────────────────────────────
+    if (isFragile && sad >= 2) {
+        return {
+            reflection: `Something heavy arrived with you today. You don't have to explain it or move through it faster than it wants to move. What follows is made for the kind of tired that lives in the chest.`,
+            arc: 'held lightly',
+            guidance: 'Nothing is required of you here except to be present.',
+            scenes: [
+                { key: 'tide',        duration: 90,  intro: 'go under. it\'s safe here.' },
+                { key: 'void',        duration: 75,  intro: 'just a point of light.' },
+                { key: 'aurora',      duration: 120, intro: 'something vast and beautiful.' },
+            ],
+        };
+    }
+
+    if (isFragile && anxious >= 2) {
+        return {
+            reflection: `Your mind has been working overtime — you can feel it in your chest, in the pace of things. This journey begins with the simplest possible thing and asks nothing more than your breath.`,
+            arc: 'the untangling',
+            guidance: 'Slow is the whole point.',
+            scenes: [
+                { key: 'breath',      duration: 90,  intro: 'start here. just breathe.' },
+                { key: 'void',        duration: 60,  intro: 'one point. nothing else.' },
+                { key: 'harmonograph', duration: 90, intro: 'watch something come to rest.' },
+            ],
+        };
+    }
+
+    if (isFragile) {
+        return {
+            reflection: `You came today with something careful in you — an awareness of your own limits, which is its own kind of wisdom. What follows is gentle. Nothing here will ask more than you have.`,
+            arc: 'soft ground',
+            guidance: 'You can leave any time. You can also stay.',
+            scenes: [
+                { key: 'breath',   duration: 90,  intro: 'just breathe. really.' },
+                { key: 'tide',     duration: 90,  intro: 'let the wave do the work.' },
+                { key: 'aurora',   duration: 120, intro: 'beauty that asks nothing.' },
+            ],
+        };
+    }
+
+    if (isMaker) {
+        return {
+            reflection: `There is something in you today that wants to make — to shape something, leave a mark, have your hands do what your mind has been holding. This journey ends in making. The beginning is just the warm-up.`,
+            arc: 'from seeing to making',
+            guidance: 'Your hands know things your mind is still figuring out.',
+            scenes: [
+                { key: 'ink',     duration: 60,  intro: 'watch colour find its shape.' },
+                { key: 'brush',   duration: 120, intro: 'slow strokes. let them be imperfect.' },
+                { key: 'plasma',  duration: 90,  intro: 'paint with direction itself.' },
+                { key: 'stardust', duration: 90, intro: 'scatter light into the dark.' },
+            ],
+        };
+    }
+
+    if (isDissolve) {
+        return {
+            reflection: `Part of you wants to stop holding the shape of yourself for a while — to become something more like water or smoke or slowly dissolving thread. That's not weakness. That's the point.`,
+            arc: 'the letting go',
+            guidance: 'You can stop having edges for a while.',
+            scenes: [
+                { key: 'fluid',       duration: 90,  intro: 'become smoke. become water.' },
+                { key: 'mycelium',    duration: 75,  intro: 'spread slowly through the dark.' },
+                { key: 'harmonograph', duration: 120, intro: 'watch the last tremor settle.' },
+                { key: 'aurora',      duration: 90,  intro: 'and then: pure light.' },
+            ],
+        };
+    }
+
+    if (isWonder) {
+        return {
+            reflection: `You arrived with space in you — a genuine curiosity, a readiness to be moved. That openness is not nothing. It's the whole thing. This journey takes it seriously.`,
+            arc: 'going outward',
+            guidance: 'Let yourself be small inside something vast.',
+            scenes: [
+                { key: 'gravity',  duration: 75,  intro: 'feel the weight of everything.' },
+                { key: 'attractor', duration: 90, intro: 'chaos becoming pattern.' },
+                { key: 'aurora',   duration: 120, intro: 'then: pure north-sky light.' },
+                { key: 'stardust', duration: 90,  intro: 'make something cosmic.' },
+            ],
+        };
+    }
+
+    if (anxious >= 3) {
+        return {
+            reflection: `There is a lot of motion in you right now — thoughts cycling, something in the chest, the sense that everything needs attention simultaneously. This journey begins by asking you to choose one thing: your breath.`,
+            arc: 'from noise to ground',
+            guidance: 'Nothing is urgent here.',
+            scenes: [
+                { key: 'breath',      duration: 80,  intro: 'start with this one thing.' },
+                { key: 'cymatics',    duration: 75,  intro: 'order in the interference.' },
+                { key: 'harmonograph', duration: 90, intro: 'slowly, the motion stills.' },
+                { key: 'brush',       duration: 90,  intro: 'leave a mark. just one.' },
+            ],
+        };
+    }
+
+    if (isEnergy) {
+        return {
+            reflection: `Something is alive in you today — a forward-moving energy that wants somewhere to go. This journey doesn't slow you down. It gives that energy a shape.`,
+            arc: 'aliveness',
+            guidance: 'Bring all of you.',
+            scenes: [
+                { key: 'swarm',    duration: 60,  intro: 'one mind, ten thousand bodies.' },
+                { key: 'flow',     duration: 75,  intro: 'go with the current.' },
+                { key: 'plasma',   duration: 90,  intro: 'paint with velocity itself.' },
+                { key: 'stardust', duration: 90,  intro: 'and scatter it all.' },
+            ],
+        };
+    }
+
+    // Default: contemplative middle path
+    return {
+        reflection: `You arrived today with something neither urgent nor absent — a kind of middle ground that holds its own particular quality. This journey traces a gentle arc from stillness through wonder to making.`,
+        arc: 'the middle distance',
+        guidance: 'See what wants to happen.',
+        scenes: [
+            { key: 'void',      duration: 60,  intro: 'one point. one breath.' },
+            { key: 'web',       duration: 90,  intro: 'the mathematics of connection.' },
+            { key: 'aurora',    duration: 90,  intro: 'let it be beautiful.' },
+            { key: 'brush',     duration: 90,  intro: 'now make something.' },
+        ],
+    };
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+// Fill black then start
+ctx.fillStyle = '#000';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+startIntro();
+</script>
+</body>
+</html>

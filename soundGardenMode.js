@@ -156,7 +156,7 @@ class SoundGardenMode {
         }
         ctx.beginPath(); ctx.moveTo(-22*s, 2*s); ctx.lineTo(22*s, 2*s);
         ctx.strokeStyle = `hsla(${hue}, 40%, 72%, ${a*0.25})`;
-        ctx.lineWidth = 0.6*s; ctx.stroke();
+        ctx.lineWidth = 1.0*s; ctx.stroke();
     }
 
     _fDrop(ctx, s, a, hue, t) {

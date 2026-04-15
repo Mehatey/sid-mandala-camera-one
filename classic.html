@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mandala Classic</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; cursor: none; }
+  canvas { position: fixed; top: 0; left: 0; }
+  #coinCanvas { pointer-events: none; }
+
+  #styleBar { display: none; }
+  #counter   { display: none; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<canvas id="coinCanvas"></canvas>
+
+<div id="styleBar">
+  <button id="prevStyle">◀</button>
+  <span id="styleName">Geometric</span>
+  <button id="nextStyle">▶</button>
+</div>
+<div id="counter">layer 0</div>
+
+<script src="mandalaGenerator.js"></script>
+<script src="liquidEffect.js"></script>
+
+<script>
+// ── Canvas ────────────────────────────────────────────────────────────────────
+const canvas     = document.getElementById('canvas');
+const coinCanvas = document.getElementById('coinCanvas');
+const ctx        = canvas.getContext('2d');
+const coinCtx    = coinCanvas.getContext('2d');
+
+function resize() {
+    canvas.width = coinCanvas.width = window.innerWidth;
+    canvas.height = coinCanvas.height = window.innerHeight;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (liquidEffect) liquidEffect.resize();
+}
+window.addEventListener('resize', resize);
+
+// ── Per-style configuration ───────────────────────────────────────────────────
+// hue:    base hue of the colour wash
+// span:   hue arc of the gradient (degrees)
+// spd:    hue rotation speed (degrees/sec)
+// fade:   trail alpha per frame (lower = longer ghost trails)
+// tint:   [r,g,b] background tint for trails (warms/cools the shadow)
+// ms:     milliseconds between auto-layer adds
+// gSpd:   speed of the orbiting secondary gradient
+// extras: style-specific extra parameters
+const STYLES = [
+    { // 0: Sapphire — blue/navy/turquoise, faceted geometry
+        name:'Sapphire',
+        hue: 210, span: 70, spd: 7, fade: 0.016, tint:[0, 3, 14], ms: 4800, gSpd: 0.11,
+        starburstLines: 20, outerRingBreath: true
+    },
+    { // 1: Thread Lines — dense lace, string art
+        name:'Thread Lines',
+        hue: 188, span: 65, spd: 6, fade: 0.007, tint:[ 0, 3, 14], ms: 3600, gSpd: 0.06,
+        radialBeams: 8, threadPulse: true
+    },
+    { // 2: Interwoven — holographic ribbon weave
+        name:'Interwoven',
+        hue: 295, span: 95, spd: 15, fade: 0.016, tint:[ 8, 0, 10], ms: 5200, gSpd: 0.14,
+        chromaticAberration: true, pearlSheen: true
+    },
+    { // 3: Ocean Depths — bioluminescent deep sea
+        name:'Ocean Depths',
+        hue: 208, span: 55, spd: 7, fade: 0.014, tint:[ 0, 5, 16], ms: 5500, gSpd: 0.08,
+        tideRings: true, bioParticles: true
+    },
+    { // 4: Emerald Forest — organic, spore-filled
+        name:'Emerald Forest',
+        hue: 135, span: 75, spd: 12, fade: 0.020, tint:[ 0, 8, 1], ms: 4200, gSpd: 0.15,
+        sporeParticles: true, dappledLight: true
+    },
+    { // 5: Pixel Art — retro CRT neon
+        name:'Pixel Art',
+        hue: 315, span: 130, spd: 24, fade: 0.024, tint:[ 7, 0, 10], ms: 3000, gSpd: 0.30,
+        scanlines: true, neonBloom: true, crtVignette: true
+    },
+    { // 6: Fluid — cosmic aurora, prismatic
+        name:'Fluid',
+        hue: 258, span: 120, spd: 14, fade: 0.006, tint:[ 2, 0, 10], ms: 5200, gSpd: 0.18,
+        aurora: true, prismRings: true
+    },
+];
+const AUTO_CYCLE_MS = 75000;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentStyle   = 0;
+let foldCount      = 0;
+let time           = 0;
+let mouseX         = -1000, mouseY = -1000;
+let bloomRings     = [];
+let wasWarping     = false;
+let autoLayerTimer = 0;
+let autoCycleTimer = 0;
+let foldIndex      = 0;
+let flashAlpha     = 0;
+
+// Style-specific live state
+let styleParticles = [];   // per-style particle systems
+let tideRings      = [];   // ocean tide pulse rings
+let tideClock      = 0;
+let auroraPhase    = 0;
+let threadPulseClock = 0;
+let threadPulseRings = [];
+let dappledSpots   = [];   // emerald forest dappled lights
+
+// ── Systems ───────────────────────────────────────────────────────────────────
+const mandalaGenerator = new MandalaGenerator(ctx);
+const liquidEffect     = new LiquidEffect(ctx, canvas);
+mandalaGenerator.nucleusAlpha = 1.0;
+resize();
+
+// ── Init per-style extras ─────────────────────────────────────────────────────
+function initStyleExtras(styleIdx) {
+    styleParticles = [];
+    tideRings      = [];
+    threadPulseRings = [];
+    dappledSpots   = [];
+    tideClock      = 0;
+    threadPulseClock = 0;
+    auroraPhase    = Math.random() * Math.PI * 2;
+
+    if (styleIdx === 3) {
+        // Ocean — bioluminescent drift particles (normalized coords -1..1)
+        for (let i = 0; i < 35; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const r = 0.08 + Math.random() * 0.78;
+            styleParticles.push({
+                x: Math.cos(a) * r, y: Math.sin(a) * r,
+                vx: (Math.random() - 0.5) * 0.00045,
+                vy: -0.00035 - Math.random() * 0.00055,
+                alpha: 0.10 + Math.random() * 0.55,
+                size: 0.004 + Math.random() * 0.009,
+                hue: 165 + Math.random() * 55,
+                life: Math.random()
+            });
+        }
+    } else if (styleIdx === 4) {
+        // Forest — spores
+        for (let i = 0; i < 55; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const r = 0.05 + Math.random() * 0.80;
+            styleParticles.push({
+                x: Math.cos(a) * r, y: Math.sin(a) * r,
+                vx: (Math.random() - 0.5) * 0.00030,
+                vy: -0.00028 - Math.random() * 0.00040,
+                alpha: 0.06 + Math.random() * 0.28,
+                size: 0.003 + Math.random() * 0.006,
+                hue: 80 + Math.random() * 80,
+                life: Math.random()
+            });
+        }
+        // 4 dappled sunlight patches (normalized coords)
+        for (let i = 0; i < 4; i++) {
+            const a = (i / 4) * Math.PI * 2 + Math.random() * 0.8;
+            dappledSpots.push({
+                x: Math.cos(a) * (0.25 + Math.random() * 0.40),
+                y: Math.sin(a) * (0.25 + Math.random() * 0.40),
+                r: 0.12 + Math.random() * 0.16,
+                alpha: 0.06 + Math.random() * 0.10,
+                drift: Math.random() * Math.PI * 2,
+                driftSpeed: 0.012 + Math.random() * 0.018
+            });
+        }
+    }
+}
+
+// ── Coin cursor ───────────────────────────────────────────────────────────────
+const coinImg = new Image();
+coinImg.src   = 'coin.gif';
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+let audioCtx  = null;
+let warpNodes = null;
+
+function ensureAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playFoldTone() {
+    ensureAudio();
+    if (!audioCtx || audioCtx.state === 'suspended') return;
+    const pentatonic = [220, 261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 659.3, 784.0];
+    const freq = pentatonic[foldIndex % pentatonic.length];
+    foldIndex++;
+    const now = audioCtx.currentTime;
+    const osc  = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    osc.type = 'triangle'; osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.18, now + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+    osc.connect(g); g.connect(audioCtx.destination); osc.start(now); osc.stop(now + 2.2);
+    const osc2 = audioCtx.createOscillator(); const g2 = audioCtx.createGain();
+    osc2.type = 'sine'; osc2.frequency.value = freq * 2.01;
+    g2.gain.setValueAtTime(0, now);
+    g2.gain.linearRampToValueAtTime(0.07, now + 0.012);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+    osc2.connect(g2); g2.connect(audioCtx.destination); osc2.start(now); osc2.stop(now + 1.3);
+}
+
+function startWarpSound() {
+    if (!audioCtx || warpNodes) return;
+    const now = audioCtx.currentTime, sr = audioCtx.sampleRate;
+    const master = audioCtx.createGain();
+    master.gain.setValueAtTime(0, now);
+    master.gain.linearRampToValueAtTime(0.18, now + 0.35);
+    master.connect(audioCtx.destination);
+    const buf = audioCtx.createBuffer(1, sr * 4, sr);
+    const dat = buf.getChannelData(0); let last = 0;
+    for (let i = 0; i < dat.length; i++) {
+        last = (last + 0.018 * (Math.random() * 2 - 1)) / 1.018; dat[i] = last * 12;
+    }
+    const noise = audioCtx.createBufferSource(); noise.buffer = buf; noise.loop = true;
+    const bpf = audioCtx.createBiquadFilter();
+    bpf.type = 'bandpass'; bpf.frequency.value = 420; bpf.Q.value = 3.5;
+    const lfo = audioCtx.createOscillator(); const lfoG = audioCtx.createGain();
+    lfo.frequency.value = 2.2; lfoG.gain.value = 300;
+    lfo.connect(lfoG); lfoG.connect(bpf.frequency);
+    const sub = audioCtx.createOscillator(); const subG = audioCtx.createGain();
+    sub.type = 'sine'; sub.frequency.value = 55; subG.gain.value = 0.25;
+    sub.connect(subG); subG.connect(master);
+    noise.connect(bpf); bpf.connect(master);
+    noise.start(); lfo.start(); sub.start();
+    warpNodes = { noise, lfo, sub, master };
+}
+
+function stopWarpSound() {
+    if (!warpNodes || !audioCtx) return;
+    const nodes = warpNodes; warpNodes = null;
+    nodes.master.gain.setTargetAtTime(0, audioCtx.currentTime, 0.18);
+    setTimeout(() => { try { nodes.noise.stop(); nodes.lfo.stop(); nodes.sub.stop(); } catch(e){} }, 700);
+}
+
+// ── Style switching ───────────────────────────────────────────────────────────
+function switchStyle(idx) {
+    currentStyle = ((idx % STYLES.length) + STYLES.length) % STYLES.length;
+    // Keep foldCount and canvas intact — user wants to see same fold in different styles
+    bloomRings = [];
+    autoLayerTimer = 0; autoCycleTimer = 0;
+    document.getElementById('styleName').textContent = STYLES[currentStyle].name;
+    document.getElementById('counter').textContent   = `layer ${foldCount}`;
+    initStyleExtras(currentStyle);
+}
+
+initStyleExtras(0); // bootstrap
+
+document.getElementById('prevStyle').addEventListener('click', e => { e.stopPropagation(); switchStyle(currentStyle - 1); });
+document.getElementById('nextStyle').addEventListener('click', e => { e.stopPropagation(); switchStyle(currentStyle + 1); });
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp')   switchStyle(currentStyle + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowDown') switchStyle(currentStyle - 1);
+    if (e.key === ' ') { ensureAudio(); addFold(); }
+    if (e.key === 'c' || e.key === 'C') {
+        foldCount = 0; bloomRings = []; foldIndex = 0;
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('counter').textContent = 'layer 0';
+    }
+});
+document.addEventListener('mousemove', e => {
+    mouseX = e.clientX; mouseY = e.clientY;
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    liquidEffect.setMousePosition(mouseX, mouseY, cx, cy, Math.min(canvas.width, canvas.height) * 0.5);
+    ensureAudio();
+});
+document.addEventListener('click', () => { ensureAudio(); addFold(); });
+
+// ── Fold ──────────────────────────────────────────────────────────────────────
+function addFold() {
+    const maxFolds = mandalaGenerator.getStyleConfig().maxLayers;
+    const clipR    = Math.min(canvas.width, canvas.height) * 0.5;
+    const cfg      = STYLES[currentStyle];
+    if (foldCount >= maxFolds) {
+        for (let i = 0; i < 3; i++) {
+            bloomRings.push({
+                r: clipR * (0.2 + i * 0.15),
+                alpha: 0.38 - i * 0.08,
+                hue: cfg.hue + i * 30,
+                spd: 2.0 + i * 0.8,
+            });
+        }
+    } else {
+        foldCount++;
+        playFoldTone();
+        bloomRings.push({ r: 8, alpha: 0.28, hue: cfg.hue + foldIndex * 18, spd: 2.5 });
+        document.getElementById('counter').textContent = `layer ${foldCount}`;
+    }
+}
+
+// ── Draw coin cursor ──────────────────────────────────────────────────────────
+function drawCoinCursor() {
+    if (mouseX < -500) return;
+    const SIZE = 48;
+    coinCtx.save();
+    const glow = coinCtx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, SIZE);
+    glow.addColorStop(0,   'rgba(255,210,80,0.30)');
+    glow.addColorStop(0.5, 'rgba(255,175,40,0.10)');
+    glow.addColorStop(1,   'rgba(0,0,0,0)');
+    coinCtx.fillStyle = glow;
+    coinCtx.beginPath(); coinCtx.arc(mouseX, mouseY, SIZE, 0, Math.PI * 2); coinCtx.fill();
+    if (coinImg.complete && coinImg.naturalWidth > 0) {
+        coinCtx.drawImage(coinImg, mouseX - SIZE / 2, mouseY - SIZE / 2, SIZE, SIZE);
+    } else {
+        coinCtx.beginPath(); coinCtx.arc(mouseX, mouseY, 18, 0, Math.PI * 2);
+        coinCtx.fillStyle = 'rgba(255,210,60,0.80)'; coinCtx.fill();
+    }
+    coinCtx.restore();
+}
+
+// ── Style-specific BACKGROUND (drawn before mandala) ─────────────────────────
+function drawStyleBackground(time, cx, cy, clipR, cfg, dt) {
+    switch(currentStyle) {
+
+        case 0: { // Geometric — deep solar atmosphere
+            // Warm amber nebula behind the mandala
+            const nb = ctx.createRadialGradient(cx, cy, 0, cx, cy, clipR);
+            const breath = 0.5 + 0.5 * Math.sin(time * 0.4);
+            nb.addColorStop(0,   `rgba(40,22,0,${0.12 + breath * 0.06})`);
+            nb.addColorStop(0.55,`rgba(22,10,0,${0.06 + breath * 0.03})`);
+            nb.addColorStop(1,   'rgba(0,0,0,0)');
+            ctx.fillStyle = nb;
+            ctx.beginPath(); ctx.arc(cx, cy, clipR, 0, Math.PI * 2); ctx.fill();
+            break;
+        }
+
+        case 1: { // Thread Lines — deep aqua void
+            const nb = ctx.createRadialGradient(cx, cy, 0, cx, cy, clipR);
+            nb.addColorStop(0,   'rgba(0,18,28,0.10)');
+            nb.addColorStop(0.6, 'rgba(0,8,18,0.05)');
+            nb.addColorStop(1,   'rgba(0,0,0,0)');
+            ctx.fillStyle = nb;
+            ctx.beginPath(); ctx.arc(cx, cy, clipR, 0, Math.PI * 2); ctx.fill();
+            break;
+        }
+
+        case 3: { // Ocean — caustic shimmer on the backdrop
+            // 3 slowly-wobbling caustic highlights
+            for (let i = 0; i < 3; i++) {
+                const ca = time * 0.07 + i * Math.PI * 0.66;
+                const cr = clipR * (0.28 + 0.18 * Math.sin(time * 0.11 + i));
+                const cpx = cx + Math.cos(ca) * clipR * 0.25;
+                const cpy = cy + Math.sin(ca) * clipR * 0.22;
+                const cg = ctx.createRadialGradient(cpx, cpy, 0, cpx, cpy, cr);
+                cg.addColorStop(0,   `rgba(0,90,140,${0.07 + 0.04 * Math.sin(time * 0.3 + i)})`);
+                cg.addColorStop(0.6, 'rgba(0,40,80,0.03)');
+                cg.addColorStop(1,   'rgba(0,0,0,0)');
+                ctx.fillStyle = cg;
+                ctx.beginPath(); ctx.arc(cx, cy, clipR, 0, Math.PI * 2); ctx.fill();
+            }
+            break;
+        }
+
+        case 6: { // Fluid — aurora borealis backdrop
+            auroraPhase += dt * 0.22;
+            const aColors = [
+                [148, 0, 211],  // violet
+                [75,  0, 130],  // indigo
+                [0,   0, 200],  // blue
+                [0,  128, 200], // cyan
+            ];
+            for (let i = 0; i < 3; i++) {
+                const aa = auroraPhase + i * 2.1;
+                const ax = cx + Math.cos(aa * 0.4) * clipR * 0.45;
+                const ay = cy + Math.sin(aa * 0.3) * clipR * 0.40;
+                const ar = clipR * (0.55 + 0.18 * Math.sin(aa * 0.5));
+                const [r, g, b] = aColors[i % aColors.length];
+                const ag = ctx.createRadialGradient(ax, ay, 0, ax, ay, ar);
+                ag.addColorStop(0,   `rgba(${r},${g},${b},${0.06 + 0.03 * Math.sin(aa)})`);
+                ag.addColorStop(0.5, `rgba(${r},${g},${b},0.025)`);
+                ag.addColorStop(1,   'rgba(0,0,0,0)');
+                ctx.fillStyle = ag;
+                ctx.beginPath(); ctx.arc(cx, cy, clipR * 1.1, 0, Math.PI * 2); ctx.fill();
+            }
+            break;
+        }
+    }
+}
+
+// ── Style-specific FOREGROUND (drawn after mandala + overlays) ────────────────
+function drawStyleForeground(time, cx, cy, clipR, cfg, dt) {
+    switch(currentStyle) {
+
+        case 0: { // Geometric — starburst + breathing outer ring + shimmer arc
+            const h1 = (cfg.hue + time * cfg.spd) % 360;
+            ctx.save();
+
+            // 20 thin starburst lines — cyan/blue tones matching 20-sided geometry
+            ctx.globalCompositeOperation = 'screen';
+            ctx.lineWidth = 0.55;
+            for (let i = 0; i < 20; i++) {
+                const a = (i / 20) * Math.PI * 2 + time * 0.016;
+                const innerR = clipR * 0.04;
+                const outerR = clipR * (0.88 + 0.06 * Math.sin(time * 0.50 + i * 0.31));
+                const lineHue = (195 + i * 3.5) % 255; // cyan to royal blue sweep
+                const alpha = 0.14 + 0.08 * Math.sin(time * 0.65 + i * 0.5);
+                ctx.strokeStyle = `hsla(${lineHue}, 92%, 72%, ${alpha})`;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(a) * innerR, cy + Math.sin(a) * innerR);
+                ctx.lineTo(cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR);
+                ctx.stroke();
+            }
+
+            // Breathing outer boundary ring — electric blue
+            const breathR = clipR * (0.94 + 0.03 * Math.sin(time * 0.48));
+            const ringA = 0.18 + 0.07 * Math.sin(time * 0.48);
+            ctx.strokeStyle = `hsla(205, 92%, 68%, ${ringA})`;
+            ctx.lineWidth = 1.8;
+            ctx.shadowColor = 'rgba(0, 180, 255, 0.55)';
+            ctx.shadowBlur  = 10;
+            ctx.beginPath(); ctx.arc(cx, cy, breathR, 0, Math.PI * 2); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Inner turquoise pulse ring
+            const innerBreath = clipR * (0.42 + 0.04 * Math.sin(time * 0.72));
+            ctx.strokeStyle = `hsla(175, 85%, 65%, ${0.12 + 0.06 * Math.sin(time * 0.72)})`;
+            ctx.lineWidth = 1.0;
+            ctx.beginPath(); ctx.arc(cx, cy, innerBreath, 0, Math.PI * 2); ctx.stroke();
+
+
+            ctx.restore();
+            break;
+        }
+
+        case 1: { // Thread Lines — radial beams + thread pulse rings
+            const h1 = (cfg.hue + time * cfg.spd) % 360;
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+
+            // 8 radial accent beams (matching 8-fold symmetry)
+            for (let i = 0; i < 8; i++) {
+                const a = (i / 8) * Math.PI * 2 + time * 0.008;
+                const len = clipR * (0.92 + 0.05 * Math.sin(time * 0.4 + i));
+                const alpha = 0.08 + 0.05 * Math.sin(time * 0.6 + i * 0.8);
+                const grad = ctx.createLinearGradient(
+                    cx, cy,
+                    cx + Math.cos(a) * len, cy + Math.sin(a) * len
+                );
+                grad.addColorStop(0,   `hsla(${h1}, 90%, 75%, ${alpha * 1.5})`);
+                grad.addColorStop(0.5, `hsla(${h1 + 20}, 80%, 65%, ${alpha})`);
+                grad.addColorStop(1,   'transparent');
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 0.7;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+                ctx.stroke();
+            }
+
+            // Thread pulse rings — advance clock and spawn
+            threadPulseClock += dt;
+            if (threadPulseClock > 3.8) {
+                threadPulseClock = 0;
+                threadPulseRings.push({ r: clipR * 0.04, alpha: 0.35, hue: h1 });
+            }
+            ctx.globalCompositeOperation = 'source-over';
+            for (let i = threadPulseRings.length - 1; i >= 0; i--) {
+                const pr = threadPulseRings[i];
+                pr.r     += clipR * 0.006;
+                pr.alpha -= 0.003;
+                if (pr.r > clipR || pr.alpha <= 0) { threadPulseRings.splice(i, 1); continue; }
+                ctx.strokeStyle = `hsla(${pr.hue}, 88%, 72%, ${pr.alpha})`;
+                ctx.lineWidth   = 0.8;
+                ctx.beginPath(); ctx.arc(cx, cy, pr.r, 0, Math.PI * 2); ctx.stroke();
+            }
+
+            // Inner 8-point star highlight
+            ctx.globalCompositeOperation = 'screen';
+            const starR = clipR * 0.06;
+            ctx.lineWidth = 0.6;
+            for (let i = 0; i < 8; i++) {
+                const a1 = (i / 8) * Math.PI * 2 + time * 0.012;
+                const a2 = ((i + 4) / 8) * Math.PI * 2 + time * 0.012;
+                ctx.strokeStyle = `hsla(${h1 + i * 5}, 85%, 78%, 0.20)`;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(a1) * starR, cy + Math.sin(a1) * starR);
+                ctx.lineTo(cx + Math.cos(a2) * starR, cy + Math.sin(a2) * starR);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+            break;
+        }
+
+        case 2: { // Interwoven — chromatic aberration + pearl sheen
+            const h1 = (cfg.hue + time * cfg.spd) % 360;
+            ctx.save();
+
+            // Chromatic aberration: draw overlay gradient twice, offset by 4px each side
+            const offsets = [[-4, -4, 'rgba(255,0,60,0.07)'], [4, 4, 'rgba(0,60,255,0.07)']];
+            for (const [ox, oy, color] of offsets) {
+                const pg = ctx.createRadialGradient(cx + ox, cy + oy, 0, cx + ox, cy + oy, clipR * 0.9);
+                pg.addColorStop(0,   color);
+                pg.addColorStop(0.5, 'rgba(0,0,0,0)');
+                pg.addColorStop(1,   'rgba(0,0,0,0)');
+                ctx.globalCompositeOperation = 'screen';
+                ctx.fillStyle = pg;
+                ctx.beginPath(); ctx.arc(cx, cy, clipR, 0, Math.PI * 2); ctx.fill();
+            }
+
+            // Pearl/iridescent sheen — thin ring that cycles hue fast
+            const pearlHue  = (time * 80) % 360;
+            const pearlR    = clipR * (0.35 + 0.08 * Math.sin(time * 0.6));
+            ctx.globalCompositeOperation = 'overlay';
+            ctx.lineWidth   = 4;
+            ctx.strokeStyle = `hsla(${pearlHue}, 90%, 80%, 0.16)`;
+            ctx.shadowColor = `hsla(${pearlHue}, 95%, 85%, 0.30)`;
+            ctx.shadowBlur  = 10;
+            ctx.beginPath(); ctx.arc(cx, cy, pearlR, 0, Math.PI * 2); ctx.stroke();
+            ctx.shadowBlur  = 0;
+
+            // Second pearl ring offset
+            ctx.lineWidth   = 2;
+            ctx.strokeStyle = `hsla(${(pearlHue + 120) % 360}, 90%, 75%, 0.10)`;
+            ctx.beginPath(); ctx.arc(cx, cy, pearlR * 1.5, 0, Math.PI * 2); ctx.stroke();
+
+            ctx.restore();
+            break;
+        }
+
+        case 3: { // Ocean Depths — tide rings + bioluminescent particles
+            const h1 = (cfg.hue + time * cfg.spd) % 360;
+
+            // Spawn tide rings every ~3.5 seconds
+            tideClock += dt;
+            if (tideClock > 3.5) {
+                tideClock = 0;
+                tideRings.push({ r: clipR * 0.03, alpha: 0.28, phase: 0 });
+            }
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            for (let i = tideRings.length - 1; i >= 0; i--) {
+                const tr = tideRings[i];
+                tr.r     += clipR * 0.0045;
+                tr.alpha -= 0.0025;
+                if (tr.r > clipR || tr.alpha <= 0) { tideRings.splice(i, 1); continue; }
+                ctx.strokeStyle = `rgba(40,180,230,${tr.alpha})`;
+                ctx.lineWidth   = 1.0;
+                ctx.beginPath(); ctx.arc(cx, cy, tr.r, 0, Math.PI * 2); ctx.stroke();
+                // Second ring slightly larger
+                ctx.strokeStyle = `rgba(0,120,180,${tr.alpha * 0.5})`;
+                ctx.lineWidth   = 2.5;
+                ctx.beginPath(); ctx.arc(cx, cy, tr.r * 1.08, 0, Math.PI * 2); ctx.stroke();
+            }
+
+            // Bioluminescent particles
+            for (const p of styleParticles) {
+                p.x    += p.vx;
+                p.y    += p.vy;
+                p.life += p.vy * 0.5; // re-use vy as life drain
+                // Respawn when off-screen or faded
+                if (Math.abs(p.x) > 1.05 || Math.abs(p.y) > 1.05 || p.alpha < 0.02) {
+                    const a = Math.random() * Math.PI * 2;
+                    const r = 0.55 + Math.random() * 0.50;
+                    p.x = Math.cos(a) * r; p.y = Math.sin(a) * r;
+                    p.alpha = 0.10 + Math.random() * 0.55;
+                    p.vy = -0.00035 - Math.random() * 0.00055;
+                    p.vx = (Math.random() - 0.5) * 0.00045;
+                    p.hue = 165 + Math.random() * 55;
+                }
+                const px = cx + p.x * clipR;
+                const py = cy + p.y * clipR;
+                const pulseFactor = 0.7 + 0.3 * Math.sin(time * 2.2 + p.x * 8);
+                ctx.globalAlpha = p.alpha * pulseFactor;
+                ctx.fillStyle   = `hsl(${p.hue}, 90%, 72%)`;
+                ctx.shadowColor = `hsl(${p.hue}, 95%, 80%)`;
+                ctx.shadowBlur  = 6;
+                ctx.beginPath();
+                ctx.arc(px, py, p.size * clipR, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+            ctx.restore();
+            break;
+        }
+
+        case 4: { // Emerald Forest — spores + dappled light
+            const h1 = (cfg.hue + time * cfg.spd) % 360;
+
+            ctx.save();
+
+            // Dappled sunlight patches (soft bright circles that wander)
+            ctx.globalCompositeOperation = 'screen';
+            for (const s of dappledSpots) {
+                s.drift += dt * s.driftSpeed;
+                const wobbleX = s.x + 0.04 * Math.cos(s.drift * 1.1);
+                const wobbleY = s.y + 0.03 * Math.sin(s.drift * 0.9);
+                const sx = cx + wobbleX * clipR;
+                const sy = cy + wobbleY * clipR;
+                const sr = s.r * clipR;
+                const dg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+                const alpha = s.alpha * (0.7 + 0.3 * Math.sin(s.drift));
+                dg.addColorStop(0,   `rgba(140,255,100,${alpha})`);
+                dg.addColorStop(0.5, `rgba(80,200,40,${alpha * 0.4})`);
+                dg.addColorStop(1,   'rgba(0,0,0,0)');
+                ctx.fillStyle = dg;
+                ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+            }
+
+            // Floating spore particles
+            for (const p of styleParticles) {
+                p.x    += p.vx + 0.00012 * Math.sin(time * 0.8 + p.y * 10);
+                p.y    += p.vy;
+                if (Math.abs(p.x) > 1.02 || p.y < -1.05) {
+                    const a = Math.random() * Math.PI * 2;
+                    const r = 0.3 + Math.random() * 0.70;
+                    p.x     = Math.cos(a) * r;
+                    p.y     = Math.sin(a) * r;
+                    if (p.y < 0) p.y = 0.7 + Math.random() * 0.3; // respawn near bottom
+                    p.alpha = 0.06 + Math.random() * 0.28;
+                    p.vy    = -0.00028 - Math.random() * 0.00040;
+                }
+                const px = cx + p.x * clipR;
+                const py = cy + p.y * clipR;
+                // Tiny shimmer
+                const shimmer = 0.5 + 0.5 * Math.sin(time * 3.5 + p.x * 20 + p.y * 15);
+                ctx.globalAlpha = p.alpha * shimmer;
+                ctx.fillStyle   = `hsl(${p.hue}, 80%, 68%)`;
+                ctx.shadowColor = `hsl(${p.hue}, 90%, 78%)`;
+                ctx.shadowBlur  = 4;
+                ctx.beginPath();
+                ctx.arc(px, py, p.size * clipR, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur  = 0;
+            ctx.globalAlpha = 1;
+
+            // Moss-green outer ring that breathes
+            ctx.globalCompositeOperation = 'overlay';
+            ctx.lineWidth   = 2;
+            ctx.strokeStyle = `hsla(${h1}, 70%, 55%, ${0.15 + 0.07 * Math.sin(time * 0.55)})`;
+            ctx.beginPath(); ctx.arc(cx, cy, clipR * 0.92, 0, Math.PI * 2); ctx.stroke();
+
+            ctx.restore();
+            break;
+        }
+
+        case 5: { // Pixel Art — scanlines + neon bloom + CRT vignette
+            const h1 = (cfg.hue + time * cfg.spd) % 360;
+            ctx.save();
+
+            // Scanlines — thin dark horizontal stripes every 4px
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = 'rgba(0,0,0,0.22)';
+            for (let y = 0; y < canvas.height; y += 4) {
+                ctx.fillRect(0, y, canvas.width, 2);
+            }
+
+            // Neon bloom — bright pixel-style blocky rings (squared arcs)
+            ctx.globalCompositeOperation = 'screen';
+            const neonColors = [
+                `hsl(${h1}, 100%, 65%)`,
+                `hsl(${(h1+60)%360}, 100%, 65%)`,
+                `hsl(${(h1+120)%360}, 100%, 65%)`,
+            ];
+            for (let i = 0; i < 3; i++) {
+                const nr = clipR * (0.25 + i * 0.22);
+                const na = 0.12 + 0.06 * Math.sin(time * 1.5 + i * 2.1);
+                ctx.strokeStyle = neonColors[i];
+                ctx.lineWidth   = 1;
+                ctx.globalAlpha = na;
+                // Draw a square approximation for the pixel-art feel
+                const sqSize = nr * Math.SQRT2;
+                ctx.strokeRect(cx - sqSize * 0.5, cy - sqSize * 0.5, sqSize, sqSize);
+            }
+            ctx.globalAlpha = 1;
+
+            // CRT corner vignette — dark corners
+            ctx.globalCompositeOperation = 'multiply';
+            const corners = [
+                [0, 0], [canvas.width, 0],
+                [0, canvas.height], [canvas.width, canvas.height]
+            ];
+            for (const [vx, vy] of corners) {
+                const cvg = ctx.createRadialGradient(vx, vy, 0, vx, vy, canvas.width * 0.65);
+                cvg.addColorStop(0,   'rgba(0,0,0,0.55)');
+                cvg.addColorStop(0.4, 'rgba(0,0,0,0.18)');
+                cvg.addColorStop(1,   'rgba(0,0,0,0)');
+                ctx.fillStyle = cvg;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            ctx.restore();
+            break;
+        }
+
+        case 6: { // Fluid — prismatic center rings + soft veil
+            const h1 = (cfg.hue + time * cfg.spd) % 360;
+            ctx.save();
+
+            // Prismatic rings — 6 tight rings cycling through rainbow near center
+            ctx.globalCompositeOperation = 'screen';
+            for (let i = 0; i < 6; i++) {
+                const pr = clipR * (0.06 + i * 0.045);
+                const ph = (h1 + i * 55 + time * 25) % 360;
+                const pa = 0.10 + 0.06 * Math.sin(time * 0.8 + i * 1.1);
+                ctx.strokeStyle = `hsla(${ph}, 90%, 75%, ${pa})`;
+                ctx.lineWidth   = 1.2;
+                ctx.beginPath(); ctx.arc(cx, cy, pr, 0, Math.PI * 2); ctx.stroke();
+            }
+
+
+            // Soft translucent veil — diffused glow over the entire mandala
+            ctx.globalCompositeOperation = 'overlay';
+            const veilG = ctx.createRadialGradient(cx, cy, 0, cx, cy, clipR * 0.9);
+            veilG.addColorStop(0,   `hsla(${h1 + 30}, 70%, 60%, 0.10)`);
+            veilG.addColorStop(0.4, `hsla(${h1 + 60}, 60%, 50%, 0.05)`);
+            veilG.addColorStop(1,   'transparent');
+            ctx.fillStyle = veilG;
+            ctx.beginPath(); ctx.arc(cx, cy, clipR, 0, Math.PI * 2); ctx.fill();
+
+            ctx.restore();
+            break;
+        }
+    }
+}
+
+// ── Main loop ─────────────────────────────────────────────────────────────────
+let lastTimestamp = 0;
+
+function loop(timestamp) {
+    const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.05);
+    lastTimestamp = timestamp;
+    time += dt;
+
+    const cfg   = STYLES[currentStyle];
+    const W     = canvas.width, H = canvas.height;
+    const cx    = W / 2, cy = H / 2;
+    const clipR = Math.min(W, H) * 0.5;
+
+    // ── Auto-cycle styles ─────────────────────────────────────────────────────
+    autoCycleTimer += dt * 1000;
+    if (autoCycleTimer >= AUTO_CYCLE_MS) switchStyle(currentStyle + 1);
+
+    // ── Warp sound ────────────────────────────────────────────────────────────
+    const isWarping = liquidEffect.isLiquifying();
+    if (isWarping && !wasWarping) startWarpSound();
+    if (!isWarping && wasWarping) stopWarpSound();
+    wasWarping = isWarping;
+
+    // ── Mandala render ────────────────────────────────────────────────────────
+    if (foldCount > 0) {
+        // Style-tinted trail fade
+        const [tr, tg, tb] = cfg.tint;
+        const fa = isWarping ? cfg.fade * 0.55 : cfg.fade;
+        ctx.fillStyle = `rgba(${tr},${tg},${tb},${fa})`;
+        ctx.fillRect(0, 0, W, H);
+
+        // Per-style atmospheric background (behind the mandala)
+        drawStyleBackground(time, cx, cy, clipR, cfg, dt);
+
+        // Mandala geometry
+        ctx.save();
+        ctx.beginPath(); ctx.arc(cx, cy, clipR, 0, Math.PI * 2); ctx.clip();
+        // Style 6 (Fluid) has radiusRange 0.34 — scale it up to fill the same circle as all other styles
+        if (currentStyle === 6) {
+            ctx.translate(cx, cy); ctx.scale(1 / 0.46, 1 / 0.46); ctx.translate(-cx, -cy);
+        }
+        mandalaGenerator.drawMandala(cx, cy, foldCount, time, currentStyle, liquidEffect);
+        ctx.restore();
+
+        // ── Colour overlays — Thread Lines only ──────────────────────────────
+        const h1 = (cfg.hue + time * cfg.spd) % 360;
+        const h2 = (h1 + cfg.span * 0.5) % 360;
+        const h3 = (h1 + cfg.span)       % 360;
+
+        if (currentStyle === 1) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'overlay';
+
+            // Primary radial gradient
+            const pg = ctx.createRadialGradient(cx, cy, 0, cx, cy, clipR * 0.96);
+            pg.addColorStop(0,    `hsla(${h1}, 82%, 56%, 0.58)`);
+            pg.addColorStop(0.40, `hsla(${h2}, 72%, 50%, 0.32)`);
+            pg.addColorStop(0.75, `hsla(${h3}, 66%, 44%, 0.18)`);
+            pg.addColorStop(1,    'transparent');
+            ctx.fillStyle = pg;
+            ctx.beginPath(); ctx.arc(cx, cy, clipR, 0, Math.PI * 2); ctx.fill();
+
+            // Secondary orbiting gradient
+            const orbitA = time * cfg.gSpd;
+            const orbitR = clipR * 0.32;
+            const ox     = cx + Math.cos(orbitA) * orbitR;
+            const oy     = cy + Math.sin(orbitA) * orbitR;
+            const og = ctx.createRadialGradient(ox, oy, 0, ox, oy, clipR * 0.58);
+            og.addColorStop(0,   `hsla(${h2 + 45}, 78%, 58%, 0.38)`);
+            og.addColorStop(0.5, `hsla(${h3 + 20}, 68%, 46%, 0.18)`);
+            og.addColorStop(1,   'transparent');
+            ctx.fillStyle = og;
+            ctx.beginPath(); ctx.arc(cx, cy, clipR, 0, Math.PI * 2); ctx.fill();
+
+            ctx.restore();
+
+            // Centre glow
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            const innerR = clipR * 0.20;
+            const ig = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
+            ig.addColorStop(0,    `hsla(${h1 + 25}, 92%, 78%, 0.50)`);
+            ig.addColorStop(0.55, `hsla(${h1 + 25}, 80%, 58%, 0.18)`);
+            ig.addColorStop(1,    'transparent');
+            ctx.fillStyle = ig;
+            ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        // ── Per-style foreground extras ───────────────────────────────────────
+        ctx.save();
+        ctx.beginPath(); ctx.arc(cx, cy, clipR * 1.05, 0, Math.PI * 2); ctx.clip();
+        drawStyleForeground(time, cx, cy, clipR, cfg, dt);
+        ctx.restore();
+
+        // ── Edge vignette ─────────────────────────────────────────────────────
+        const vig = ctx.createRadialGradient(cx, cy, clipR * 0.58, cx, cy, clipR);
+        vig.addColorStop(0, 'rgba(0,0,0,0)');
+        vig.addColorStop(1, 'rgba(0,0,0,0.70)');
+        ctx.fillStyle = vig;
+        ctx.beginPath(); ctx.arc(cx, cy, clipR, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // ── Bloom rings ───────────────────────────────────────────────────────────
+    ctx.save();
+    for (let i = bloomRings.length - 1; i >= 0; i--) {
+        const ring = bloomRings[i];
+        ring.r     += ring.spd;
+        ring.alpha -= 0.005;
+        if (ring.r > clipR * 1.05 || ring.alpha <= 0) { bloomRings.splice(i, 1); continue; }
+        ctx.strokeStyle = `hsla(${ring.hue}, 72%, 68%, ${ring.alpha})`;
+        ctx.lineWidth   = 1.2;
+        ctx.beginPath(); ctx.arc(cx, cy, ring.r, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
+
+
+    // ── Coin cursor ───────────────────────────────────────────────────────────
+    coinCtx.clearRect(0, 0, W, H);
+    drawCoinCursor();
+
+    requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@ class DistractionSystem {
         form:      'purse.gif',
         woven:     'pizza.gif',
         forest:    'lighter.gif',
-        pixel:     'robot.gif',
+        pixel:     null,
         sound:     'eye.gif',
         breath:    'blob.gif',
     };

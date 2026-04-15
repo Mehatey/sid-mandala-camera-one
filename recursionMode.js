@@ -99,7 +99,7 @@ class RecursionMode {
             // Inner rings: thicker line for more presence
             const blend = i / (ringData.length - 1);
             ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${lit}%, ${alpha})`;
-            ctx.lineWidth   = 0.4 + blend * 0.8;
+            ctx.lineWidth   = 0.85 + blend * 0.8;
             this._strokePoly(pts);
 
             // Corridor walls
@@ -107,7 +107,7 @@ class RecursionMode {
                 const inner = ringData[i + 1];
                 const iPts  = this._polyPoints(cx, cy, inner.r, this.sides, inner.angle);
                 ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${lit}%, ${alpha * 0.28})`;
-                ctx.lineWidth   = 0.30;
+                ctx.lineWidth   = 0.7;
                 for (let v = 0; v < this.sides; v++) {
                     ctx.beginPath();
                     ctx.moveTo(pts[v].x,  pts[v].y);

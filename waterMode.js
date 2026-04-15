@@ -120,7 +120,7 @@ class WaterMode {
             ctx.beginPath();
             ctx.arc(rip.x, rip.y, ringR, 0, Math.PI * 2);
             ctx.strokeStyle = `rgba(${lum}, ${lum + 28}, 255, ${a})`;
-            ctx.lineWidth   = 0.7 + (1 - j / rings) * 1.1;
+            ctx.lineWidth   = 1.0 + (1 - j / rings) * 1.1;
             ctx.stroke();
 
             // Soft radial glow on the 3 leading rings

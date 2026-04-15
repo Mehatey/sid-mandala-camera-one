@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sid zentangle — overview</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ── Overview toolbar ── */
+        #overviewBar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 8000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 10px 20px;
+            background: rgba(2, 3, 14, 0.72);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 13px;
+            letter-spacing: 0.12em;
+            color: rgba(200, 210, 240, 0.75);
+            user-select: none;
+        }
+        #overviewBar button {
+            background: none;
+            border: 1px solid rgba(200,210,240,0.25);
+            color: rgba(200,210,240,0.75);
+            font: inherit;
+            letter-spacing: inherit;
+            padding: 4px 14px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        #overviewBar button:hover {
+            border-color: rgba(200,210,240,0.6);
+            color: rgba(200,210,240,1);
+        }
+        #sceneLabel {
+            min-width: 200px;
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 0.20em;
+            text-transform: uppercase;
+            opacity: 0.65;
+        }
+        #sceneIndex {
+            font-size: 10px;
+            opacity: 0.45;
+            margin-left: 4px;
+        }
+
+        /* ── Canvases fill below toolbar ── */
+        html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+        #canvas, #coinCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: block; }
+        #canvas        { z-index: 0; }
+        #coinCanvas    { z-index: 10; pointer-events: none; }
+        #cursorCanvas  { position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none; }
+
+        /* Cursor hidden globally */
+        body { cursor: none; }
+
+        /* Scene card stays visible above bar */
+        #sceneCard { top: 50% !important; z-index: 7000; }
+    </style>
+
+    <!-- Set overview flag BEFORE loading main.js so haiku is brief -->
+    <script>window.OVERVIEW_MODE = true;</script>
+</head>
+<body>
+
+    <!-- ── Canvases ── -->
+    <canvas id="canvas"></canvas>
+    <canvas id="coinCanvas"></canvas>
+    <canvas id="cursorCanvas"></canvas>
+
+    <!-- ── Overview navigation bar ── -->
+    <div id="overviewBar">
+        <button id="ovPrev">← prev</button>
+        <span id="sceneLabel">—<span id="sceneIndex"></span></span>
+        <button id="ovNext">next →</button>
+        <span style="opacity:0.3;font-size:10px;margin-left:12px">arrow keys also work</span>
+    </div>
+
+    <!-- ── Scene card (haiku label between scenes) ── -->
+    <div id="sceneCard" class="hidden">
+        <div class="sceneCardName"></div>
+        <div class="sceneCardHaiku"></div>
+    </div>
+
+    <!-- ── Blink / style controls (kept functional but hidden in overview) ── -->
+    <div id="blinkWrap" style="display:none">
+        <button id="blinkBtn"></button>
+    </div>
+    <div id="hint" class="hidden"></div>
+    <button id="prevStyle" style="display:none"></button>
+    <button id="nextStyle" style="display:none"></button>
+    <span id="styleName" style="display:none"></span>
+    <button id="clearBtn" style="display:none"></button>
+
+    <!-- ── Onboarding stubs (all hidden — skipped immediately) ── -->
+    <div id="brandScreen" class="hidden">
+        <button id="brandContinueBtn"></button>
+    </div>
+    <div id="introOverlay" class="hidden"></div>
+    <div id="rulesOverlay" class="hidden">
+        <button id="beginBtn"></button>
+    </div>
+    <div id="moodOverlay" class="hidden">
+        <input id="preMoodSlider" type="range" min="1" max="10" value="5">
+        <button id="moodStartBtn"></button>
+    </div>
+    <div id="intentionOverlay" class="hidden">
+        <input id="intentionWordInput" type="text">
+        <button id="intentionContinueBtn"></button>
+    </div>
+    <div id="videoIntroOverlay" class="hidden">
+        <video id="guideVideo" playsinline muted></video>
+        <audio id="guideAudio"></audio>
+        <canvas id="irisCanvas" style="display:none"></canvas>
+        <div id="videoCaptions"></div>
+        <button id="videoSkipBtn"></button>
+    </div>
+
+    <!-- ── End-flow stubs ── -->
+    <div id="endMoodOverlay" class="hidden">
+        <input id="postMoodSlider" type="range" min="1" max="10" value="5">
+        <button id="postMoodNextBtn"></button>
+    </div>
+    <div id="reflectionOverlay" class="hidden">
+        <textarea id="meditateHowInput"></textarea>
+        <textarea id="openEndedInput"></textarea>
+        <button id="reflectionSubmitBtn"></button>
+    </div>
+    <div id="endOverlay" class="hidden">
+        <div id="endIntention"></div>
+        <div id="endMandalaWrap"></div>
+        <div id="endMandalaActions" style="display:none">
+            <input id="endEmailInput" type="email">
+            <button id="saveMandalaBtn">save your mandala  ↓</button>
+        </div>
+        <button id="restartBtn"></button>
+    </div>
+
+    <!-- ── MediaPipe ── -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+
+    <!-- ── App scripts ── -->
+    <script src="mandalaGenerator.js"></script>
+    <script src="mandala3D.js"></script>
+    <script src="cosmicSpiral.js"></script>
+    <script src="coinSystem.js"></script>
+    <script src="liquidEffect.js"></script>
+    <script src="cursorSystem.js?v=2"></script>
+    <script src="soundSystem.js"></script>
+    <script src="blinkDetector.js"></script>
+    <script src="handTracker.js"></script>
+    <script src="waterMode.js"></script>
+    <script src="cosmosMode.js"></script>
+    <script src="watercolorMode.js"></script>
+    <script src="auroraMode.js"></script>
+    <script src="quoteMode.js"></script>
+    <script src="soundGardenMode.js"></script>
+    <script src="videoRoomMode.js"></script>
+    <script src="breathMode.js"></script>
+    <script src="embersMode.js"></script>
+    <script src="mirrorMode.js"></script>
+    <script src="flowMode.js"></script>
+    <script src="gazeMode.js"></script>
+    <script src="voidMode.js"></script>
+    <script src="recursionMode.js"></script>
+    <script src="myceliumMode.js"></script>
+    <script src="cymaticsMode.js"></script>
+    <script src="tideMode.js"></script>
+    <script src="naturalWorldMode.js"></script>
+    <script src="spectrogramMode.js"></script>
+    <script src="sandMode.js"></script>
+    <script src="driftMode.js"></script>
+    <script src="distractionSystem.js"></script>
+    <script src="fluidShader.js"></script>
+    <script src="sessionManager.js"></script>
+    <script src="main.js"></script>
+
+    <!-- ── Overview bar wiring ── -->
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            // Hook prev/next buttons to session navigation (arrow keys already work)
+            document.getElementById('ovPrev').addEventListener('click', () => {
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+            });
+            document.getElementById('ovNext').addEventListener('click', () => {
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+            });
+
+            // Poll session state to update the label in the toolbar
+            setInterval(() => {
+                try {
+                    if (typeof session !== 'undefined' && session && session.active) {
+                        const stage = session.getCurrentStage();
+                        const idx   = session.stageIndex;
+                        const total = session.sequence ? session.sequence.length : '?';
+                        document.getElementById('sceneLabel').childNodes[0].textContent = stage ? stage.name : '—';
+                        document.getElementById('sceneIndex').textContent = ` ${idx + 1}/${total}`;
+                    }
+                } catch(e) {}
+            }, 200);
+        });
+    </script>
+</body>
+</html>

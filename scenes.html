@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>scenes</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { background: #000; overflow: hidden; width: 100%; height: 100%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+
+        canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            z-index: 0;
+        }
+
+        /* ── Sidebar ── */
+        #sidebar {
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            width: 210px;
+            z-index: 100;
+            background: rgba(2, 2, 10, 0.80);
+            backdrop-filter: blur(14px);
+            border-right: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        #sidebar h1 {
+            font-size: 9px;
+            font-weight: 400;
+            letter-spacing: 0.32em;
+            text-transform: uppercase;
+            color: rgba(180, 190, 225, 0.32);
+            padding: 20px 18px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            flex-shrink: 0;
+        }
+
+        .btn {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 9px 18px;
+            cursor: pointer;
+            border: none;
+            border-left: 2px solid transparent;
+            background: transparent;
+            text-align: left;
+            width: 100%;
+            transition: background 0.12s;
+            flex-shrink: 0;
+        }
+        .btn:hover   { background: rgba(255,255,255,0.04); }
+        .btn.active  { background: rgba(255,255,255,0.07); border-left-color: rgba(160,195,255,0.55); }
+
+        .btn .n {
+            font-size: 11px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(200, 212, 245, 0.68);
+        }
+        .btn.active .n { color: rgba(215, 228, 255, 1); }
+
+        .btn .d {
+            font-size: 9px;
+            letter-spacing: 0.04em;
+            color: rgba(160, 175, 215, 0.34);
+            line-height: 1.35;
+        }
+        .btn .new-tag {
+            font-size: 8px;
+            letter-spacing: 0.16em;
+            color: rgba(110, 185, 255, 0.58);
+            margin-top: 1px;
+        }
+
+        .section-divider {
+            font-size: 8px;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: rgba(160,175,215,0.22);
+            padding: 12px 18px 6px;
+            flex-shrink: 0;
+        }
+
+        #hint {
+            font-size: 8.5px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(160,175,215,0.22);
+            padding: 14px 18px 0;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+
+        #camBtn {
+            display: block;
+            margin: 14px 18px 0;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 3px;
+            color: rgba(200,212,245,0.65);
+            font-family: inherit;
+            font-size: 9px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+            text-align: center;
+        }
+        #camBtn:hover { background: rgba(255,255,255,0.09); color: rgba(200,212,245,1); }
+        #camBtn.active { border-color: rgba(120,200,120,0.45); color: rgba(140,220,140,0.8); }
+        #camStatus {
+            font-size: 8px;
+            letter-spacing: 0.12em;
+            color: rgba(160,175,215,0.30);
+            padding: 5px 18px 0;
+            flex-shrink: 0;
+            min-height: 14px;
+        }
+        #micBtn {
+            display: block;
+            margin: 8px 18px 0;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 3px;
+            color: rgba(200,212,245,0.65);
+            font-family: inherit;
+            font-size: 9px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+            text-align: center;
+        }
+        #micBtn:hover  { background: rgba(255,255,255,0.09); color: rgba(200,212,245,1); }
+        #micBtn.active { border-color: rgba(120,200,120,0.45); color: rgba(140,220,140,0.8); }
+        #micStatus {
+            font-size: 8px;
+            letter-spacing: 0.12em;
+            color: rgba(160,175,215,0.30);
+            padding: 5px 18px 0;
+            flex-shrink: 0;
+            min-height: 14px;
+        }
+
+        /* scene name overlay — bottom centre */
+        #sceneLabel {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            font-size: 10px;
+            letter-spacing: 0.30em;
+            text-transform: uppercase;
+            color: rgba(200, 212, 245, 0.28);
+            pointer-events: none;
+            transition: opacity 0.6s;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div id="sidebar">
+    <h1>scenes</h1>
+    <!-- buttons injected below -->
+    <button id="camBtn">enable camera</button>
+    <div id="camStatus"></div>
+    <button id="micBtn">enable mic</button>
+    <div id="micStatus"></div>
+    <div id="hint">↑ ↓  arrow keys</div>
+</div>
+
+<div id="sceneLabel"></div>
+
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+
+<!-- Mode files only — no main.js, no session, no onboarding -->
+<script src="voidMode.js"></script>
+<script src="embersMode.js"></script>
+<script src="myceliumMode.js"></script>
+<script src="cymaticsMode.js"></script>
+<script src="tideMode.js"></script>
+<script src="flowMode.js"></script>
+<script src="mirrorMode.js"></script>
+<script src="recursionMode.js"></script>
+<script src="gazeMode.js"></script>
+<script src="spectrogramMode.js"></script>
+<script src="naturalWorldMode.js"></script>
+<script src="breathMode.js"></script>
+<script src="sandMode.js"></script>
+<script src="driftMode.js"></script>
+<script src="webMode.js"></script>
+<script src="bloomMode.js"></script>
+<script src="prismMode.js"></script>
+<script src="attractorMode.js"></script>
+<script src="reactionMode.js"></script>
+<script src="fourierMode.js"></script>
+<script src="storiesMode.js"></script>
+<script src="omMode.js"></script>
+<script src="frequencyMode.js"></script>
+<script src="stillnessMode.js"></script>
+<script src="pulseMode.js"></script>
+<script src="magneticMode.js"></script>
+<script src="lettersMode.js"></script>
+<script src="clockMode.js"></script>
+<script src="drawMode.js"></script>
+<script src="neuralMode.js"></script>
+<script src="neurogenesisMode.js"></script>
+<script src="swarmMode.js"></script>
+<script src="gravityMode.js"></script>
+<script src="inkMode.js"></script>
+<script src="fabricMode.js"></script>
+<script src="sandpileMode.js"></script>
+<script src="fluidMode.js"></script>
+<script src="auroraMode.js"></script>
+<script src="harmonographMode.js"></script>
+<script src="kaleidMode.js"></script>
+<script src="portalMode.js"></script>
+<script src="liquidMode.js"></script>
+<script src="brushMode.js"></script>
+<script src="plasmaMode.js"></script>
+<script src="stardustMode.js"></script>
+<script src="rainMode.js"></script>
+<script src="membraneMode.js"></script>
+<script src="constellationMode.js"></script>
+<script src="heartMode.js"></script>
+<script src="jellyMode.js"></script>
+<script src="causticMode.js"></script>
+<script src="lavaMode.js"></script>
+<script src="irisMode.js"></script>
+<script src="frostMode.js"></script>
+<script src="orreryMode.js"></script>
+<script src="meridianMode.js"></script>
+<script src="fieldMode.js"></script>
+<script src="vortexMode.js"></script>
+<script src="terrainMode.js"></script>
+<script src="newtonMode.js"></script>
+<script src="marbleMode.js"></script>
+<script src="waxMode.js"></script>
+<script src="patinaMode.js"></script>
+<script src="humansMode.js"></script>
+<script src="livingMandalaMode.js"></script>
+<script src="nacreMode.js"></script>
+<script src="abyssMode.js"></script>
+<script src="nebulaMode.js"></script>
+<script src="mandalaGenerator.js"></script>
+<script src="mandalaMode.js"></script>
+<script src="goldenMode.js"></script>
+<script src="juliaMode.js"></script>
+<script src="psychedelicMode.js"></script>
+
+<script>
+// ── Canvas setup ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── Scene definitions ───────────────────────────────────────────────────────
+const SCENES = [
+    { key: 'void',        label: 'Void',        desc: 'breathing point of light'       },
+    { key: 'embers',      label: 'Embers',       desc: 'rising fire sparks'             },
+    { key: 'mycelium',    label: 'Mycelium',     desc: 'organic filigree threads'       },
+    { key: 'cymatics',    label: 'Cymatics',     desc: 'three sources · ripple interference' },
+    { key: 'tide',        label: 'Tide',         desc: 'deep water wave interference'   },
+    { key: 'flow',        label: 'Flow',         desc: 'particle river field'           },
+    { key: 'mirror',      label: 'Mirror',       desc: '8-fold kaleidoscope'            },
+    { key: 'recursion',   label: 'Recursion',    desc: 'infinite corridor tunnel'       },
+    { key: 'gaze',        label: 'Gaze',         desc: 'watching eyes'                  },
+    { key: 'spectrogram', label: 'Spectrogram',  desc: 'singing bowl harmonics'         },
+    { key: 'nature',      label: 'Nature',       desc: '3D bioluminescent forest'       },
+    { key: 'breath',      label: 'Breath',       desc: 'guided breathing'               },
+    { key: 'sand',        label: 'Sand',         desc: 'hand shapes particle mandala',  isNew: true },
+    { key: 'drift',       label: 'Drift',        desc: 'face steers a starfield',       isNew: true },
+    { key: 'web',         label: 'Web',          desc: 'string-art circle mandala',     isNew: true },
+    { key: 'bloom',       label: 'Bloom',        desc: 'hand opens a flower mandala',   isNew: true },
+    { key: 'prism',       label: 'Prism',        desc: 'nested polygons, hand twists',  isNew: true },
+    { key: 'attractor',   label: 'Attractor',    desc: 'strange attractor density field', isNew: true },
+    { key: 'reaction',    label: 'Reaction',     desc: 'gray-scott chemistry emergence', isNew: true },
+    { key: 'fourier',     label: 'Fourier',      desc: 'epicycles drawing any shape',   isNew: true },
+    { key: 'stories',     label: 'Stories',      desc: 'the rest of the human condition', isNew: true },
+    { key: 'om',          label: 'Om',           desc: 'sustain a tone · mandala builds',  isNew: true },
+    { key: 'frequency',   label: 'Frequency',    desc: 'sound shapes a living ring',       isNew: true },
+    { key: 'stillness',   label: 'Stillness',    desc: 'hold still · it forms for you',    isNew: true },
+    { key: 'pulse',       label: 'Pulse',        desc: 'tap to the beat · find resonance', isNew: true },
+    { key: 'magnetic',    label: 'Magnetic',     desc: 'click to drop poles · filings align', isNew: true },
+    { key: 'letters',     label: 'Letters',      desc: 'type · watch words become light',  isNew: true },
+    { key: 'clock',         label: 'Clock',         desc: 'now · only now · come back later',         isNew: true },
+    { key: 'draw',          label: 'Draw',          desc: 'you make the mandala',                     isNew: true },
+    { key: 'neural',        label: 'Neural',        desc: 'a living nervous system · click to fire',  isNew: true },
+    { key: 'neurogenesis',  label: 'Neurogenesis',  desc: 'watch neurons grow and wire up',           isNew: true },
+    { key: 'swarm',         label: 'Swarm',         desc: 'murmuration · blink to strike',            isNew: true },
+    { key: 'gravity',       label: 'Gravity',       desc: 'spacetime fabric · masses deform the grid', isNew: true },
+    { key: 'ink',           label: 'Ink',           desc: 'inks bleed and mix on warm paper',           isNew: true },
+    { key: 'fabric',        label: 'Fabric',        desc: 'silk in wind · blink for a gust',            isNew: true },
+    { key: 'sandpile',      label: 'Sandpile',      desc: 'fractal avalanche · abelian sand mathematics',isNew: true },
+    { key: 'fluid',         label: 'Fluid',         desc: 'smoke and heat · real navier-stokes fluid',  isNew: true },
+    { key: 'aurora',        label: 'Aurora',        desc: 'northern lights above a frozen forest',      isNew: true },
+    { key: 'harmonograph',  label: 'Harmonograph',  desc: 'four pendulums draw one infinite line',      isNew: true },
+    { key: 'kaleid',        label: 'Kaleid',        desc: 'camera · N-fold mirror mandala · blink shifts folds', isNew: true },
+    { key: 'portal',        label: 'Portal',        desc: 'camera · concentric rings · nested telescope', isNew: true },
+    { key: 'liquid',        label: 'Liquid',        desc: 'camera · pixel warp mandala · chromatic glass', isNew: true },
+    { key: 'brush',         label: 'Brush',         desc: 'sumi-e ink on warm paper · slow = fat · fast = thin', isNew: true },
+    { key: 'plasma',        label: 'Plasma',        desc: 'paint with living light · direction becomes colour',  isNew: true },
+    { key: 'stardust',      label: 'Stardust',      desc: 'sculpt the cosmos · slow = warm nebula · fast = blue',isNew: true },
+    { key: 'rain',          label: 'Rain',          desc: 'rainfall pools · ripple rings · micro-splashes',      isNew: true },
+    { key: 'membrane',      label: 'Membrane',      desc: 'elastic grid · press to deform · blink to wave',      isNew: true },
+    { key: 'constellation', label: 'Constellation', desc: 'stars emerge · find each other · meaning from chaos',  isNew: true },
+    { key: 'heart',         label: 'Heart',         desc: 'heartbeat slowing · 80bpm to rest · blink to stir',   isNew: true },
+    { key: 'jelly',         label: 'Jelly',         desc: 'bioluminescent jellyfish · dark water · living glow',  isNew: true },
+    { key: 'caustic',       label: 'Caustic',       desc: 'wet glass at night · water drops bend lamplight',      isNew: true },
+    { key: 'lava',          label: 'Lava',          desc: 'metaball blobs · midnight indigo · slow merging',        isNew: true },
+    { key: 'iris',          label: 'Iris',          desc: 'oiled silk iridescence · dark field · subtle shimmer',   isNew: true },
+    { key: 'frost',         label: 'Frost',         desc: 'ice crystal branching · hexagonal geometry · cold quiet',isNew: true },
+    { key: 'orrery',        label: 'Orrery',        desc: 'six planets in elliptical orbits · kepler\'s third law', isNew: true },
+    { key: 'meridian',      label: 'Meridian',      desc: 'seated figure · chakra points · rising energy channels', isNew: true },
+    { key: 'field',         label: 'Field',         desc: 'dipole field lines · blink flips polarity', isNew: true },
+    { key: 'vortex',        label: 'Vortex',        desc: '5-arm logarithmic spiral galaxy · blink reverses spin', isNew: true },
+    { key: 'terrain',       label: 'Terrain',       desc: 'domain-warped topography from orbit · tectonic drift', isNew: true },
+    { key: 'newton',        label: 'Newton',        desc: 'newton basin fractal · blink cycles symmetry order', isNew: true },
+    { key: 'marble',        label: 'Marble',        desc: 'polished stone slab · geological veins · raking light · blink swaps variant', isNew: true },
+    { key: 'wax',           label: 'Wax',           desc: 'encaustic wax panel · amber layers · hexagonal crystal · blink pours new wax', isNew: true },
+    { key: 'patina',        label: 'Patina',        desc: 'oxidised copper · verdigris spreading from corrosion centres · blink fires new event', isNew: true },
+    { key: 'humans',        label: 'Humans',        desc: 'all human life at once · 44 lives as a mandala · every window a story', isNew: true },
+    { key: 'livingMandala', label: 'You',           desc: 'camera becomes sacred geometry · kaleidoscope + domain warp + feedback · blink cycles symmetry', isNew: true },
+    { key: 'nacre',         label: 'Nacre',         desc: 'thin-film iridescence · Newton\'s rings across the whole canvas · touch sends ripples', isNew: true },
+    { key: 'abyss',         label: 'Abyss',         desc: 'hadal zone · organic bioluminescent forms in near-total dark · marine snow falling', isNew: true },
+    { key: 'nebula',        label: 'Nebula',         desc: 'stellar nursery · H-alpha crimson + O-III teal + dust lanes · blink ignites a star', isNew: true },
+    { key: 'mandala',       label: 'Mandala',        desc: '7 original study mandalas · blink cycles styles: thread → ocean → forest → geometric…', isNew: true },
+    { key: 'golden',        label: 'Golden',         desc: 'golden ratio · fibonacci phyllotaxis · sunflower seed packing · logarithmic spirals', isNew: true },
+    { key: 'julia',         label: 'Julia',          desc: 'animated julia set · smooth colouring · 8 c waypoints · blink jumps to next fractal', isNew: true },
+    { key: 'psychedelic',   label: 'Psychedelic',    desc: 'infinite mirror tunnel · N-fold kaleidoscope · spectral colour cycling · log-spiral depth', isNew: true },
+];
+
+// ── Instantiate all modes once ──────────────────────────────────────────────
+const MODES = {
+    void:        new VoidMode(ctx, canvas),
+    embers:      new EmbersMode(ctx, canvas),
+    mycelium:    new MyceliumMode(ctx, canvas),
+    cymatics:    new CymaticsMode(ctx, canvas),
+    tide:        new TideMode(ctx, canvas),
+    flow:        new FlowMode(ctx, canvas),
+    mirror:      new MirrorMode(ctx, canvas),
+    recursion:   new RecursionMode(ctx, canvas),
+    gaze:        new GazeMode(ctx, canvas),
+    spectrogram: new SpectrogramMode(ctx, canvas),
+    nature:      new NaturalWorldMode(ctx, canvas),
+    breath:      new BreathMode(ctx, canvas),
+    sand:        new SandMode(ctx, canvas),
+    drift:       new DriftMode(ctx, canvas),
+    web:         new WebMode(ctx, canvas),
+    bloom:       new BloomMode(ctx, canvas),
+    prism:       new PrismMode(ctx, canvas),
+    attractor:   new AttractorMode(ctx, canvas),
+    reaction:    new ReactionMode(ctx, canvas),
+    fourier:     new FourierMode(ctx, canvas),
+    stories:     new StoriesMode(ctx, canvas),
+    om:          new OmMode(ctx, canvas),
+    frequency:   new FrequencyMode(ctx, canvas),
+    stillness:   new StillnessMode(ctx, canvas),
+    pulse:       new PulseMode(ctx, canvas),
+    magnetic:    new MagneticMode(ctx, canvas),
+    letters:     new LettersMode(ctx, canvas),
+    clock:        new ClockMode(ctx, canvas),
+    draw:         new DrawMode(ctx, canvas),
+    neural:       new NeuralMode(ctx, canvas),
+    neurogenesis: new NeurogenesisMode(ctx, canvas),
+    swarm:        new SwarmMode(ctx, canvas),
+    gravity:      new GravityMode(ctx, canvas),
+    ink:          new InkMode(ctx, canvas),
+    fabric:       new FabricMode(ctx, canvas),
+    sandpile:     new SandpileMode(ctx, canvas),
+    fluid:        new FluidMode(ctx, canvas),
+    aurora:       new AuroraMode(ctx, canvas),
+    harmonograph: new HarmonographMode(ctx, canvas),
+    kaleid:       new KaleidMode(ctx, canvas),
+    portal:       new PortalMode(ctx, canvas),
+    liquid:       new LiquidMode(ctx, canvas),
+    brush:        new BrushMode(ctx, canvas),
+    plasma:       new PlasmaMode(ctx, canvas),
+    stardust:     new StardustMode(ctx, canvas),
+    rain:         new RainMode(ctx, canvas),
+    membrane:     new MembraneMode(ctx, canvas),
+    constellation: new ConstellationMode(ctx, canvas),
+    heart:        new HeartMode(ctx, canvas),
+    jelly:        new JellyMode(ctx, canvas),
+    caustic:      new CausticMode(ctx, canvas),
+    lava:         new LavaMode(ctx, canvas),
+    iris:         new IrisMode(ctx, canvas),
+    frost:        new FrostMode(ctx, canvas),
+    orrery:       new OrreryMode(ctx, canvas),
+    meridian:     new MeridianMode(ctx, canvas),
+    field:        new FieldMode(ctx, canvas),
+    vortex:       new VortexMode(ctx, canvas),
+    terrain:      new TerrainMode(ctx, canvas),
+    newton:       new NewtonMode(ctx, canvas),
+    marble:       new MarbleMode(ctx, canvas),
+    wax:          new WaxMode(ctx, canvas),
+    patina:       new PatinaMode(ctx, canvas),
+    humans:       new HumansMode(ctx, canvas),
+    livingMandala: new LivingMandalaMode(ctx, canvas),
+    nacre:         new NacreMode(ctx, canvas),
+    abyss:         new AbyssMode(ctx, canvas),
+    nebula:        new NebulaMode(ctx, canvas),
+    mandala:       new MandalaMode(ctx, canvas),
+    golden:        new GoldenMode(ctx, canvas),
+    julia:         new JuliaMode(ctx, canvas),
+    psychedelic:   new PsychedelicMode(ctx, canvas),
+};
+
+// ── Build sidebar ───────────────────────────────────────────────────────────
+const sidebar = document.getElementById('sidebar');
+const hint    = document.getElementById('hint');
+
+SCENES.forEach((sc, i) => {
+    // Divider before new-today group
+    if (sc.isNew && !SCENES[i - 1]?.isNew) {
+        const div = document.createElement('div');
+        div.className = 'section-divider';
+        div.textContent = 'new today';
+        sidebar.insertBefore(div, hint);
+    }
+
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.dataset.key = sc.key;
+    btn.innerHTML = `
+        <span class="n">${sc.label}</span>
+        <span class="d">${sc.desc}</span>
+        ${sc.isNew ? '<span class="new-tag">✦ new</span>' : ''}
+    `;
+    btn.addEventListener('click', () => switchTo(sc.key));
+    sidebar.insertBefore(btn, hint);
+});
+
+// ── Scene switching ─────────────────────────────────────────────────────────
+let activeKey  = null;
+let currentIdx = 0;
+
+function switchTo(key) {
+    activeKey  = key;
+    currentIdx = SCENES.findIndex(s => s.key === key);
+
+    // Fill black on scene change
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    MODES[key].startScene();
+
+    // Update sidebar highlight
+    document.querySelectorAll('.btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.key === key);
+    });
+
+    // Update bottom label
+    const sc = SCENES[currentIdx];
+    const label = document.getElementById('sceneLabel');
+    label.textContent = sc.label;
+    label.style.opacity = '1';
+    setTimeout(() => { label.style.opacity = '0'; }, 2800);
+}
+
+// ── Render loop ─────────────────────────────────────────────────────────────
+let lastTime = 0;
+const AUDIO_MODES = ['om', 'frequency'];
+function animate(ts) {
+    requestAnimationFrame(animate);
+    if (!activeKey) return;
+    const time = ts / 1000;
+    // Feed audio to mic-reactive modes
+    if (_analyser && AUDIO_MODES.includes(activeKey)) {
+        _analyser.getByteFrequencyData(_freqData);
+        _analyser.getByteTimeDomainData(_timeData);
+        MODES[activeKey].setAudio(_freqData, _timeData, _audioCtx.sampleRate);
+    }
+    MODES[activeKey].draw(time);
+    lastTime = time;
+}
+requestAnimationFrame(animate);
+
+// ── Keyboard navigation + mode input ────────────────────────────────────────
+window.addEventListener('keydown', e => {
+    // Letters mode: capture printable keys + Enter + Backspace
+    if (activeKey === 'letters') {
+        if (!e.ctrlKey && !e.metaKey) {
+            if (e.key.length === 1) { MODES.letters.onKey(e.key); return; }
+            if (e.key === 'Backspace' || e.key === 'Enter') {
+                MODES.letters.onKey(e.key); return;
+            }
+        }
+    }
+    // Draw mode: number keys change symmetry, c clears
+    if (activeKey === 'draw' && !e.ctrlKey && !e.metaKey) {
+        if (e.key >= '3' && e.key <= '9') { MODES.draw.onKey(e.key); return; }
+        if (e.key === 'c' || e.key === 'C') { MODES.draw.onKey(e.key); return; }
+    }
+    // Pulse mode: spacebar or enter taps the beat
+    if (activeKey === 'pulse' && (e.key === ' ' || e.key === 'Enter')) {
+        e.preventDefault();
+        MODES.pulse.onTap();
+        return;
+    }
+    // Scene navigation
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        switchTo(SCENES[Math.min(currentIdx + 1, SCENES.length - 1)].key);
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        switchTo(SCENES[Math.max(currentIdx - 1, 0)].key);
+    }
+});
+
+// ── Canvas click / context-menu routing ─────────────────────────────────────
+canvas.addEventListener('click', e => {
+    if (activeKey === 'pulse')    MODES.pulse.onTap();
+    if (activeKey === 'magnetic') MODES.magnetic.onPolePlace(e.clientX, e.clientY);
+    if (activeKey === 'neural')   MODES.neural._inject(e.clientX, e.clientY, 0.95);
+});
+
+canvas.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if (activeKey === 'magnetic') MODES.magnetic.onPoleRemove(e.clientX, e.clientY);
+});
+
+// ── Cursor / mouse routing ───────────────────────────────────────────────────
+window.addEventListener('mousemove', e => {
+    if (activeKey === 'stillness')    MODES.stillness.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'draw')         MODES.draw.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'brush')        MODES.brush.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'plasma')       MODES.plasma.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'stardust')     MODES.stardust.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'membrane')     MODES.membrane.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'jelly')        MODES.jelly.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'caustic')      MODES.caustic.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'lava')         MODES.lava.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'iris')         MODES.iris.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'meridian')     MODES.meridian.onMouseMove && MODES.meridian.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'field')        MODES.field.onMouseMove    && MODES.field.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'marble')       MODES.marble.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'wax')          MODES.wax.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'patina')       MODES.patina.onMouseMove(e.clientX, e.clientY);
+    if (activeKey === 'nacre')        MODES.nacre.onMouseMove(e.clientX, e.clientY);
+});
+window.addEventListener('mousedown', e => {
+    if (activeKey === 'draw')  MODES.draw.onMouseDown(e.clientX, e.clientY);
+    if (activeKey === 'brush') MODES.brush.onMouseDown(e.clientX, e.clientY);
+});
+window.addEventListener('mouseup', e => {
+    if (activeKey === 'draw')  MODES.draw.onMouseUp();
+    if (activeKey === 'brush') MODES.brush.onMouseUp();
+});
+
+// ── Microphone / audio setup ─────────────────────────────────────────────────
+const micBtn    = document.getElementById('micBtn');
+const micStatus = document.getElementById('micStatus');
+let _micStarted = false;
+let _analyser   = null;
+let _freqData   = null;
+let _timeData   = null;
+let _audioCtx   = null;
+
+micBtn.addEventListener('click', async () => {
+    if (_micStarted) return;
+    _micStarted = true;
+    micBtn.textContent = 'starting…';
+    micStatus.textContent = 'requesting…';
+    try {
+        const stream   = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        _audioCtx      = new (window.AudioContext || window.webkitAudioContext)();
+        const source   = _audioCtx.createMediaStreamSource(stream);
+        _analyser      = _audioCtx.createAnalyser();
+        _analyser.fftSize = 2048;
+        _analyser.smoothingTimeConstant = 0.80;
+        source.connect(_analyser);
+        _freqData = new Uint8Array(_analyser.frequencyBinCount);
+        _timeData = new Uint8Array(_analyser.fftSize);
+        micBtn.textContent = 'mic active';
+        micBtn.classList.add('active');
+        micStatus.textContent = 'audio ready';
+    } catch(e) {
+        micBtn.textContent = 'mic failed';
+        micStatus.textContent = e.message || 'error';
+        console.error(e);
+    }
+});
+
+// ── Unified camera: one video, one Camera, both FaceMesh + Hands ────────────
+const camBtn    = document.getElementById('camBtn');
+const camStatus = document.getElementById('camStatus');
+let _camStarted = false;
+let _pinching   = false;
+
+// Simple EAR blink detection state
+let _earHistory = [];
+let _blinkCooldown = 0;
+
+function _ear(lm, pts) {
+    // Eye aspect ratio from 6 landmark indices
+    const [p1,p2,p3,p4,p5,p6] = pts.map(i => lm[i]);
+    const h1 = Math.hypot(p2.x-p6.x, p2.y-p6.y);
+    const h2 = Math.hypot(p3.x-p5.x, p3.y-p5.y);
+    const w  = Math.hypot(p1.x-p4.x, p1.y-p4.y);
+    return (h1 + h2) / (2 * w);
+}
+
+camBtn.addEventListener('click', async () => {
+    if (_camStarted) return;
+    _camStarted = true;
+    camBtn.textContent = 'starting…';
+    camStatus.textContent = 'loading…';
+
+    // Single hidden video
+    const video = document.createElement('video');
+    video.style.cssText = 'position:fixed;opacity:0;pointer-events:none;width:1px;height:1px;top:0;left:0;';
+    document.body.appendChild(video);
+
+    // ── FaceMesh ──────────────────────────────────────────────────────────────
+    const faceMesh = new FaceMesh({
+        locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${f}`
+    });
+    faceMesh.setOptions({
+        maxNumFaces: 1, refineLandmarks: true,
+        minDetectionConfidence: 0.5, minTrackingConfidence: 0.5
+    });
+    faceMesh.onResults(r => {
+        if (!r.multiFaceLandmarks?.[0]) return;
+        const lm = r.multiFaceLandmarks[0];
+
+        // Face centre position (nose tip = lm[1])
+        const nx = lm[1].x;
+        const ny = lm[1].y;
+        if (activeKey === 'drift')  MODES.drift.onFaceMove(nx, ny);
+        if (activeKey === 'fabric') MODES.fabric.onFaceMove(nx, ny);
+        if (activeKey === 'fluid')  MODES.fluid.onFaceMove(nx, ny);
+
+        // Blink: EAR on both eyes
+        const leftEAR  = _ear(lm, [33, 160, 158, 133, 153, 144]);
+        const rightEAR = _ear(lm, [362, 385, 387, 263, 373, 380]);
+        const ear = (leftEAR + rightEAR) * 0.5;
+
+        _blinkCooldown = Math.max(0, _blinkCooldown - 1);
+        if (ear < 0.20 && _blinkCooldown === 0) {
+            _blinkCooldown = 18;
+            if (activeKey === 'drift') MODES.drift.onBlink();
+            if (activeKey === 'web')       MODES.web.onBlink();
+            if (activeKey === 'bloom')     MODES.bloom.onBlink();
+            if (activeKey === 'prism')     MODES.prism.onBlink();
+            if (activeKey === 'attractor') MODES.attractor.onBlink();
+            if (activeKey === 'reaction')  MODES.reaction.onBlink();
+            if (activeKey === 'fourier')   MODES.fourier.onBlink();
+            if (activeKey === 'stories')      MODES.stories.onBlink();
+            if (activeKey === 'void')          MODES.void.onBlink();
+            if (activeKey === 'embers')        MODES.embers.onBlink();
+            if (activeKey === 'mycelium')      MODES.mycelium.onBlink && MODES.mycelium.onBlink();
+            if (activeKey === 'cymatics')      MODES.cymatics.onBlink();
+            if (activeKey === 'tide')          MODES.tide.onBlink();
+            if (activeKey === 'mirror')        MODES.mirror.onBlink();
+            if (activeKey === 'recursion')     MODES.recursion.onBlink();
+            if (activeKey === 'gaze')          MODES.gaze.onBlink();
+            if (activeKey === 'nature')        MODES.nature.onBlink();
+            if (activeKey === 'flow')          MODES.flow.onBlink();
+            if (activeKey === 'neurogenesis')  MODES.neurogenesis.onBlink();
+            if (activeKey === 'swarm')         MODES.swarm.onBlink();
+            if (activeKey === 'gravity')       MODES.gravity.onBlink();
+            if (activeKey === 'ink')           MODES.ink.onBlink();
+            if (activeKey === 'fabric')        MODES.fabric.onBlink();
+            if (activeKey === 'sandpile')      MODES.sandpile.onBlink();
+            if (activeKey === 'fluid')         MODES.fluid.onBlink();
+            if (activeKey === 'aurora')        MODES.aurora.onBlink();
+            if (activeKey === 'harmonograph')  MODES.harmonograph.onBlink();
+            if (activeKey === 'kaleid')        MODES.kaleid.onBlink();
+            if (activeKey === 'portal')        MODES.portal.onBlink();
+            if (activeKey === 'liquid')        MODES.liquid.onBlink();
+            if (activeKey === 'brush')         MODES.brush.onBlink();
+            if (activeKey === 'plasma')        MODES.plasma.onBlink();
+            if (activeKey === 'stardust')      MODES.stardust.onBlink();
+            if (activeKey === 'rain')          MODES.rain.onBlink();
+            if (activeKey === 'membrane')      MODES.membrane.onBlink();
+            if (activeKey === 'constellation') MODES.constellation.onBlink();
+            if (activeKey === 'heart')         MODES.heart.onBlink();
+            if (activeKey === 'jelly')         MODES.jelly.onBlink();
+            if (activeKey === 'caustic')       MODES.caustic.onBlink();
+            if (activeKey === 'lava')          MODES.lava.onBlink();
+            if (activeKey === 'iris')          MODES.iris.onBlink();
+            if (activeKey === 'frost')         MODES.frost.onBlink();
+            if (activeKey === 'orrery')        MODES.orrery.onBlink();
+            if (activeKey === 'meridian')      MODES.meridian.onBlink();
+            if (activeKey === 'field')         MODES.field.onBlink();
+            if (activeKey === 'vortex')        MODES.vortex.onBlink();
+            if (activeKey === 'terrain')       MODES.terrain.onBlink();
+            if (activeKey === 'newton')        MODES.newton.onBlink();
+            if (activeKey === 'marble')        MODES.marble.onBlink();
+            if (activeKey === 'wax')           MODES.wax.onBlink();
+            if (activeKey === 'patina')        MODES.patina.onBlink();
+            if (activeKey === 'humans')        MODES.humans.onBlink();
+            if (activeKey === 'livingMandala') MODES.livingMandala.onBlink();
+            if (activeKey === 'nacre')         MODES.nacre.onBlink();
+            if (activeKey === 'abyss')         MODES.abyss.onBlink();
+            if (activeKey === 'nebula')        MODES.nebula.onBlink();
+            if (activeKey === 'mandala')       MODES.mandala.onBlink();
+            if (activeKey === 'golden')        MODES.golden.onBlink();
+            if (activeKey === 'julia')         MODES.julia.onBlink();
+            if (activeKey === 'psychedelic')   MODES.psychedelic.onBlink();
+        }
+
+    });
+
+    // ── Hands ─────────────────────────────────────────────────────────────────
+    const hands = new Hands({
+        locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`
+    });
+    hands.setOptions({
+        maxNumHands: 1, modelComplexity: 1,
+        minDetectionConfidence: 0.7, minTrackingConfidence: 0.5
+    });
+    const HAND_MODES = ['sand', 'web', 'bloom', 'prism', 'attractor', 'reaction', 'fourier', 'stories', 'brush', 'plasma', 'stardust', 'membrane', 'jelly', 'caustic', 'lava', 'iris'];
+    const CAM_HAND_MODES = ['kaleid', 'portal', 'liquid'];
+    hands.onResults(r => {
+        const isCamHand = CAM_HAND_MODES.includes(activeKey);
+        if (!HAND_MODES.includes(activeKey) && !isCamHand) return;
+        if (!r.multiHandLandmarks?.[0]) return;
+
+        const lm    = r.multiHandLandmarks[0];
+        const label = r.multiHandedness?.[0]?.label || 'Right';
+        const mode  = MODES[activeKey];
+
+        // Palm centre = landmark 9 (middle finger MCP)
+        mode.onHandMove(lm[9].x, lm[9].y);
+
+        // Pinch detection: thumb tip (4) + index tip (8)
+        const dist = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
+        if (dist < 0.07 && !_pinching) {
+            _pinching = true;
+            if (isCamHand) {
+                mode.onPinch();
+            } else {
+                mode.onPinch(label, (lm[4].x + lm[8].x) * 0.5, (lm[4].y + lm[8].y) * 0.5);
+            }
+        } else if (dist >= 0.07) {
+            _pinching = false;
+        }
+    });
+
+    // ── Single Camera instance feeds both models ───────────────────────────────
+    try {
+        const camera = new Camera(video, {
+            onFrame: async () => {
+                await faceMesh.send({ image: video });
+                await hands.send({ image: video });
+            },
+            width: 320, height: 240
+        });
+        await camera.start();
+
+        // Give camera-reactive modes access to the live video element
+        for (const key of CAM_HAND_MODES) {
+            if (MODES[key]?.setVideo) MODES[key].setVideo(video);
+        }
+
+        camBtn.textContent  = 'camera active';
+        camBtn.classList.add('active');
+        camStatus.textContent = 'face + hands ready';
+    } catch(e) {
+        camBtn.textContent = 'camera failed';
+        camStatus.textContent = e.message || 'error';
+        console.error(e);
+    }
+});
+
+// ── Start on first scene ────────────────────────────────────────────────────
+switchTo('void');
+</script>
+</body>
+</html>

@@ -54,13 +54,16 @@ class SessionManager {
             { mode: 'tide',      style: null, name: 'tide'       },  // Tide — interference wave field
             { mode: null,        style: 2,    name: 'woven'      },  // Interwoven — complex interlace
             { mode: 'mirror',    style: null, name: 'mirror'     },  // Mirror — kaleidoscope
-            { mode: 'cymatics',  style: null, name: 'cymatics'   },  // Cymatics — math made visible
-            { mode: null,        style: 4,    name: 'forest'     },  // Emerald Forest — organic midpoint
+            { mode: 'cymatics',  style: null, name: 'cymatics'      },  // Cymatics — math made visible
+            { mode: 'spectrogram', style: null, name: 'spectrogram' },  // Spectrogram — harmonic drone visualised
+            { mode: null,        style: 4,    name: 'forest'        },  // Emerald Forest — organic midpoint
             { mode: 'flow',      style: null, name: 'flow'       },  // Flow Field — particle rivers
+            { mode: 'sand',      style: null, name: 'sand'       },  // Sand — hand-reactive particle mandala
             { mode: 'gaze',      style: null, name: 'gaze'       },  // Eye World — watching eyes
             { mode: 'nature',    style: null, name: 'nature'     },  // Natural World — first-person 3D walk
             { mode: null,        style: 5,    name: 'pixel'      },  // Pixel Art — brief lightness break
             { mode: 'recursion', style: null, name: 'recursion'  },  // Recursion — infinite corridor
+            { mode: 'drift',     style: null, name: 'drift'      },  // Drift — face-steered starfield
             { mode: 'void',      style: null, name: 'void'       },  // Void — singularity
             { mode: 'sound',     style: null, name: 'sound'      },  // Sound Garden
             { mode: 'breath',    style: null, name: 'breath'     },  // Breath Guide — closing

@@ -121,7 +121,7 @@ class QuoteMode {
         // Decorative line above
         const dw = 68;
         ctx.strokeStyle = `rgba(140, 165, 215, ${alpha * 0.28})`;
-        ctx.lineWidth   = 0.5;
+        ctx.lineWidth   = 1.0;
         ctx.beginPath();
         ctx.moveTo(-dw, -totalH / 2 - 22);
         ctx.lineTo( dw, -totalH / 2 - 22);

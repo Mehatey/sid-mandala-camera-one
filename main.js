@@ -12,7 +12,8 @@ const GUIDE_CAPTIONS = [
 let canvas, ctx, coinCanvas, coinCtx;
 let cursorCanvas, cursorCtx, globalCursorSystem;
 let mandalaGenerator, coinSystem, liquidEffect, cursorSystem, soundSystem;
-let embersMode, mirrorMode, flowMode, gazeMode, voidMode, recursionMode, myceliumMode, cymaticsMode, tideMode, naturalWorldMode;
+let embersMode, mirrorMode, flowMode, gazeMode, voidMode, recursionMode, myceliumMode, cymaticsMode, tideMode, naturalWorldMode, spectrogramMode, sandMode, driftMode;
+let mandala3D;
 let foldCount = 0;
 let centerX = 0, centerY = 0;
 let mouseX = 0, mouseY = 0;
@@ -23,6 +24,90 @@ let activeMode = null; // null = mandala; 'water'/'cosmos'/'watercolor'/'aurora'
 let waterMode, cosmosMode, watercolorMode, auroraMode, quoteMode, soundGardenMode, videoRoomMode, breathMode;
 let distractionSystem;
 let fluidShader = null;
+
+// ── Bio-cave environment (scenes 1 & 2) ──────────────────────────────────────
+let _bioParticles = [];
+function _initBioParticles() {
+    _bioParticles = [];
+    for (let i = 0; i < 110; i++) {
+        _bioParticles.push({
+            x:   Math.random(),
+            y:   Math.random(),
+            vx:  (Math.random() - 0.5) * 0.00013,
+            vy:  -0.00007 - Math.random() * 0.00013,
+            size: 0.8 + Math.random() * 2.6,
+            alpha: 0.08 + Math.random() * 0.52,
+            pulse: Math.random() * Math.PI * 2,
+            pspd:  0.45 + Math.random() * 1.3,
+        });
+    }
+}
+_initBioParticles();
+
+function _drawBioCave(sceneIdx) {
+    const W = canvas.width, H = canvas.height;
+    // scene 0 → blue (hue ~205), scene 1 → teal-green (hue ~155)
+    const baseHue = sceneIdx === 0 ? 205 : 155;
+
+    ctx.save();
+
+    // Dark organic rock masses in the four corners using bezier fills
+    const rocks = [
+        // [cpx1,cpy1, cpx2,cpy2, ex,ey], start = corner
+        { sx:0,   sy:0,   cp:[[0.12,0, 0.26,0.14, 0.20,0.36],[0.16,0.48, 0.04,0.40, 0,0.54]], close:true },
+        { sx:1,   sy:0,   cp:[[0.88,0, 0.74,0.12, 0.80,0.30],[0.84,0.44, 0.96,0.36, 1,0.48]], close:true },
+        { sx:0,   sy:1,   cp:[[0.10,1, 0.18,0.84, 0.14,0.70],[0.10,0.60, 0,  0.65, 0,0.52]],  close:true },
+        { sx:1,   sy:1,   cp:[[0.90,1, 0.82,0.82, 0.86,0.68],[0.90,0.58, 1,  0.62, 1,0.50]],  close:true },
+    ];
+    for (const rock of rocks) {
+        ctx.beginPath();
+        ctx.moveTo(rock.sx * W, rock.sy * H);
+        for (const [ax,ay,bx,by,ex,ey] of rock.cp) {
+            ctx.bezierCurveTo(ax*W,ay*H, bx*W,by*H, ex*W,ey*H);
+        }
+        if (rock.close) ctx.closePath();
+        ctx.fillStyle = `rgba(0,${sceneIdx===0?5:8},${sceneIdx===0?10:6},0.88)`;
+        ctx.fill();
+    }
+
+    // Side ambient glow sources (bioluminescent bloom from rock faces)
+    const glows = [
+        { x:0.04, y:0.55, r:0.38 },
+        { x:0.96, y:0.42, r:0.32 },
+        { x:0.5,  y:0.90, r:0.30 },
+    ];
+    ctx.globalCompositeOperation = 'screen';
+    for (const g of glows) {
+        const gg = ctx.createRadialGradient(g.x*W, g.y*H, 0, g.x*W, g.y*H, g.r*Math.min(W,H));
+        gg.addColorStop(0,   `hsla(${baseHue},80%,38%,0.14)`);
+        gg.addColorStop(0.45,`hsla(${baseHue},70%,28%,0.05)`);
+        gg.addColorStop(1,   'rgba(0,0,0,0)');
+        ctx.fillStyle = gg;
+        ctx.fillRect(0, 0, W, H);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Bioluminescent floating particles
+    for (const p of _bioParticles) {
+        p.x += p.vx; p.y += p.vy; p.pulse += p.pspd * 0.016;
+        if (p.y < -0.02) { p.y = 1.02; p.x = Math.random(); p.alpha = 0.08 + Math.random() * 0.52; }
+        if (p.x < -0.02) p.x += 1.04;
+        if (p.x >  1.02) p.x -= 1.04;
+        const pf = 0.35 + 0.65 * Math.sin(p.pulse);
+        const a  = p.alpha * pf;
+        if (a < 0.025) continue;
+        const hue = baseHue + (p.x * 30 - 15);
+        ctx.save();
+        ctx.globalAlpha  = Math.min(a, 0.75);
+        ctx.shadowColor  = `hsl(${hue},95%,72%)`;
+        ctx.shadowBlur   = p.size * 3.5;
+        ctx.fillStyle    = `hsl(${hue},88%,66%)`;
+        ctx.beginPath(); ctx.arc(p.x*W, p.y*H, p.size, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+    }
+
+    ctx.restore();
+}
 
 // ── Background void dust ──────────────────────────────────────────────────────
 let bgDust = [];
@@ -307,6 +392,7 @@ function init() {
     cursorSystem = new CursorSystem(coinCtx, coinCanvas);
     soundSystem   = new SoundSystem();
     cosmicSpiral  = new CosmicSpiral(ctx, canvas);
+    mandala3D     = new Mandala3D(ctx, canvas);
     embersMode    = new EmbersMode(ctx, canvas);
     mirrorMode    = new MirrorMode(ctx, canvas);
     flowMode      = new FlowMode(ctx, canvas);
@@ -317,6 +403,9 @@ function init() {
     cymaticsMode  = new CymaticsMode(ctx, canvas);
     tideMode         = new TideMode(ctx, canvas);
     naturalWorldMode = new NaturalWorldMode(ctx, canvas);
+    spectrogramMode  = new SpectrogramMode(ctx, canvas);
+    sandMode         = new SandMode(ctx, canvas);
+    driftMode        = new DriftMode(ctx, canvas);
 
     // Session manager — controls 10-min guided experience
     session = new SessionManager(canvas, coinCanvas, coinCtx, (stage) => {
@@ -538,6 +627,11 @@ function init() {
 
         liquidEffect.setMousePosition(mouseX, mouseY, centerX, centerY, actualRadius);
 
+        // 3D mandala mouse control (scene 1)
+        if (mandala3D && session && session.active && session.stageIndex === 0) {
+            mandala3D.setMousePosition(mouseX, mouseY);
+        }
+
         // Check if we're actually liquifying (cursor affecting geometry)
         const isLiquifying = liquidEffect.isLiquifying() && foldCount > 0;
         soundSystem.updateLiquifyState(isLiquifying);
@@ -590,6 +684,29 @@ function init() {
     document.body.style.cursor = 'none';
 
     animate();
+
+    // ── DEV: skip onboarding, start straight into experience ─────────────────
+    setTimeout(() => {
+        ['brandScreen','introOverlay','rulesOverlay','moodOverlay','intentionOverlay','videoIntroOverlay']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+        const bw = document.getElementById('blinkWrap');
+        if (bw) bw.style.display = 'none';
+        // Reveal canvases
+        canvas.classList.remove('intro-hidden');
+        coinCanvas.classList.remove('intro-hidden');
+        // Start fluid shader
+        if (fluidShader) fluidShader.start();
+        // Start session (audio starts on first user interaction)
+        session.start();
+        const firstStage = session.getCurrentStage();
+        activeMode = firstStage.mode;
+        if (firstStage.mode === null) mandalaGenerator.setStyle(firstStage.style || 0);
+        if (firstStage.name === 'stillness' && mandala3D) mandala3D.startScene();
+        sceneTransAlpha = 1.0;
+        _pendingDistractionScene = firstStage.name;
+        _showSceneCard(firstStage.name);
+        try { soundSystem.startModeAmbient(firstStage.mode || firstStage.name); } catch(e) {}
+    }, 100);
 }
 
 function initAudio() {
@@ -652,12 +769,15 @@ const SCENE_HAIKUS = {
     woven:     "threads the eye can't trace\nweave the cloth you sit upon\nwhich thread are you now",
     mirror:    'one face, eight faces\nthe self that looks back at you\nwhich one is the real',
     cymatics:  'sound finds its own face\nwhere the vibration goes still\nform writes its own name',
+    spectrogram: 'the drone holds the room\nlike water holds its own weight\nyou are listening',
     forest:    'the forest forgets\nthe name you came here with\nperhaps you can too',
     flow:      'the river does not\nask where it is going next\nit simply moves on',
     gaze:      'ten thousand eyes watch\nnot one of them is judging\nthey are also you',
     nature:    'you did not arrive\nthe path was already yours\nstep without landing',
     pixel:     'zoom out far enough\nand every face is pixels\nzoom in: you are here',
     recursion: 'look once, then again\nthe hall you stand in is you\nit ends where you do',
+    sand:      'lift your hand slowly\nwatch the pattern find itself\nyou were never gone',
+    drift:     'lean and the stars turn\nyou are the axis of this\nnot a passenger',
     void:      'before the first thought\na point of light in the dark\nyou are both of these',
     sound:     'silence is a sound\nthe body does not forget\nlet it remember',
     breath:    'one breath in, one out\nthe universe exhales you\nthen breathes you back in',
@@ -690,7 +810,7 @@ function _showSceneCard(sceneName) {
             _pendingDistractionScene = null;
         }
         setTimeout(() => card.classList.add('hidden'), 1100);
-    }, 6000); // 6s to read haiku comfortably
+    }, window.OVERVIEW_MODE ? 800 : 6000); // overview: quick label; normal: 6s haiku
 }
 let _sceneCardTimer = null;
 
@@ -735,7 +855,11 @@ function _setupNewScene(stage) {
     if (stage.mode === 'mycelium'  && myceliumMode)  myceliumMode.startScene();
     if (stage.mode === 'cymatics'  && cymaticsMode)  cymaticsMode.startScene();
     if (stage.mode === 'tide'      && tideMode)      tideMode.startScene();
-    if (stage.mode === 'nature'    && naturalWorldMode) naturalWorldMode.startScene();
+    if (stage.mode === 'nature'       && naturalWorldMode) naturalWorldMode.startScene();
+    if (stage.mode === 'spectrogram'  && spectrogramMode)  spectrogramMode.startScene();
+    if (stage.mode === 'sand'         && sandMode)  { sandMode.startScene(); initHandTracking(); }
+    if (stage.mode === 'drift'        && driftMode)        driftMode.startScene();
+    if (stage.name === 'stillness'    && mandala3D)         mandala3D.startScene();
     soundSystem.startModeAmbient(stage.mode || stage.name);
     // Distraction queued here; fires after haiku timer (so it doesn't appear on black screen)
     _pendingDistractionScene = stage.name;
@@ -938,6 +1062,7 @@ function _beginSession() {
     const firstStage = session.getCurrentStage();
     activeMode = firstStage.mode;
     if (firstStage.mode === null) mandalaGenerator.setStyle(firstStage.style || 0);
+    if (firstStage.name === 'stillness' && mandala3D) mandala3D.startScene();
 
     // sceneTransAlpha will gently fade in the scene after the haiku card dismisses
     sceneTransAlpha = 1.0;
@@ -1054,6 +1179,10 @@ async function startBlinkDetection() {
                     tideMode.onBlink();
                 } else if (activeMode === 'nature') {
                     naturalWorldMode.onBlink();
+                } else if (activeMode === 'spectrogram') {
+                    spectrogramMode.onBlink();
+                } else if (activeMode === 'drift') {
+                    driftMode.onBlink();
                 } else {
                     addFold();
                     if (cosmicSpiral) cosmicSpiral.onBlink();
@@ -1067,10 +1196,11 @@ async function startBlinkDetection() {
                 void blinkBtn.offsetWidth;
                 blinkBtn.classList.add('pulse');
             },
-            // onGaze — routes to session centre tracker + head-shake detection
+            // onGaze — routes to session centre tracker + head-shake detection + drift mode
             (normX, normY) => {
                 if (session && session.active) session.onGaze(normX, normY);
                 _updateGazeX(normX);
+                if (activeMode === 'drift' && driftMode) driftMode.onFaceMove(normX, normY);
             }
         );
         await blinkDetector.start();
@@ -1118,10 +1248,12 @@ async function startHandTracking() {
             // onHandMove
             (normX, normY) => {
                 if (activeMode === 'watercolor') watercolorMode.onHandMove(normX, normY);
+                if (activeMode === 'sand')       sandMode.onHandMove(normX, normY);
             },
             // onPinch
             (label, normX, normY) => {
                 if (activeMode === 'watercolor') watercolorMode.onPinch(label, normX, normY);
+                if (activeMode === 'sand')       sandMode.onPinch(label, normX, normY);
             }
         );
         await handTracker.start();
@@ -1390,21 +1522,36 @@ function animate() {
         tideMode.draw(time);
     } else if (activeMode === 'nature') {
         naturalWorldMode.draw(time);
+    } else if (activeMode === 'spectrogram') {
+        spectrogramMode.draw(time);
+    } else if (activeMode === 'sand') {
+        sandMode.draw(time);
+    } else if (activeMode === 'drift') {
+        driftMode.draw(time);
     } else {
         const isStillness = session && session.active && session.stageIndex === 0;
         const clipR       = Math.min(canvas.width, canvas.height) * 0.50;
 
         if (isStillness) {
-            // Scene 1 only: spiral liquefaction of camera feed
+            // Scene 1: spiral + bioluminescent cave atmosphere
             cosmicSpiral.draw(time, foldCount, blinkDetector?.video);
+            _drawBioCave(0);
             _drawStillnessScene();
         } else {
+            const isDepth = session && session.active && session.stageIndex === 1;
+
             if (foldCount > 0) {
                 const isCurrentlyWarping = liquidEffect.isLiquifying();
                 const fadeAlpha = isCurrentlyWarping ? 0.018 : 0.05;
                 ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } else if (isDepth) {
+                // Before first fold: paint dark cave base so it's not just black
+                ctx.fillStyle = 'rgba(1, 3, 7, 0.90)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
+
+            if (isDepth) _drawBioCave(1); // teal cave atmosphere for Ocean Depths
 
             if (foldCount > 0) {
                 ctx.save();

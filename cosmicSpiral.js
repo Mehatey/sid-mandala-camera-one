@@ -60,7 +60,7 @@ class CosmicSpiral {
         const hasVideo = video && video.readyState >= 2 && video.videoWidth > 0;
 
         const N_TURNS  = 2.5 + Math.min(foldCount, 9) * 0.50; // blinks add turns
-        const maxR     = Math.min(W, H) * 0.46;
+        const maxR     = Math.min(W, H) * 0.48;
         const N_POINTS = 1600;
 
         // Liquefaction grows from 0 → 0.44 over ~30s
@@ -93,7 +93,7 @@ class CosmicSpiral {
             const py  = cy + r * Math.sin(θ);
 
             // Segment thickness: thin at centre, grows outward, extra thick when liquefying
-            const lineW = 0.4 + s * 3.2 + liquify * 5.0;
+            const lineW = 1.8 + s * 9.5 + liquify * 12.0;
 
             // ── UV mapping: face (video centre) → spiral centre ──────────────────
             // The spiral's polar coordinates map back into the video frame
@@ -125,7 +125,7 @@ class CosmicSpiral {
                 const pg  = pxData[idx + 1];
                 const pb  = pxData[idx + 2];
                 // Alpha: vivid near centre, fades as video liquefies away
-                alpha     = (0.62 + s * 0.28) * (1 - liquify * 0.55);
+                alpha     = (0.78 + s * 0.20) * (1 - liquify * 0.50);
                 color     = `rgb(${pr},${pg},${pb})`;
             } else {
                 // No video — render as shifting colour spectrum

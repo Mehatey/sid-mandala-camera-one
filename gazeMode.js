@@ -7,8 +7,8 @@ class GazeMode {
         this.eyes   = [];
         this.t      = 0;
 
-        // Blend mode cycle — each blink steps forward
-        this.blendModes = ['screen', 'overlay', 'hard-light', 'color-dodge', 'difference', 'luminosity'];
+        // Blend mode cycle — each blink steps forward (only soft, beautiful blends)
+        this.blendModes = ['screen', 'overlay', 'color-dodge', 'luminosity', 'screen'];
         this.blendIndex  = 0;
         this.currentBlend = 'screen';
 
@@ -197,7 +197,7 @@ class GazeMode {
             ctx.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0);
             ctx.lineTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
             ctx.strokeStyle = `hsla(${hue + 55}, 95%, ${48 + bright * 36}%, ${0.22 + bright * 0.45})`;
-            ctx.lineWidth   = 0.6 + bright * 0.9;
+            ctx.lineWidth   = 1.0 + bright * 0.9;
             ctx.stroke();
         }
         ctx.restore();
@@ -210,7 +210,7 @@ class GazeMode {
             ctx.beginPath();
             ctx.arc(0, 0, rr, 0, Math.PI * 2);
             ctx.strokeStyle = `hsla(${hue + 70}, 100%, 78%, ${alpha})`;
-            ctx.lineWidth   = 0.8;
+            ctx.lineWidth   = 1.2;
             ctx.stroke();
         }
 
@@ -290,7 +290,7 @@ class GazeMode {
             ctx.moveTo(v.x1, v.y1);
             ctx.bezierCurveTo(v.cp1x, v.cp1y, v.cp1x, v.cp1y, v.x2, v.y2);
             ctx.strokeStyle = `hsla(${v.hue}, 80%, 60%, ${pulse * 0.045})`;
-            ctx.lineWidth   = 0.6 + pulse * 0.8;
+            ctx.lineWidth   = 1.0 + pulse * 0.8;
             ctx.stroke();
         }
     }

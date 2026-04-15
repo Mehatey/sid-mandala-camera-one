@@ -453,7 +453,7 @@ class NaturalWorldMode {
     _drawGroundLines(ctx, biome, W, H, HY) {
         const [fr, fg, fb] = biome.fogC;
         ctx.strokeStyle = `rgba(${fr},${fg},${fb},0.12)`;
-        ctx.lineWidth   = 0.5;
+        ctx.lineWidth   = 1.0;
         const VP = W / 2; // vanishing point X
         const numLines = 7;
         for (let i = 0; i < numLines; i++) {

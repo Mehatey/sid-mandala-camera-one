@@ -228,6 +228,10 @@ class SoundSystem {
                 // Forest walk — wind, rustling leaves, deep hum
                 this._startForestAmbient();
                 break;
+            case 'spectrogram':
+                // Rich harmonic drone matching the visual — 110Hz comb + formant sweep
+                this._startSpectrogramAmbient();
+                break;
             // sound scene handled by SoundGardenMode — nothing here
             default: break;
         }
@@ -722,6 +726,60 @@ class SoundSystem {
         osc.connect(g); g.connect(master); osc.start(); oscs.push(osc);
 
         this._modeGain = master; this._modeOscs = oscs; this._modeNodes = [wLpf, wGain, lBpf, lGain, lfoG];
+    }
+
+    // ── Spectrogram ambient — harmonic drone that matches the visual exactly ──
+    _startSpectrogramAmbient() {
+        const ctx    = this.audioCtx;
+        const master = ctx.createGain(); master.gain.value = 0;
+        master.connect(ctx.destination);
+        master.gain.setTargetAtTime(0.44, ctx.currentTime, 2.5);
+        const oscs = [];
+
+        // Harmonics of A2 (110Hz) — matches visual F0
+        const F0   = 110;
+        const amps = [0.080, 0.052, 0.036, 0.024, 0.016, 0.010, 0.007, 0.004];
+        amps.forEach((amp, i) => {
+            const f = F0 * (i + 1);
+            [-0.001, +0.001].forEach(d => {
+                const osc = ctx.createOscillator(); const g = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = f * (1 + d);
+                g.gain.value = amp;
+                osc.connect(g); g.connect(master);
+                osc.start(); oscs.push(osc);
+            });
+        });
+
+        // Formant sweep — slowly moving BPF, mirrors the visual formant bands
+        const bpf = ctx.createBiquadFilter();
+        bpf.type = 'bandpass'; bpf.frequency.value = 500; bpf.Q.value = 2.8;
+        bpf.connect(master);
+
+        // Feed some harmonics through the formant too (wet mix for timbre)
+        const bpfDry = [0, 1, 2].map(i => {
+            const osc = ctx.createOscillator(); const g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = F0 * (i + 1);
+            g.gain.value = [0.045, 0.030, 0.018][i];
+            osc.connect(g); g.connect(bpf);
+            osc.start(); return osc;
+        });
+        oscs.push(...bpfDry);
+
+        // Slow formant sweep (matches visual formant 1 drift — 0.022 cycles/s)
+        const flfo  = ctx.createOscillator(); const flfoG = ctx.createGain();
+        flfo.frequency.value = 0.022; flfoG.gain.value = 360;
+        flfo.connect(flfoG); flfoG.connect(bpf.frequency);
+        flfo.start(); oscs.push(flfo);
+
+        // Slow amplitude breath (14s cycle — matches visual breath)
+        const alfo  = ctx.createOscillator(); const alfoG = ctx.createGain();
+        alfo.frequency.value = 0.071; alfoG.gain.value = 0.065;
+        alfo.connect(alfoG); alfoG.connect(master.gain);
+        alfo.start(); oscs.push(alfo);
+
+        this._modeGain = master; this._modeOscs = oscs; this._modeNodes = [bpf, flfoG, alfoG];
     }
 
     // ── Generic pad (used by water/cosmos/watercolor/aurora/quotes) ──────────

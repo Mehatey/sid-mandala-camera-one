@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>zentangle</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+    background: #000; width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: rgba(215, 225, 255, 0.88);
+    -webkit-font-smoothing: antialiased;
+}
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+
+/* ── Layer utility ─────────────────────────────────────────────── */
+.layer {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 1.2s ease;
+}
+.layer.hidden { opacity: 0; pointer-events: none; }
+
+/* ── ARRIVAL ───────────────────────────────────────────────────── */
+#arrival {
+    background: rgba(0,0,2,0.80);
+    padding: 0 clamp(28px, 8vw, 110px);
+    overflow-y: auto;
+    justify-content: center;
+}
+#arrival-inner {
+    max-width: 520px; width: 100%;
+    display: flex; flex-direction: column;
+    padding: 40px 0;
+}
+#arrival-logo {
+    font-size: clamp(30px, 5vw, 52px);
+    font-weight: 200; letter-spacing: 0.30em;
+    text-transform: lowercase; color: rgba(215, 228, 255, 0.92);
+    margin-bottom: 6px;
+}
+#arrival-tagline {
+    font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.16em;
+    color: rgba(140, 165, 215, 0.38); text-transform: lowercase;
+    margin-bottom: 44px;
+}
+
+/* collective word cloud preview */
+#collective-cloud {
+    min-height: 32px; margin-bottom: 38px;
+    display: flex; flex-wrap: wrap; gap: 7px 14px; align-items: center;
+}
+.cw { font-size: clamp(9px, 1.1vw, 11px); letter-spacing: 0.10em; color: rgba(130,165,230,0.28); text-transform: lowercase; }
+.cw.hi  { color: rgba(165,195,250,0.50); }
+.cw.top { color: rgba(200,220,255,0.70); }
+.cw.mine { color: rgba(220,192,88,0.85); font-style: italic; }
+#join-count { font-size: 10px; letter-spacing: 0.14em; color: rgba(140,168,220,0.30); text-transform: lowercase; margin-bottom: 32px; }
+
+/* word input */
+.input-row {
+    display: flex; align-items: flex-end; gap: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    padding-bottom: 8px; margin-bottom: 28px;
+}
+#word-in {
+    flex: 1; background: none; border: none; outline: none;
+    font-family: inherit; font-size: clamp(14px, 1.8vw, 17px);
+    font-weight: 300; letter-spacing: 0.03em;
+    color: rgba(215,225,255,0.88); caret-color: rgba(140,185,255,0.8); padding: 4px 0;
+}
+#word-in::placeholder { color: rgba(140,160,215,0.24); }
+.input-label { font-size: 9px; letter-spacing: 0.18em; color: rgba(130,155,210,0.28); text-transform: lowercase; flex-shrink: 0; line-height: 2; }
+
+/* anchor */
+.section-label { font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase; color: rgba(140,168,215,0.28); margin-bottom: 12px; }
+#anchors { display: flex; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; }
+.anc-btn {
+    background: none; border: 1px solid rgba(255,255,255,0.07); border-radius: 2px;
+    font-family: inherit; font-size: 10px; letter-spacing: 0.20em; text-transform: lowercase;
+    color: rgba(165,185,235,0.42); padding: 7px 16px; cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.anc-btn:hover { color: rgba(200,215,255,0.70); border-color: rgba(255,255,255,0.16); }
+.anc-btn.active { color: rgba(215,228,255,0.92); border-color: rgba(140,185,255,0.36); background: rgba(100,148,255,0.07); }
+
+/* duration */
+#durations { display: flex; flex-direction: column; gap: 0; margin-bottom: 40px; }
+.dur-btn {
+    background: none; border: none; border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-family: inherit; padding: 11px 0; text-align: left; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    transition: all 0.18s;
+}
+.dur-btn .dur-name { font-size: clamp(11px, 1.3vw, 13px); letter-spacing: 0.12em; color: rgba(180,195,240,0.50); text-transform: lowercase; }
+.dur-btn .dur-meta { font-size: 9px; letter-spacing: 0.12em; color: rgba(140,165,215,0.28); text-transform: lowercase; }
+.dur-btn:hover .dur-name { color: rgba(210,222,255,0.80); }
+.dur-btn.active .dur-name { color: rgba(215,228,255,0.95); }
+.dur-btn.active .dur-meta { color: rgba(185,210,255,0.50); }
+.dur-tick { width: 5px; height: 5px; border-radius: 50%; background: rgba(140,185,255,0.65); opacity: 0; transition: opacity 0.2s; flex-shrink: 0; }
+.dur-btn.active .dur-tick { opacity: 1; }
+
+#begin-btn {
+    background: none; border: none; font-family: inherit;
+    font-size: 11px; letter-spacing: 0.34em; text-transform: uppercase;
+    color: rgba(140,185,255,0.38); cursor: pointer; padding: 8px 0;
+    transition: color 0.2s, letter-spacing 0.3s; align-self: flex-start;
+}
+#begin-btn:hover { color: rgba(185,215,255,0.75); letter-spacing: 0.44em; }
+
+/* ── JOURNEY HUD ───────────────────────────────────────────────── */
+#jhud { pointer-events: none; z-index: 15; }
+
+#chapter-label {
+    position: fixed; top: 28px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; letter-spacing: 0.30em; text-transform: uppercase;
+    color: rgba(140,168,215,0.22); transition: opacity 1s;
+}
+#scene-name {
+    font-size: clamp(20px, 2.8vw, 30px); font-weight: 200;
+    letter-spacing: 0.16em; text-transform: lowercase;
+    color: rgba(215,228,255,0.88); text-align: center;
+    transition: opacity 1.8s ease; max-width: 600px; line-height: 1.35;
+}
+#advance-hint {
+    position: fixed; bottom: 58px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; letter-spacing: 0.22em; color: rgba(140,165,215,0.18);
+    text-transform: lowercase; transition: opacity 0.8s;
+}
+#j-progress {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 9px; align-items: center;
+}
+.jdot { width: 4px; height: 4px; border-radius: 50%; background: rgba(140,185,255,0.16); transition: background 0.5s, transform 0.3s; }
+.jdot.active { background: rgba(140,185,255,0.62); transform: scale(1.3); }
+.jdot.done   { background: rgba(140,185,255,0.28); }
+.jchap-dot   { width: 6px; height: 6px; border-radius: 50%; background: rgba(180,205,255,0.18); transition: background 0.5s; }
+.jchap-dot.active { background: rgba(180,210,255,0.55); }
+
+/* ── ANALYTICS ─────────────────────────────────────────────────── */
+#analytics {
+    background: rgba(0,0,2,0.90); overflow-y: auto;
+    padding: 60px clamp(24px,6vw,80px); align-items: flex-start;
+    justify-content: flex-start; z-index: 20;
+}
+#analytics-inner {
+    width: 100%; max-width: 880px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1.6fr; gap: 56px 80px; align-items: start;
+}
+@media (max-width: 680px) { #analytics-inner { grid-template-columns: 1fr; gap: 44px; } }
+
+#arrived-title {
+    grid-column: 1/-1;
+    font-size: clamp(26px, 4vw, 44px); font-weight: 200; letter-spacing: 0.22em;
+    text-transform: lowercase; color: rgba(215,228,255,0.88); margin-bottom: 8px;
+}
+#arrived-echo { grid-column: 1/-1; font-size: clamp(11px,1.3vw,14px); letter-spacing: 0.16em; color: rgba(220,192,88,0.52); font-style: italic; text-transform: lowercase; margin-bottom: 52px; }
+
+.a-section h3 {
+    font-size: 9px; font-weight: 400; letter-spacing: 0.30em; text-transform: uppercase;
+    color: rgba(140,175,220,0.30); margin-bottom: 26px; padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.stat-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.035); }
+.sl { font-size: clamp(10px,1.1vw,12px); letter-spacing: 0.12em; color: rgba(160,180,225,0.40); text-transform: lowercase; }
+.sv { font-size: clamp(12px,1.4vw,15px); font-weight: 300; color: rgba(210,225,255,0.80); letter-spacing: 0.04em; text-align: right; }
+.sv.hl { color: rgba(220,192,88,0.85); font-style: italic; }
+
+#word-cloud-wrap { position: relative; min-height: 0; margin-top: 26px; margin-bottom: 12px; }
+.cloud-word { position: absolute; text-transform: lowercase; letter-spacing: 0.06em; white-space: nowrap; user-select: none; line-height: 1; color: rgba(130,168,235,0.42); }
+.cloud-word.big  { color: rgba(160,198,252,0.65); }
+.cloud-word.top  { color: rgba(188,215,255,0.82); }
+.cloud-word.mine { color: rgba(220,192,88,0.92); font-style: italic; }
+.collective-note { font-size: clamp(9px,1vw,11px); letter-spacing: 0.08em; color: rgba(140,168,215,0.32); line-height: 1.75; text-transform: lowercase; }
+
+#analytics-footer { grid-column: 1/-1; display: flex; justify-content: center; padding-top: 24px; }
+#return-btn {
+    background: none; border: none; font-family: inherit; font-size: 11px;
+    letter-spacing: 0.30em; text-transform: uppercase; color: rgba(140,185,255,0.34);
+    cursor: pointer; padding: 10px 0; transition: color 0.2s, letter-spacing 0.3s;
+}
+#return-btn:hover { color: rgba(185,215,255,0.70); letter-spacing: 0.40em; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- ──────────────────── PHASE 1: ARRIVAL ──────────────────────── -->
+<div id="arrival" class="layer">
+  <div id="arrival-inner">
+    <div id="arrival-logo">zentangle</div>
+    <div id="arrival-tagline">an open-eye meditation</div>
+
+    <div id="collective-cloud"></div>
+    <div id="join-count"></div>
+
+    <div class="input-row">
+      <input id="word-in" type="text" placeholder="set something down, one word" maxlength="32" autocomplete="off" spellcheck="false" />
+      <div class="input-label">optional</div>
+    </div>
+
+    <div class="section-label">anchor your attention</div>
+    <div id="anchors">
+      <button class="anc-btn" data-anchor="breath">breath</button>
+      <button class="anc-btn" data-anchor="form">form</button>
+      <button class="anc-btn" data-anchor="sound">sound</button>
+    </div>
+
+    <div class="section-label">choose your depth</div>
+    <div id="durations">
+      <button class="dur-btn" data-dur="quick">
+        <span class="dur-name">quick</span>
+        <span class="dur-meta">5 scenes · ~5 min</span>
+        <span class="dur-tick"></span>
+      </button>
+      <button class="dur-btn active" data-dur="standard">
+        <span class="dur-name">standard</span>
+        <span class="dur-meta">9 scenes · ~11 min</span>
+        <span class="dur-tick"></span>
+      </button>
+      <button class="dur-btn" data-dur="full">
+        <span class="dur-name">full</span>
+        <span class="dur-meta">15 scenes · all original mandalas · ~18 min</span>
+        <span class="dur-tick"></span>
+      </button>
+    </div>
+
+    <button id="begin-btn">begin</button>
+  </div>
+</div>
+
+<!-- ──────────────────── PHASE 2: JOURNEY HUD ──────────────────── -->
+<div id="jhud" class="layer hidden">
+  <div id="chapter-label"></div>
+  <div id="scene-name"></div>
+  <div id="advance-hint">space · breathe · advance</div>
+  <div id="j-progress"></div>
+</div>
+
+<!-- ──────────────────── PHASE 3: ANALYTICS ────────────────────── -->
+<div id="analytics" class="layer hidden">
+  <div id="analytics-inner">
+    <div id="arrived-title">you have arrived</div>
+    <div id="arrived-echo"></div>
+    <div class="a-section" id="personal-section"><h3>your journey</h3><div id="personal-stats"></div></div>
+    <div class="a-section" id="collective-section">
+      <h3>the collective</h3>
+      <div id="collective-stats"></div>
+      <div id="word-cloud-wrap"></div>
+      <div class="collective-note" id="collective-note"></div>
+    </div>
+    <div id="analytics-footer"><button id="return-btn">sit again</button></div>
+  </div>
+</div>
+
+<!-- ── Original mandala utility ─────────────────────────────────── -->
+<script src="mandalaGenerator.js"></script>
+
+<!-- ── All standalone modes ─────────────────────────────────────── -->
+<!-- Original study modes -->
+<script src="voidMode.js"></script>
+<script src="embersMode.js"></script>
+<script src="myceliumMode.js"></script>
+<script src="cymaticsMode.js"></script>
+<script src="tideMode.js"></script>
+<script src="flowMode.js"></script>
+<script src="mirrorMode.js"></script>
+<script src="recursionMode.js"></script>
+<script src="gazeMode.js"></script>
+<script src="breathMode.js"></script>
+<!-- Atmospheric / nature -->
+<script src="auroraMode.js"></script>
+<script src="heartMode.js"></script>
+<script src="rainMode.js"></script>
+<script src="constellationMode.js"></script>
+<script src="jellyMode.js"></script>
+<script src="frostMode.js"></script>
+<script src="orreryMode.js"></script>
+<script src="causticMode.js"></script>
+<script src="lavaMode.js"></script>
+<script src="irisMode.js"></script>
+<!-- Geometry / fractal -->
+<script src="vortexMode.js"></script>
+<script src="terrainMode.js"></script>
+<script src="newtonMode.js"></script>
+<script src="harmonographMode.js"></script>
+<script src="attractorMode.js"></script>
+<script src="reactionMode.js"></script>
+<!-- Texture / material -->
+<script src="marbleMode.js"></script>
+<script src="waxMode.js"></script>
+<script src="patinaMode.js"></script>
+<script src="inkMode.js"></script>
+<script src="fabricMode.js"></script>
+<!-- Cosmos / deep -->
+<script src="humansMode.js"></script>
+<script src="nacreMode.js"></script>
+<script src="abyssMode.js"></script>
+<script src="nebulaMode.js"></script>
+<!-- New: golden ratio / fractals / psychedelic / mandalas -->
+<script src="goldenMode.js"></script>
+<script src="juliaMode.js"></script>
+<script src="psychedelicMode.js"></script>
+<script src="mandalaMode.js"></script>
+<!-- Human & body -->
+<script src="meridianMode.js"></script>
+<script src="fieldMode.js"></script>
+<script src="membraneMode.js"></script>
+<script src="gravityMode.js"></script>
+<script src="swarmMode.js"></script>
+<script src="neurogenesisMode.js"></script>
+
+<script>
+'use strict';
+
+// ── Canvas ──────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+
+// ── Journey tier definitions ────────────────────────────────────────
+// Each entry: key, display name, chapter label, duration (seconds)
+const QUICK = [
+    { key: 'breath',      name: 'arrive',       chapter: 'arrival',    duration: 50 },
+    { key: 'golden',      name: 'emergence',    chapter: 'emergence',  duration: 65 },
+    { key: 'psychedelic', name: 'dissolution',  chapter: 'depth',      duration: 65 },
+    { key: 'humans',      name: 'connection',   chapter: 'connection', duration: 60 },
+    { key: 'breath',      name: 'return',       chapter: 'return',     duration: 50 },
+];
+
+const STANDARD = [
+    { key: 'mandala',     name: 'stillness',    chapter: 'arrival',    duration: 60 },
+    { key: 'golden',      name: 'emergence',    chapter: 'emergence',  duration: 68 },
+    { key: 'nebula',      name: 'cosmos',       chapter: 'depth',      duration: 75 },
+    { key: 'julia',       name: 'depth',        chapter: 'depth',      duration: 75 },
+    { key: 'psychedelic', name: 'dissolution',  chapter: 'depth',      duration: 65 },
+    { key: 'humans',      name: 'connection',   chapter: 'connection', duration: 65 },
+    { key: 'abyss',       name: 'presence',     chapter: 'connection', duration: 60 },
+    { key: 'nacre',       name: 'iridescence',  chapter: 'return',     duration: 55 },
+    { key: 'breath',      name: 'return',       chapter: 'return',     duration: 55 },
+];
+
+const FULL = [
+    // Arrival — finding stillness
+    { key: 'mandala',       name: 'stillness',     chapter: 'arrival',    duration: 55, mandalaStyle: 1 },
+    { key: 'breath',        name: 'arrive',        chapter: 'arrival',    duration: 50 },
+    { key: 'embers',        name: 'rise',          chapter: 'arrival',    duration: 55 },
+    // Emergence — life and mathematics
+    { key: 'mycelium',      name: 'threads',       chapter: 'emergence',  duration: 60 },
+    { key: 'golden',        name: 'emergence',     chapter: 'emergence',  duration: 68 },
+    { key: 'tide',          name: 'dissolve',      chapter: 'emergence',  duration: 60 },
+    { key: 'aurora',        name: 'vast',          chapter: 'emergence',  duration: 65 },
+    // Depth — the infinite and the fractal
+    { key: 'nebula',        name: 'cosmos',        chapter: 'depth',      duration: 72 },
+    { key: 'julia',         name: 'depth',         chapter: 'depth',      duration: 72 },
+    { key: 'psychedelic',   name: 'dissolution',   chapter: 'depth',      duration: 65 },
+    // Connection — the human condition
+    { key: 'humans',        name: 'connection',    chapter: 'connection', duration: 65 },
+    { key: 'void',          name: 'singularity',   chapter: 'connection', duration: 45 },
+    // Return — coming back
+    { key: 'abyss',         name: 'deep water',    chapter: 'return',     duration: 60 },
+    { key: 'nacre',         name: 'iridescence',   chapter: 'return',     duration: 55 },
+    { key: 'breath',        name: 'return',        chapter: 'return',     duration: 55 },
+];
+
+const TIERS = { quick: QUICK, standard: STANDARD, full: FULL };
+
+// ── Instantiate all modes ────────────────────────────────────────────
+// (constructed once, reused across restarts)
+const MODES = {};
+const MODE_CLASSES = {
+    void:        () => new VoidMode(ctx, canvas),
+    embers:      () => new EmbersMode(ctx, canvas),
+    mycelium:    () => new MyceliumMode(ctx, canvas),
+    cymatics:    () => new CymaticsMode(ctx, canvas),
+    tide:        () => new TideMode(ctx, canvas),
+    flow:        () => new FlowMode(ctx, canvas),
+    mirror:      () => new MirrorMode(ctx, canvas),
+    recursion:   () => new RecursionMode(ctx, canvas),
+    gaze:        () => new GazeMode(ctx, canvas),
+    breath:      () => new BreathMode(ctx, canvas),
+    aurora:      () => new AuroraMode(ctx, canvas),
+    heart:       () => new HeartMode(ctx, canvas),
+    rain:        () => new RainMode(ctx, canvas),
+    constellation: () => new ConstellationMode(ctx, canvas),
+    jelly:       () => new JellyMode(ctx, canvas),
+    frost:       () => new FrostMode(ctx, canvas),
+    orrery:      () => new OrreryMode(ctx, canvas),
+    caustic:     () => new CausticMode(ctx, canvas),
+    lava:        () => new LavaMode(ctx, canvas),
+    iris:        () => new IrisMode(ctx, canvas),
+    vortex:      () => new VortexMode(ctx, canvas),
+    terrain:     () => new TerrainMode(ctx, canvas),
+    newton:      () => new NewtonMode(ctx, canvas),
+    harmonograph:() => new HarmonographMode(ctx, canvas),
+    attractor:   () => new AttractorMode(ctx, canvas),
+    reaction:    () => new ReactionMode(ctx, canvas),
+    marble:      () => new MarbleMode(ctx, canvas),
+    wax:         () => new WaxMode(ctx, canvas),
+    patina:      () => new PatinaMode(ctx, canvas),
+    ink:         () => new InkMode(ctx, canvas),
+    fabric:      () => new FabricMode(ctx, canvas),
+    humans:      () => new HumansMode(ctx, canvas),
+    nacre:       () => new NacreMode(ctx, canvas),
+    abyss:       () => new AbyssMode(ctx, canvas),
+    nebula:      () => new NebulaMode(ctx, canvas),
+    golden:      () => new GoldenMode(ctx, canvas),
+    julia:       () => new JuliaMode(ctx, canvas),
+    psychedelic: () => new PsychedelicMode(ctx, canvas),
+    mandala:     () => new MandalaMode(ctx, canvas),
+    meridian:    () => new MeridianMode(ctx, canvas),
+    field:       () => new FieldMode(ctx, canvas),
+    membrane:    () => new MembraneMode(ctx, canvas),
+    gravity:     () => new GravityMode(ctx, canvas),
+    swarm:       () => new SwarmMode(ctx, canvas),
+    neurogenesis:() => new NeurogenesisMode(ctx, canvas),
+};
+
+// Lazy-instantiate to avoid errors if some files are missing
+function getMode(key) {
+    if (!MODES[key]) {
+        if (!MODE_CLASSES[key]) return null;
+        try { MODES[key] = MODE_CLASSES[key](); } catch(e) { return null; }
+    }
+    return MODES[key];
+}
+// Pre-instantiate all modes used in journeys
+[...QUICK, ...STANDARD, ...FULL].forEach(s => getMode(s.key));
+
+// ── Session state ────────────────────────────────────────────────────
+let _word         = '';
+let _anchor       = null;
+let _tier         = 'standard';
+let _phase        = 'arrival';
+let _scenes       = STANDARD;
+let _sceneIdx     = 0;
+let _journeyStart = 0;
+let _sceneStart   = 0;
+let _blinks       = 0;
+let _autoTimer    = null;
+let _raf          = null;
+
+// ── Arrival: fetch collective words ─────────────────────────────────
+async function fetchWords() {
+    try { const r = await fetch('/api/words'); return await r.json(); }
+    catch(e) { return { total: 0, words: {} }; }
+}
+
+function renderCloud(data, myWord, elId) {
+    const el   = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = '';
+    const freq   = data.words || {};
+    const total  = data.total || 0;
+    const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 22);
+    const maxF   = sorted.length ? sorted[0][1] : 1;
+    for (const [w, c] of sorted) {
+        const sp = document.createElement('span');
+        const r  = c / maxF;
+        sp.className = 'cw' + (r > 0.65 ? ' top' : r > 0.3 ? ' hi' : '') + (w === myWord ? ' mine' : '');
+        sp.textContent = w;
+        el.appendChild(sp);
+    }
+    return total;
+}
+
+fetchWords().then(data => {
+    const total = renderCloud(data, '', 'collective-cloud');
+    const jcEl = document.getElementById('join-count');
+    if (total > 0) jcEl.textContent = `you join ${total} other${total === 1 ? '' : 's'} who have sat here`;
+});
+
+// ── Arrival UI ────────────────────────────────────────────────────────
+document.querySelectorAll('.anc-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.anc-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.toggle('active');
+        _anchor = btn.classList.contains('active') ? btn.dataset.anchor : null;
+    });
+});
+
+document.querySelectorAll('.dur-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        _tier = btn.dataset.dur;
+    });
+});
+
+document.getElementById('begin-btn').addEventListener('click', beginJourney);
+document.getElementById('word-in').addEventListener('keydown', e => {
+    if (e.key === 'Enter') beginJourney();
+});
+
+// ── Begin ─────────────────────────────────────────────────────────────
+async function beginJourney() {
+    _word   = document.getElementById('word-in').value.trim().toLowerCase().slice(0, 32);
+    _scenes = TIERS[_tier] || STANDARD;
+
+    if (_word) {
+        fetch('/api/words', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word: _word, anchor: _anchor }),
+        }).catch(() => {});
+    }
+
+    document.getElementById('arrival').classList.add('hidden');
+    setTimeout(() => {
+        document.getElementById('jhud').classList.remove('hidden');
+        _startJourney();
+    }, 1200);
+}
+
+// ── Journey ───────────────────────────────────────────────────────────
+function _buildDots() {
+    const el = document.getElementById('j-progress');
+    el.innerHTML = '';
+    _scenes.forEach((_, i) => {
+        const d = document.createElement('div');
+        d.className = 'jdot'; d.id = `jd-${i}`; el.appendChild(d);
+    });
+}
+
+function _updateDots(idx) {
+    _scenes.forEach((_, i) => {
+        const d = document.getElementById(`jd-${i}`);
+        if (d) d.className = 'jdot' + (i === idx ? ' active' : i < idx ? ' done' : '');
+    });
+}
+
+function _startJourney() {
+    _phase        = 'journey';
+    _journeyStart = Date.now();
+    _sceneIdx     = 0;
+    _blinks       = 0;
+    _buildDots();
+    _startScene(0);
+    document.addEventListener('keydown', _onKey);
+    document.addEventListener('dblclick', _onDblClick);
+}
+
+function _onKey(e) {
+    if (_phase !== 'journey') return;
+    if (e.code === 'Space') { e.preventDefault(); _advance(); }
+    if (e.code === 'KeyB')  _blink();
+}
+function _onDblClick() {
+    if (_phase !== 'journey') return;
+    _blink();
+}
+
+function _blink() {
+    _blinks++;
+    const sc = _scenes[_sceneIdx];
+    if (!sc) return;
+    const m = getMode(sc.key);
+    if (m && m.onBlink) m.onBlink();
+}
+
+function _startScene(idx) {
+    if (idx >= _scenes.length) { _endJourney(); return; }
+    _sceneIdx  = idx;
+    _sceneStart= Date.now();
+    const sc   = _scenes[idx];
+
+    _updateDots(idx);
+
+    // Chapter label
+    const chapEl = document.getElementById('chapter-label');
+    chapEl.textContent = sc.chapter || '';
+
+    // Clear canvas
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Init mode — for mandala, set specific style if specified
+    const m = getMode(sc.key);
+    if (m) {
+        if (sc.key === 'mandala' && sc.mandalaStyle !== undefined) {
+            m._style = sc.mandalaStyle;
+            if (m._gen) m._gen.setStyle(sc.mandalaStyle);
+        }
+        if (m.startScene) m.startScene();
+    }
+
+    // Scene name overlay
+    const nameEl = document.getElementById('scene-name');
+    nameEl.style.opacity = '1';
+    nameEl.textContent   = sc.name;
+    setTimeout(() => { nameEl.style.opacity = '0'; }, 3500);
+
+    // Auto-advance timer
+    if (_autoTimer) clearTimeout(_autoTimer);
+    _autoTimer = setTimeout(_advance, sc.duration * 1000);
+}
+
+function _advance() {
+    if (_sceneIdx >= _scenes.length) return;
+    const next = _sceneIdx + 1;
+    if (next >= _scenes.length) _endJourney();
+    else _startScene(next);
+}
+
+// ── Animate loop ──────────────────────────────────────────────────────
+function _animate(ts) {
+    _raf = requestAnimationFrame(_animate);
+    if (_phase !== 'journey') return;
+    const sc = _scenes[_sceneIdx];
+    if (!sc) return;
+    const m = getMode(sc.key);
+    if (m && m.draw) { try { m.draw(ts); } catch(e) {} }
+}
+_raf = requestAnimationFrame(_animate);
+
+// ── Mouse routing ─────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => {
+    if (_phase !== 'journey') return;
+    const sc = _scenes[_sceneIdx];
+    if (!sc) return;
+    const m = getMode(sc.key);
+    if (m && m.onMouseMove) m.onMouseMove(e.clientX, e.clientY);
+});
+
+// ── End journey ───────────────────────────────────────────────────────
+async function _endJourney() {
+    _phase = 'analytics';
+    if (_autoTimer) clearTimeout(_autoTimer);
+    document.removeEventListener('keydown', _onKey);
+    document.removeEventListener('dblclick', _onDblClick);
+
+    const dur = Math.round((Date.now() - _journeyStart) / 1000);
+
+    fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word: _word, anchor: _anchor, duration: dur, scenes: _scenes.length, blinks: _blinks }),
+    }).catch(() => {});
+
+    let data = { participants: 0, words: {}, topWord: null, avgDuration: 0, avgBlinks: 0, totalBlinks: 0 };
+    try { const r = await fetch('/api/analytics'); data = await r.json(); } catch(e) {}
+
+    document.getElementById('jhud').classList.add('hidden');
+    _buildAnalytics(dur, data);
+    setTimeout(() => document.getElementById('analytics').classList.remove('hidden'), 900);
+}
+
+function _fmt(s) { const m = Math.floor(s/60), x = s%60; return m ? `${m}m ${x}s` : `${x}s`; }
+
+function _buildAnalytics(dur, data) {
+    document.getElementById('arrived-echo').textContent = _word ? `"${_word}"` : '';
+
+    // Personal
+    const pRows = [];
+    if (_word) pRows.push(['word set down', _word, true]);
+    pRows.push(
+        ['anchor',           _anchor || 'none chosen', false],
+        ['journey',          { quick:'quick', standard:'standard', full:'full' }[_tier] + ` · ${_scenes.length} scenes`, false],
+        ['time in stillness',_fmt(dur), false],
+        ['blinks',           _blinks > 0 ? `${_blinks}` : '—', false],
+    );
+    document.getElementById('personal-stats').innerHTML = pRows.map(([l, v, hl]) =>
+        `<div class="stat-row"><span class="sl">${l}</span><span class="sv${hl?' hl':''}">${v}</span></div>`
+    ).join('');
+
+    // Collective
+    const N    = data.participants || 0;
+    const cRows = [
+        ['people before you',   N > 0 ? N : 'you are the first'],
+        ['most carried word',   data.topWord || '—'],
+        ['average time',        data.avgDuration ? _fmt(data.avgDuration) : '—'],
+        ['total blinks',        data.totalBlinks || '—'],
+    ];
+    document.getElementById('collective-stats').innerHTML = cRows.map(([l, v]) =>
+        `<div class="stat-row"><span class="sl">${l}</span><span class="sv">${v}</span></div>`
+    ).join('');
+
+    // Word cloud
+    const cloudEl = document.getElementById('word-cloud-wrap');
+    cloudEl.innerHTML = '';
+    const freq  = data.words || {};
+    const words = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 42);
+    const maxF  = words.length ? words[0][1] : 1;
+
+    if (words.length > 0) {
+        const CW = Math.min(520, window.innerWidth - 80);
+        const CH = 230;
+        cloudEl.style.cssText = `height:${CH}px; width:${CW}px;`;
+        let a = 0;
+        for (const [w, count] of words) {
+            const ratio = count / maxF;
+            const fsize = Math.round(8 + ratio * 21);
+            const sp    = document.createElement('span');
+            sp.className = 'cloud-word' + (ratio > 0.55 ? ' top' : ratio > 0.28 ? ' big' : '') + (w === _word ? ' mine' : '');
+            sp.style.fontSize = fsize + 'px';
+            sp.textContent = w;
+            cloudEl.appendChild(sp);
+            const r = 18 + a * 10;
+            let x = CW * 0.5 + Math.cos(a * 2.42) * r;
+            let y = CH * 0.5 + Math.sin(a * 2.42) * r * 0.55;
+            x = Math.max(2, Math.min(CW - fsize * w.length * 0.6, x));
+            y = Math.max(4, Math.min(CH - fsize - 4, y));
+            sp.style.left = x + 'px';
+            sp.style.top  = y + 'px';
+            a += 0.60 + ratio * 0.42;
+        }
+    }
+
+    // Collective note
+    const noteEl = document.getElementById('collective-note');
+    if (N > 0) {
+        noteEl.textContent = data.topWord
+            ? `the most carried word was "${data.topWord}". yours ${_word ? `was "${_word}"` : 'remained unspoken'}.`
+            : _word ? `"${_word}" has been added to the field.` : '';
+    } else {
+        noteEl.textContent = 'you are the first to sit here. the words that come after will carry yours.';
+    }
+}
+
+// ── Return to start ───────────────────────────────────────────────────
+document.getElementById('return-btn').addEventListener('click', () => {
+    document.getElementById('analytics').classList.add('hidden');
+    setTimeout(() => {
+        _word = ''; _anchor = null; _phase = 'arrival';
+        document.getElementById('word-in').value = '';
+        document.querySelectorAll('.anc-btn').forEach(b => b.classList.remove('active'));
+        fetchWords().then(data => {
+            renderCloud(data, '', 'collective-cloud');
+            const jcEl = document.getElementById('join-count');
+            const t    = data.total || 0;
+            if (t > 0) jcEl.textContent = `you join ${t} others who have sat here`;
+        });
+        document.getElementById('arrival').classList.remove('hidden');
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }, 1200);
+});
+</script>
+</body>
+</html>

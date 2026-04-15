@@ -13,7 +13,7 @@ class EmbersMode {
         this.particles = [];
         this.t      = 0;
         this._burst = 0;
-        for (let i = 0; i < 90; i++) this._spawn(true);
+        for (let i = 0; i < 120; i++) this._spawn(true);
     }
 
     onBlink() {
@@ -47,12 +47,13 @@ class EmbersMode {
     }
 
     _spawnAt(x, y, vx, vy, lifeOffset = 0) {
-        const hue = 4 + Math.random() * 46;
+        // hue 2-48: reds → oranges → gold/amber
+        const hue = 2 + Math.random() * 46;
         this.particles.push({
             x, y, vx, vy,
             hue,
-            size:    1.1 + Math.random() * 2.2,
-            alpha:   0.55 + Math.random() * 0.40,
+            size:    1.2 + Math.random() * 2.6,
+            alpha:   0.65 + Math.random() * 0.32,
             life:    lifeOffset,
             maxLife: 3.5 + Math.random() * 5.0,
             wobble:  Math.random() * Math.PI * 2,
@@ -68,16 +69,17 @@ class EmbersMode {
         const W = this.canvas.width, H = this.canvas.height;
         const cx = W / 2, cy = H / 2;
 
-        // Background — slow dark-red fade accumulates
-        ctx.fillStyle = 'rgba(7, 2, 1, 0.10)';
+        // Background — slow dark-ember fade
+        ctx.fillStyle = 'rgba(6, 2, 1, 0.09)';
         ctx.fillRect(0, 0, W, H);
 
         // Warm heat-glow from centre
-        const hR = 130 + 18 * Math.sin(this.t * 0.7);
+        const hR = 160 + 24 * Math.sin(this.t * 0.7);
         const heat = ctx.createRadialGradient(cx, cy, 0, cx, cy, hR);
-        heat.addColorStop(0, `rgba(200, 55, 8, ${0.055 + 0.022 * Math.sin(this.t * 1.1)})`);
-        heat.addColorStop(0.5, `rgba(140, 28, 4, 0.022)`);
-        heat.addColorStop(1, 'rgba(0,0,0,0)');
+        heat.addColorStop(0,   `rgba(220, 70, 10, ${0.10 + 0.04 * Math.sin(this.t * 1.1)})`);
+        heat.addColorStop(0.35,`rgba(160, 35, 6,  0.045)`);
+        heat.addColorStop(0.7, `rgba(80,  12, 2,  0.018)`);
+        heat.addColorStop(1,   'rgba(0,0,0,0)');
         ctx.fillStyle = heat;
         ctx.beginPath(); ctx.arc(cx, cy, hR, 0, Math.PI * 2); ctx.fill();
 
@@ -85,7 +87,8 @@ class EmbersMode {
         if (this.particles.length < this.MAX_P && Math.random() < 0.5)
             this._spawn(false);
 
-        // Particles
+        // ── Two-pass rendering: glow pass then core pass ─────────────────────────
+        // Pass 1: outer glow (wide, very transparent — no shadowBlur needed)
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
             p.life += 0.016;
@@ -102,17 +105,33 @@ class EmbersMode {
 
             const a  = p.alpha * env;
             const sz = p.size * (1 - lr * 0.35);
+
+            // Outer glow disk — large, faint
+            const glowR = sz * (9 + sz * 4.5);
+            ctx.fillStyle = `hsla(${p.hue}, 95%, 64%, ${a * 0.045})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mid glow disk
+            ctx.fillStyle = `hsla(${p.hue + 12}, 96%, 72%, ${a * 0.10})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, glowR * 0.50, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Pass 2: bright cores (drawn on top of all glows)
+        for (const p of this.particles) {
+            const lr  = p.life / p.maxLife;
+            const env = lr < 0.12 ? lr / 0.12 : 1 - Math.pow((lr - 0.12) / 0.88, 0.65);
+            const a   = p.alpha * env;
+            const sz  = p.size * (1 - lr * 0.35);
             const lum = 55 + 32 * (1 - lr);
 
-            ctx.save();
-            ctx.shadowBlur  = 7 + sz * 3.5;
-            ctx.shadowColor = `hsla(${p.hue}, 92%, 60%, ${a * 0.8})`;
-            ctx.fillStyle   = `hsla(${p.hue + 22 * (1 - lr)}, 96%, ${lum}%, ${a})`;
+            ctx.fillStyle = `hsla(${p.hue + 24 * (1 - lr)}, 98%, ${lum}%, ${a})`;
             ctx.beginPath();
             ctx.arc(p.x, p.y, Math.max(0.3, sz), 0, Math.PI * 2);
             ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.restore();
         }
 
         // Blink burst flash

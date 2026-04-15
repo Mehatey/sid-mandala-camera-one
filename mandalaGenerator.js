@@ -377,7 +377,19 @@ class MandalaGenerator {
             ctx.save();
             ctx.translate(centerX, centerY);
             ctx.rotate(angle);
-            
+
+            // Liquid warp displacement at petal midpoint
+            if (this.liquidEffect) {
+                const pmx = centerX + Math.cos(angle) * radius * 0.55;
+                const pmy = centerY + Math.sin(angle) * radius * 0.55;
+                const dp  = this.liquidEffect.displacePoint(pmx, pmy);
+                const wdx = dp.x - pmx, wdy = dp.y - pmy;
+                ctx.translate(
+                    Math.cos(-angle) * wdx - Math.sin(-angle) * wdy,
+                    Math.sin(-angle) * wdx + Math.cos(-angle) * wdy
+                );
+            }
+
             const petalLength = radius * config.petalLength;
             const petalWidth = radius * config.petalWidth;
             const baseOffset = radius * config.baseOffset;
@@ -447,7 +459,7 @@ class MandalaGenerator {
         }
         ctx.closePath();
         ctx.strokeStyle = `rgba(228, 238, 255, ${baseAlpha + 0.05})`;
-        ctx.lineWidth = 0.45;
+        ctx.lineWidth = 0.9;
         ctx.stroke();
 
         // ── 2. Radial lines (inner fraction → ring) ──────────────────────────
@@ -464,7 +476,7 @@ class MandalaGenerator {
             ctx.lineTo(Math.cos(a2)   * radius,
                        Math.sin(a2)   * radius);
             ctx.strokeStyle = `rgba(210, 225, 255, ${baseAlpha * 0.65})`;
-            ctx.lineWidth = 0.3;
+            ctx.lineWidth = 0.65;
             ctx.stroke();
         }
 
@@ -479,7 +491,7 @@ class MandalaGenerator {
             ctx.moveTo(Math.cos(ang) * inner, Math.sin(ang) * inner);
             ctx.lineTo(Math.cos(ang) * outer, Math.sin(ang) * outer);
             ctx.strokeStyle = `rgba(235, 242, 255, ${isPrimary ? baseAlpha + 0.05 : baseAlpha * 0.4})`;
-            ctx.lineWidth   = isPrimary ? 0.5 : 0.25;
+            ctx.lineWidth   = isPrimary ? 0.9 : 0.55;
             ctx.stroke();
         }
 
@@ -496,7 +508,7 @@ class MandalaGenerator {
             }
             ctx.closePath();
             ctx.strokeStyle = `rgba(200, 218, 255, ${baseAlpha * 0.55})`;
-            ctx.lineWidth = 0.28;
+            ctx.lineWidth = 0.6;
             ctx.stroke();
         }
 
@@ -553,7 +565,7 @@ class MandalaGenerator {
             }
             ctx.closePath();
             ctx.strokeStyle = `rgba(225, 236, 255, ${alpha})`;
-            ctx.lineWidth = 0.35 + (1 - f) * 0.15;
+            ctx.lineWidth = 0.7 + (1 - f) * 0.25;
             ctx.stroke();
         }
 
@@ -568,7 +580,7 @@ class MandalaGenerator {
             ctx.moveTo(0, 0);
             ctx.lineTo(Math.cos(a + jitter) * maxR, Math.sin(a + jitter) * maxR);
             ctx.strokeStyle = `rgba(210, 228, 255, ${0.04 + nx(i, 2) * 0.05})`;
-            ctx.lineWidth = 0.3;
+            ctx.lineWidth = 0.65;
             ctx.stroke();
         }
 
@@ -758,36 +770,22 @@ class MandalaGenerator {
     }
 
     drawCenterCore(centerX, centerY, radius, time) {
-        if (this.nucleusAlpha <= 0.05) return;  // hide orbs once camera dissolves
+        if (this.nucleusAlpha <= 0.05) return;
         const ctx = this.ctx;
-        const config = this.getStyleConfig();
-        const dotCount = this.currentStyle === 1 ? 8 : 20; // Angular star uses 8
-        
         ctx.save();
         ctx.translate(centerX, centerY);
 
-        // Style-specific center
-        if (false) { // placeholder — style 1 uses drawThreadCenter instead
-        } else {
-            // Other styles - dense cluster of dots
-            for (let i = 0; i < dotCount; i++) {
-                const angle = (Math.PI * 2 / dotCount) * i + time * 0.1;
-                const dist = radius * (0.3 + Math.sin(time * 0.5 + i) * 0.7);
-                const x = Math.cos(angle) * dist;
-                const y = Math.sin(angle) * dist;
+        // Simple radial glow at centre — no moving dots
+        const hue = [0,210,295,208,138,315,258][this.currentStyle] || 210;
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+        glow.addColorStop(0,   `hsla(${hue}, 85%, 70%, 0.50)`);
+        glow.addColorStop(0.5, `hsla(${hue}, 70%, 50%, 0.15)`);
+        glow.addColorStop(1,   'rgba(0,0,0,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
 
-                ctx.beginPath();
-                ctx.arc(x, y, 2 + Math.sin(time + i) * 1.5, 0, Math.PI * 2);
-
-                const colors = this.getLayerColors(0, 1, time);
-                ctx.fillStyle = colors.gold;
-                ctx.shadowBlur = 6;
-                ctx.shadowColor = colors.gold;
-                ctx.fill();
-            }
-        }
-
-        ctx.shadowBlur = 0;
         ctx.restore();
     }
 
@@ -918,76 +916,64 @@ class MandalaGenerator {
     }
 
     getGeometricColors(progress, timeOffset, opacityFactor, layerIndex) {
-        // Geometric style - blues, greens, yellows, oranges, browns
-        // Vary colors based on layer index to avoid repetitive yellow
-        const layerColorShift = (layerIndex % 4) * 0.25;
-        
+        // Blue / navy / turquoise / cyan palette
         if (progress < 0.2) {
-            // Inner layers — deep warm red/amber, no blue
-            const warm = 130 + Math.sin(timeOffset) * 30;
+            const b = 120 + Math.sin(timeOffset) * 25;
             return {
-                inner: `rgba(${warm}, ${55 + Math.sin(timeOffset) * 20}, ${25 + Math.sin(timeOffset + 1) * 10}, ${0.85 * opacityFactor})`,
-                mid:   `rgba(${warm + 25}, ${75 + Math.sin(timeOffset + 0.5) * 25}, ${40 + Math.sin(timeOffset + 1.5) * 15}, ${0.8 * opacityFactor})`,
-                outer: `rgba(${warm + 50}, ${95 + Math.sin(timeOffset + 1) * 30}, ${55 + Math.sin(timeOffset + 2) * 20}, ${0.75 * opacityFactor})`,
-                gold:  `rgba(255, 80, ${45 + Math.sin(timeOffset) * 25}, ${0.9 * opacityFactor})`
+                inner: `rgba(8,  18, ${b},      ${0.88 * opacityFactor})`,
+                mid:   `rgba(12, 35, ${b + 45}, ${0.82 * opacityFactor})`,
+                outer: `rgba(18, 55, ${b + 85}, ${0.76 * opacityFactor})`,
+                gold:  `rgba(0, 180, 255, ${0.90 * opacityFactor})`
             };
         } else if (progress < 0.5) {
-            const brown = 120 + Math.sin(timeOffset) * 30;
+            const b = 160 + Math.sin(timeOffset) * 28;
             return {
-                inner: `rgba(${brown}, ${80 + Math.sin(timeOffset + 1) * 20}, ${50 + Math.sin(timeOffset + 2) * 15}, ${0.85 * opacityFactor})`,
-                mid: `rgba(${brown + 20}, ${100 + Math.sin(timeOffset + 1.5) * 30}, ${70 + Math.sin(timeOffset + 2.5) * 25}, ${0.8 * opacityFactor})`,
-                outer: `rgba(${brown + 40}, ${120 + Math.sin(timeOffset + 2) * 40}, ${90 + Math.sin(timeOffset + 3) * 35}, ${0.75 * opacityFactor})`,
-                gold: `rgba(255, 90, ${50 + Math.sin(timeOffset) * 30}, ${0.9 * opacityFactor})`
+                inner: `rgba(10,  50, ${b},      ${0.85 * opacityFactor})`,
+                mid:   `rgba(15,  88, ${b + 38}, ${0.80 * opacityFactor})`,
+                outer: `rgba(20, 118, ${b + 68}, ${0.75 * opacityFactor})`,
+                gold:  `rgba(0, 210, 255, ${0.90 * opacityFactor})`
             };
         } else {
-            // Outer layers — 5 distinct color families, no yellow
-            const colorVariation = layerIndex % 5;
-
-            if (colorVariation === 0) {
-                // Crimson / deep red
-                const red = 180 + Math.sin(timeOffset) * 40;
+            const cv = layerIndex % 5;
+            if (cv === 0) {
+                const b = 165 + Math.sin(timeOffset) * 38;
                 return {
-                    inner: `rgba(255, ${red - 150}, ${red - 150}, ${0.7 * opacityFactor})`,
-                    mid: `rgba(255, ${red - 130}, ${red - 120}, ${0.65 * opacityFactor})`,
-                    outer: `rgba(255, ${red - 110}, ${red - 90}, ${0.6 * opacityFactor})`,
-                    gold: `rgba(255, 60, 80, ${0.75 * opacityFactor})`
+                    inner: `rgba(5,  12, ${b - 55}, ${0.72 * opacityFactor})`,
+                    mid:   `rgba(10, 28, ${b},      ${0.68 * opacityFactor})`,
+                    outer: `rgba(18, 48, ${b + 32}, ${0.62 * opacityFactor})`,
+                    gold:  `rgba(45, 125, 255, ${0.76 * opacityFactor})`
                 };
-            } else if (colorVariation === 1) {
-                // Purple-pink variation
-                const purple = 150 + Math.sin(timeOffset) * 50;
-                const pink = 200 + Math.sin(timeOffset + 1) * 55;
+            } else if (cv === 1) {
+                const b = 210 + Math.sin(timeOffset) * 35;
                 return {
-                    inner: `rgba(${purple}, ${50 + Math.sin(timeOffset) * 30}, ${purple + 50}, ${0.7 * opacityFactor})`,
-                    mid: `rgba(${purple + 30}, ${80 + Math.sin(timeOffset + 0.5) * 40}, ${purple + 80}, ${0.65 * opacityFactor})`,
-                    outer: `rgba(${pink}, ${120 + Math.sin(timeOffset + 1) * 50}, ${pink + 30}, ${0.6 * opacityFactor})`,
-                    gold: `rgba(255, ${150 + Math.sin(timeOffset) * 105}, ${255}, ${0.75 * opacityFactor})`
+                    inner: `rgba(28,  58, ${Math.max(0,b - 38)}, ${0.72 * opacityFactor})`,
+                    mid:   `rgba(48,  92, ${b},                  ${0.68 * opacityFactor})`,
+                    outer: `rgba(68, 125, ${Math.min(255,b + 22)}, ${0.62 * opacityFactor})`,
+                    gold:  `rgba(85, 165, 255, ${0.76 * opacityFactor})`
                 };
-            } else if (colorVariation === 2) {
-                // Yellow-green variation
-                const yg = 200 + Math.sin(timeOffset) * 40;
+            } else if (cv === 2) {
+                const c = 200 + Math.sin(timeOffset) * 38;
                 return {
-                    inner: `rgba(${yg}, ${yg + 20}, ${30 + Math.sin(timeOffset + 2) * 15}, ${0.7 * opacityFactor})`,
-                    mid:   `rgba(${yg + 10}, ${yg + 30}, ${45 + Math.sin(timeOffset + 2.5) * 20}, ${0.65 * opacityFactor})`,
-                    outer: `rgba(${yg + 20}, ${yg + 40}, ${58 + Math.sin(timeOffset + 3) * 25}, ${0.6 * opacityFactor})`,
-                    gold:  `rgba(255, 235, 40, ${0.75 * opacityFactor})`
+                    inner: `rgba(0, ${Math.max(0,c - 48)}, ${Math.min(255,c + 32)}, ${0.72 * opacityFactor})`,
+                    mid:   `rgba(0, ${c},                  ${Math.min(255,c + 42)}, ${0.68 * opacityFactor})`,
+                    outer: `rgba(0, ${Math.min(255,c + 32)}, 255,                   ${0.62 * opacityFactor})`,
+                    gold:  `rgba(0, 225, 255, ${0.76 * opacityFactor})`
                 };
-            } else if (colorVariation === 3) {
-                // Deep magenta / rose variation
-                const mag = 180 + Math.sin(timeOffset) * 40;
+            } else if (cv === 3) {
+                const t = 165 + Math.sin(timeOffset) * 38;
                 return {
-                    inner: `rgba(${mag}, ${30 + Math.sin(timeOffset + 1) * 20}, ${80 + Math.sin(timeOffset + 2) * 30}, ${0.7 * opacityFactor})`,
-                    mid:   `rgba(${mag + 20}, ${50 + Math.sin(timeOffset + 1.5) * 25}, ${100 + Math.sin(timeOffset + 2.5) * 35}, ${0.65 * opacityFactor})`,
-                    outer: `rgba(255, ${70 + Math.sin(timeOffset + 2) * 30}, ${120 + Math.sin(timeOffset + 3) * 40}, ${0.6 * opacityFactor})`,
-                    gold:  `rgba(255, 60, 90, ${0.75 * opacityFactor})`
+                    inner: `rgba(0, ${t},       ${t + 22}, ${0.72 * opacityFactor})`,
+                    mid:   `rgba(0, ${t + 32},  ${t + 42}, ${0.68 * opacityFactor})`,
+                    outer: `rgba(0, ${Math.min(255,t + 62)}, ${Math.min(255,t + 52)}, ${0.62 * opacityFactor})`,
+                    gold:  `rgba(0, 235, 218, ${0.76 * opacityFactor})`
                 };
             } else {
-                // Deep orange-amber variation
-                const amb = 200 + Math.sin(timeOffset) * 40;
+                const a = 145 + Math.sin(timeOffset) * 38;
                 return {
-                    inner: `rgba(${amb}, ${80 + Math.sin(timeOffset) * 30}, ${20 + Math.sin(timeOffset + 1) * 10}, ${0.7 * opacityFactor})`,
-                    mid:   `rgba(${amb + 20}, ${110 + Math.sin(timeOffset + 0.5) * 35}, ${35 + Math.sin(timeOffset + 1.5) * 15}, ${0.65 * opacityFactor})`,
-                    outer: `rgba(255, ${140 + Math.sin(timeOffset + 1) * 40}, ${50 + Math.sin(timeOffset + 2) * 20}, ${0.6 * opacityFactor})`,
-                    gold:  `rgba(255, 120, 30, ${0.75 * opacityFactor})`
+                    inner: `rgba(0,  ${a + 22}, ${Math.min(255,a + 62)}, ${0.72 * opacityFactor})`,
+                    mid:   `rgba(18, ${a + 52}, ${Math.min(255,a + 82)}, ${0.68 * opacityFactor})`,
+                    outer: `rgba(38, ${Math.min(255,a + 82)}, ${Math.min(255,a + 102)}, ${0.62 * opacityFactor})`,
+                    gold:  `rgba(100, 242, 228, ${0.76 * opacityFactor})`
                 };
             }
         }

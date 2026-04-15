@@ -6,11 +6,15 @@ class BlinkDetector {
         this.onGaze         = onGaze || null;
         this.isActive       = false;
         this.lastBlinkTime  = 0;
-        this.COOLDOWN_MS    = 650;   // min ms between registered blinks
-        this.EAR_THRESHOLD  = 0.21;  // below this = eye closed
-        this.CONSEC_FRAMES  = 2;     // frames below threshold to confirm close
+        this.COOLDOWN_MS    = 600;   // min ms between registered blinks
+        this.EAR_THRESHOLD  = 0.21;  // updated adaptively once baseline is known
+        this.CONSEC_FRAMES  = 1;     // 1 frame is enough — faster response
         this.belowCount     = 0;
         this.blinkLocked    = false; // prevents long squint from multi-firing
+
+        // Adaptive baseline — calibrates to each user's open-eye EAR
+        this._earSamples    = [];
+        this._baselineEAR   = null;  // set after 40 steady frames
 
         this.video    = null;
         this.faceMesh = null;
@@ -85,10 +89,27 @@ class BlinkDetector {
             this.onGaze(gazeX, gazeY);
         }
 
+        // ── Adaptive baseline calibration ────────────────────────────────────
+        // Collect open-eye EAR samples until we have 40, then fix threshold
+        // at 68% of baseline. This adapts to each user's natural eye shape.
+        if (!this._baselineEAR) {
+            // Only sample when eyes appear open (ear reasonably high)
+            if (ear > 0.18) {
+                this._earSamples.push(ear);
+                if (this._earSamples.length >= 40) {
+                    const sorted = [...this._earSamples].sort((a, b) => a - b);
+                    // Use median to ignore any accidental blinks during calibration
+                    const median = sorted[Math.floor(sorted.length / 2)];
+                    this._baselineEAR  = median;
+                    this.EAR_THRESHOLD = median * 0.68;
+                }
+            }
+        }
+
         if (ear < this.EAR_THRESHOLD) {
             this.belowCount++;
-            // Long squint (>10 frames) — lock so it won't fire on re-open
-            if (this.belowCount > 10) this.blinkLocked = true;
+            // Long squint (>15 frames ~0.5s) — lock so it won't fire on re-open
+            if (this.belowCount > 15) this.blinkLocked = true;
         } else {
             // Eyes just opened
             if (this.belowCount >= this.CONSEC_FRAMES && !this.blinkLocked) {
