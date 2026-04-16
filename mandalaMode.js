@@ -20,20 +20,40 @@ class MandalaMode {
         this.t      = 0;
         this._style = 0;
         this._gen   = new MandalaGenerator(ctx);
+        this._folds = 1;          // current fold count (builds up over time)
+        this._maxFolds = 10;
+        this._foldTimer = 0;      // time accumulator between fold reveals
+        this._FOLD_INTERVAL = 1.8; // seconds between each new fold appearing
     }
 
     startScene() {
-        this.t = 0;
+        this.t          = 0;
+        this._folds     = 1;
+        this._foldTimer = 0;
         this._gen.setStyle(this._style);
     }
 
     onBlink() {
         this._style = (this._style + 1) % 7;
         this._gen.setStyle(this._style);
+        // Blink resets the fold build-up for the new style
+        this._folds     = 1;
+        this._foldTimer = 0;
     }
 
     draw(time) {
-        this.t += 0.016;
+        const dt = 0.016;
+        this.t += dt;
+
+        // Advance fold count over time — one new fold every _FOLD_INTERVAL seconds
+        if (this._folds < this._maxFolds) {
+            this._foldTimer += dt;
+            if (this._foldTimer >= this._FOLD_INTERVAL) {
+                this._foldTimer -= this._FOLD_INTERVAL;
+                this._folds = Math.min(this._folds + 1, this._maxFolds);
+            }
+        }
+
         const ctx = this.ctx;
         const W   = this.canvas.width  || 800;
         const H   = this.canvas.height || 600;
@@ -42,6 +62,6 @@ class MandalaMode {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.10)';
         ctx.fillRect(0, 0, W, H);
 
-        this._gen.drawMandala(W * 0.5, H * 0.5, 10, this.t, this._style, null);
+        this._gen.drawMandala(W * 0.5, H * 0.5, this._folds, this.t, this._style, null);
     }
 }

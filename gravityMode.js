@@ -14,6 +14,9 @@ class GravityMode {
         this._waves   = [];   // {cx, cy, r, maxR, alpha}
         this._COLS    = 36;
         this._ROWS    = 27;
+        // Pre-allocated buffers — reused every frame to avoid GC pressure
+        this._nodes   = new Float32Array(36 * 27 * 2);
+        this._tension = new Float32Array(36 * 27);
     }
 
     startScene() {
@@ -134,9 +137,9 @@ class GravityMode {
         const cellW = W / (COLS - 1);
         const cellH = H / (ROWS - 1);
 
-        // Precompute node positions (displaced)
-        const nodes = new Float32Array(COLS * ROWS * 2);
-        const tension = new Float32Array(COLS * ROWS);
+        // Precompute node positions (displaced) — reuse cached buffers
+        const nodes   = this._nodes;
+        const tension = this._tension;
 
         for (let gy = 0; gy < ROWS; gy++) {
             for (let gx = 0; gx < COLS; gx++) {

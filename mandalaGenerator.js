@@ -16,7 +16,7 @@ class MandalaGenerator {
         }
         this.liquidEffect = liquidEffect; // Store for use in drawing methods
         
-        const maxRadius = Math.min(this.ctx.canvas.width, this.ctx.canvas.height) * 0.5;
+        const maxRadius = Math.min(this.ctx.canvas.width, this.ctx.canvas.height) * 0.44;
         const styleConfig = this.getStyleConfig();
         const layers = Math.min(foldCount, styleConfig.maxLayers);
 
