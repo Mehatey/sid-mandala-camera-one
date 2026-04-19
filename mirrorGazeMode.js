@@ -132,10 +132,11 @@ class MirrorGazeMode {
                 ctx.globalAlpha = gh.alpha * env;
                 ctx.drawImage(gh._img, 0, 0);
                 ctx.restore();
-            } else if (gh.img) {
+            } else if (gh.img && !gh._loading) {
+                gh._loading = true;
                 const img = new Image();
+                img.onload = () => { gh._img = img; gh._loading = false; };
                 img.src = gh.img;
-                img.onload = () => { gh._img = img; };
             }
         }
 

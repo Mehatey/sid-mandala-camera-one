@@ -18,6 +18,9 @@ class SumiMandalaMode {
         this._splats  = [];
         this._strokeSeed = Math.random() * 10000;
         this._buildStrokes();
+        // Prime the rice-paper background immediately so ink is visible on frame 1
+        this.ctx.fillStyle = 'rgba(245, 238, 225, 1)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
     onBlink() {
