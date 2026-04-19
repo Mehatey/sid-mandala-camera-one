@@ -110,6 +110,23 @@ html, body {
 }
 #begin-btn:hover { color: rgba(185,215,255,0.75); letter-spacing: 0.44em; }
 
+/* Arrival entrance animation — triggered via .entering class */
+#arrival.entering #arrival-inner > * {
+    animation: arrivalIn 0.7s ease both;
+}
+#arrival.entering #arrival-logo       { animation-delay: 0.05s; }
+#arrival.entering #arrival-tagline    { animation-delay: 0.18s; }
+#arrival.entering #collective-cloud   { animation-delay: 0.30s; }
+#arrival.entering #join-count         { animation-delay: 0.40s; }
+#arrival.entering .input-row          { animation-delay: 0.48s; }
+#arrival.entering #anchors            { animation-delay: 0.62s; }
+#arrival.entering #durations          { animation-delay: 0.74s; }
+#arrival.entering #begin-btn          { animation-delay: 0.88s; }
+@keyframes arrivalIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ── JOURNEY HUD ───────────────────────────────────────────────── */
 #jhud { pointer-events: none; z-index: 15; }
 
@@ -119,15 +136,23 @@ html, body {
     color: rgba(140,168,215,0.22); transition: opacity 1s;
 }
 #scene-name {
-    font-size: clamp(20px, 2.8vw, 30px); font-weight: 200;
-    letter-spacing: 0.16em; text-transform: lowercase;
-    color: rgba(215,228,255,0.88); text-align: center;
-    transition: opacity 1.8s ease; max-width: 600px; line-height: 1.35;
+    font-size: clamp(18px, 2.4vw, 26px); font-weight: 200;
+    letter-spacing: 0.22em; text-transform: lowercase;
+    color: rgba(215,228,255,0.85); text-align: center;
+    transition: opacity 2.2s ease; max-width: 600px; line-height: 1.35;
 }
 #advance-hint {
     position: fixed; bottom: 58px; left: 50%; transform: translateX(-50%);
     font-size: 9px; letter-spacing: 0.22em; color: rgba(140,165,215,0.18);
-    text-transform: lowercase; transition: opacity 0.8s;
+    text-transform: lowercase; transition: opacity 1.2s ease;
+    white-space: nowrap;
+}
+/* keyboard hint — fades in after 4s, fades out when scene advances */
+#kb-hint {
+    position: fixed; bottom: 22px; right: 22px;
+    font-size: 8px; letter-spacing: 0.18em; color: rgba(120,150,210,0.18);
+    text-transform: lowercase; pointer-events: none; z-index: 18;
+    transition: opacity 1.2s ease; opacity: 0;
 }
 #j-progress {
     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
@@ -138,6 +163,51 @@ html, body {
 .jdot.done   { background: rgba(140,185,255,0.28); }
 .jchap-dot   { width: 6px; height: 6px; border-radius: 50%; background: rgba(180,205,255,0.18); transition: background 0.5s; }
 .jchap-dot.active { background: rgba(180,210,255,0.55); }
+
+/* ── CAMERA PIP ─────────────────────────────────────────────────── */
+/* ── STILLNESS RING ─────────────────────────────────────────────── */
+#stillness-ring {
+    position: fixed; top: 20px; right: 20px;
+    width: 32px; height: 32px;
+    z-index: 20; opacity: 0;
+    transition: opacity 1s ease;
+    pointer-events: none;
+}
+#stillness-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+#stillness-ring circle.track {
+    fill: none; stroke: rgba(140,185,255,0.08); stroke-width: 1.5;
+}
+#stillness-ring circle.fill {
+    fill: none; stroke: rgba(160,220,255,0.65); stroke-width: 1.8;
+    stroke-dasharray: 87.96;   /* 2π × r=14 */
+    stroke-dashoffset: 87.96;
+    transition: stroke-dashoffset 0.18s linear, stroke 0.5s ease;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 3px rgba(140,210,255,0.4));
+}
+
+#cam-pip {
+    position: fixed; bottom: 18px; right: 18px;
+    width: 112px; height: 84px;
+    border-radius: 6px; overflow: hidden;
+    border: 1px solid rgba(140, 185, 255, 0.18);
+    z-index: 20; opacity: 0;
+    transition: opacity 1.2s ease;
+    background: #000;
+    box-shadow: 0 2px 18px rgba(0,0,0,0.45);
+}
+#cam-pip video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);   /* mirror — selfie view */
+    display: block;
+}
+#blink-flash {
+    position: fixed; inset: 0; z-index: 19;
+    background: rgba(200,220,255,0.06);
+    pointer-events: none; opacity: 0;
+    transition: opacity 0.05s ease;
+}
 
 /* ── ANALYTICS ─────────────────────────────────────────────────── */
 #analytics {
@@ -182,13 +252,263 @@ html, body {
     cursor: pointer; padding: 10px 0; transition: color 0.2s, letter-spacing 0.3s;
 }
 #return-btn:hover { color: rgba(185,215,255,0.70); letter-spacing: 0.40em; }
+
+/* ── SPLASH ─────────────────────────────────────────────────────── */
+#splash {
+    background: #000003;
+    z-index: 30;
+    transition: opacity 1.0s ease;
+}
+#splash-inner {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0; position: relative;
+}
+#splash-orb {
+    width: 72px; height: 72px; border-radius: 50%;
+    border: 1px solid rgba(140,185,255,0.18);
+    margin-bottom: 52px;
+    position: relative;
+    animation: splashOrb 4s ease-in-out infinite;
+    flex-shrink: 0;
+}
+#splash-orb::before {
+    content: ''; position: absolute; inset: -14px; border-radius: 50%;
+    border: 1px solid rgba(140,185,255,0.06);
+    animation: splashOrb 4s ease-in-out infinite 0.4s;
+}
+#splash-orb::after {
+    content: ''; position: absolute; inset: 16px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(140,185,255,0.06) 0%, transparent 70%);
+    animation: splashOrb 4s ease-in-out infinite 0.8s;
+}
+@keyframes splashOrb {
+    0%,100% { transform: scale(0.80); opacity: 0.20; }
+    50%      { transform: scale(1.15); opacity: 0.65; }
+}
+#splash-word {
+    font-size: clamp(30px, 5.5vw, 60px);
+    font-weight: 200;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    display: flex;
+}
+#splash-word span {
+    opacity: 0;
+    transform: translateY(8px);
+    display: inline-block;
+    transition: opacity 0.55s ease, transform 0.55s ease;
+    color: rgba(215,228,255,0.90);
+    letter-spacing: 0.24em;
+}
+#splash-word span.vis { opacity: 1; transform: translateY(0); }
+#splash-sub {
+    font-size: clamp(9px, 1.1vw, 11px);
+    letter-spacing: 0.26em;
+    text-transform: lowercase;
+    color: rgba(140,165,215,0.40);
+    margin-top: 18px;
+    opacity: 0;
+    transition: opacity 1.4s ease;
+}
+#splash-sub.vis { opacity: 1; }
+#splash-hint {
+    position: fixed; bottom: 40px;
+    font-size: 9px; letter-spacing: 0.22em; text-transform: lowercase;
+    color: rgba(140,165,215,0.22); cursor: pointer;
+    opacity: 0; transition: opacity 0.8s ease;
+    pointer-events: auto;
+}
+#splash-hint.vis { opacity: 1; }
+
+/* Loading indicator — shown before JS executes */
+#preload {
+    position: fixed; inset: 0; background: #000; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.6s ease;
+}
+#preload.done { opacity: 0; pointer-events: none; }
+#preload-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(140,185,255,0.35);
+    animation: splashOrb 1.5s ease-in-out infinite;
+}
+
+/* ── SCENE TRANSITION OVERLAY ───────────────────────────────────── */
+#scene-transition {
+    position: fixed; inset: 0;
+    background: #000006;
+    z-index: 8;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.32s ease;
+}
+#scene-transition.in { opacity: 1; }
+
+/* ── TRIPLE-BLINK DOTS ──────────────────────────────────────────── */
+#blink-dots {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 11px; align-items: center;
+    z-index: 20; pointer-events: none;
+    opacity: 0; transition: opacity 0.5s ease;
+}
+.bdot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(140,185,255,0.18);
+    transition: background 0.14s ease, transform 0.14s ease, box-shadow 0.14s ease;
+}
+.bdot.lit {
+    background: rgba(185,218,255,0.82);
+    transform: scale(1.45);
+    box-shadow: 0 0 7px rgba(140,205,255,0.55);
+}
+.bdot.flash {
+    background: rgba(255,255,255,0.95);
+    transform: scale(1.8);
+    box-shadow: 0 0 12px rgba(200,230,255,0.8);
+}
+
+/* ── GAZE DOT ───────────────────────────────────────────────────── */
+#gaze-dot {
+    position: fixed;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(200,225,255,0.28);
+    pointer-events: none; z-index: 18;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    box-shadow: 0 0 4px rgba(160,210,255,0.2);
+}
+
+/* ── BREATH PACER ───────────────────────────────────────────────── */
+#breath-pacer {
+    position: fixed; top: 50%; left: 28px;
+    transform: translateY(-50%);
+    width: 34px; height: 34px;
+    z-index: 18; pointer-events: none;
+    opacity: 0; transition: opacity 1.2s ease;
+}
+#breath-pacer svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+#breath-arc {
+    fill: none;
+    stroke: rgba(140,205,255,0.38); stroke-width: 1.5;
+    stroke-dasharray: 87.96;   /* 2π × 14 */
+    stroke-dashoffset: 87.96;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.08s linear;
+}
+#breath-label {
+    position: fixed; top: 50%; left: 6px;
+    transform: translateY(calc(-50% + 24px));
+    font-size: 7px; letter-spacing: 0.18em; text-transform: lowercase;
+    color: rgba(140,185,215,0.22);
+    z-index: 18; pointer-events: none;
+    opacity: 0; transition: opacity 1.2s ease;
+    writing-mode: vertical-lr; text-orientation: mixed;
+}
+#breath-label.vis { opacity: 1; }
+
+/* ── AUDIO PULSE BARS ───────────────────────────────────────────── */
+#audio-pulse {
+    position: fixed; bottom: 58px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 3px; align-items: flex-end;
+    height: 20px; z-index: 18; pointer-events: none;
+    opacity: 0; transition: opacity 1s ease;
+}
+.ap-bar {
+    width: 2px; border-radius: 1px;
+    background: rgba(140,185,255,0.20);
+    animation: apAnim var(--spd, 1s) ease-in-out infinite;
+    transform-origin: bottom;
+}
+@keyframes apAnim {
+    0%,100% { transform: scaleY(0.25); opacity: 0.15; }
+    50%      { transform: scaleY(1);   opacity: 0.55; }
+}
+
+/* ── ANALYTICS TIMELINE ─────────────────────────────────────────── */
+#journey-timeline {
+    grid-column: 1 / -1;
+    padding-bottom: 40px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+#journey-timeline h3 {
+    font-size: 9px; font-weight: 400; letter-spacing: 0.30em; text-transform: uppercase;
+    color: rgba(140,175,220,0.30); margin-bottom: 20px; padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+#timeline-bar {
+    display: flex; gap: 3px; height: 6px; width: 100%;
+    align-items: center;
+}
+.tl-seg {
+    height: 6px; border-radius: 2px; min-width: 3px;
+    opacity: 0; transform: scaleY(0.1);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    cursor: default; position: relative; flex-shrink: 0;
+}
+.tl-seg.vis { opacity: 0.75; transform: scaleY(1); }
+.tl-seg:hover { opacity: 1 !important; transform: scaleY(1.5) !important; }
+.tl-seg::after {
+    content: attr(data-name);
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+    font-size: 8px; letter-spacing: 0.09em; color: rgba(195,215,255,0.60);
+    white-space: nowrap; opacity: 0; transition: opacity 0.18s;
+    pointer-events: none; text-transform: lowercase; background: rgba(0,0,8,0.6);
+    padding: 2px 5px; border-radius: 2px;
+}
+.tl-seg:hover::after { opacity: 1; }
+#timeline-legend {
+    display: flex; gap: 18px; margin-top: 14px; flex-wrap: wrap;
+}
+.tl-chap { display: flex; align-items: center; gap: 5px; }
+.tl-chap-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.tl-chap-label { font-size: 8px; letter-spacing: 0.13em; color: rgba(140,175,220,0.30); text-transform: lowercase; }
+
+/* ── ANALYTICS AMBIENT PARTICLES ───────────────────────────────── */
+#analytics-particles {
+    position: fixed; inset: 0; z-index: 1;
+    pointer-events: none; opacity: 0;
+    transition: opacity 1.5s ease;
+}
+#analytics-particles.vis { opacity: 1; }
+#analytics { z-index: 20; }
+
+/* Analytics entrance */
+#analytics.entering #analytics-inner > * {
+    animation: analyticsIn 0.8s ease both;
+}
+#analytics.entering #journey-timeline  { animation-delay: 0.10s; }
+#analytics.entering #arrived-title     { animation-delay: 0.28s; }
+#analytics.entering #arrived-echo      { animation-delay: 0.38s; }
+#analytics.entering #personal-section  { animation-delay: 0.50s; }
+#analytics.entering #collective-section{ animation-delay: 0.62s; }
+#analytics.entering #analytics-footer  { animation-delay: 0.80s; }
+@keyframes analyticsIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 
+<!-- Shown immediately while JS loads — hidden once scripts execute -->
+<div id="preload"><div id="preload-dot"></div></div>
+
+<!-- ──────────────────── PHASE 0: SPLASH ───────────────────────── -->
+<div id="splash" class="layer">
+  <div id="splash-inner">
+    <div id="splash-orb"></div>
+    <div id="splash-word"></div>
+    <div id="splash-sub">an open-eye meditation</div>
+  </div>
+  <div id="splash-hint">tap anywhere to enter</div>
+</div>
+
 <!-- ──────────────────── PHASE 1: ARRIVAL ──────────────────────── -->
-<div id="arrival" class="layer">
+<div id="arrival" class="layer hidden">
   <div id="arrival-inner">
     <div id="arrival-logo">zentangle</div>
     <div id="arrival-tagline">an open-eye meditation</div>
@@ -240,13 +560,58 @@ html, body {
 <div id="jhud" class="layer hidden">
   <div id="chapter-label"></div>
   <div id="scene-name"></div>
-  <div id="advance-hint">space · breathe · advance</div>
+  <div id="advance-hint">blink · be still · breathe</div>
   <div id="j-progress"></div>
 </div>
+<div id="kb-hint">space to advance</div>
+
+<div id="cam-pip"></div>
+<div id="blink-flash"></div>
+<div id="stillness-ring">
+  <svg viewBox="0 0 32 32">
+    <circle class="track" cx="16" cy="16" r="14"/>
+    <circle class="fill"  cx="16" cy="16" r="14" id="still-arc"/>
+  </svg>
+</div>
+
+<!-- ── Scene transition overlay ─────────────────────────────────── -->
+<div id="scene-transition"></div>
+
+<!-- ── Triple-blink progress dots ───────────────────────────────── -->
+<div id="blink-dots">
+  <div class="bdot" id="bd0"></div>
+  <div class="bdot" id="bd1"></div>
+  <div class="bdot" id="bd2"></div>
+</div>
+
+<!-- ── Gaze dot ──────────────────────────────────────────────────── -->
+<div id="gaze-dot"></div>
+
+<!-- ── Breath pacer ─────────────────────────────────────────────── -->
+<div id="breath-pacer">
+  <svg viewBox="0 0 32 32">
+    <circle cx="16" cy="16" r="14" fill="none" stroke="rgba(140,185,255,0.07)" stroke-width="1.5"/>
+    <circle id="breath-arc" cx="16" cy="16" r="14"/>
+  </svg>
+</div>
+<div id="breath-label">breathe</div>
+
+<!-- ── Audio pulse bars ──────────────────────────────────────────── -->
+<div id="audio-pulse"></div>
+
+<!-- ── Analytics ambient canvas ─────────────────────────────────── -->
+<canvas id="analytics-particles"></canvas>
 
 <!-- ──────────────────── PHASE 3: ANALYTICS ────────────────────── -->
 <div id="analytics" class="layer hidden">
   <div id="analytics-inner">
+    <!-- Journey timeline — full width row -->
+    <div id="journey-timeline">
+      <h3>your path</h3>
+      <div id="timeline-bar"></div>
+      <div id="timeline-legend"></div>
+    </div>
+
     <div id="arrived-title">you have arrived</div>
     <div id="arrived-echo"></div>
     <div class="a-section" id="personal-section"><h3>your journey</h3><div id="personal-stats"></div></div>
@@ -261,11 +626,13 @@ html, body {
 </div>
 
 <!-- ── MediaPipe — blink + hand tracking ──────────────────────── -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
-<script src="blinkDetector.js"></script>
-<script src="handTracker.js"></script>
+<!-- MediaPipe loads in background (defer) — does NOT block page render.
+     Scenes play immediately; camera tracking activates when journey begins. -->
+<script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+<script defer src="blinkDetector.js"></script>
+<script defer src="handTracker.js"></script>
 
 <!-- ── Original mandala utility ─────────────────────────────────── -->
 <script src="mandalaGenerator.js"></script>
@@ -318,6 +685,28 @@ html, body {
 <script src="mandalaMode.js"></script>
 <!-- Sound garden (has own audio) -->
 <script src="soundGardenMode.js"></script>
+<!-- New mandala modes — batch 1 -->
+<script src="solarMandalaMode.js"></script>
+<script src="lunarMandalaMode.js"></script>
+<script src="roseMandalaMode.js"></script>
+<script src="voidBloomMode.js"></script>
+<script src="prismMandalaMode.js"></script>
+<!-- New mandala modes — batch 2 -->
+<script src="flowerLifeMode.js"></script>
+<script src="celticMandalaMode.js"></script>
+<script src="snowflakeMandalaMode.js"></script>
+<script src="sumiMandalaMode.js"></script>
+<script src="circuitMandalaMode.js"></script>
+<!-- Nature pixel sort -->
+<script src="natureSortMode.js"></script>
+<!-- New camera/gaze modes -->
+<script src="presenceMode.js"></script>
+<script src="gazeBloomMode.js"></script>
+<script src="eyeTrailMode.js"></script>
+<script src="mirrorGazeMode.js"></script>
+<script src="breathRingMode.js"></script>
+<!-- Water ripple post-process -->
+<script src="waterRipple.js"></script>
 <!-- Audio engine -->
 <script src="zenAudio.js"></script>
 <!-- Human & body -->
@@ -331,10 +720,20 @@ html, body {
 <script>
 'use strict';
 
+// Hide preload screen immediately — JS is executing
+(function() {
+    const pl = document.getElementById('preload');
+    if (pl) { pl.classList.add('done'); setTimeout(() => pl.remove(), 700); }
+})();
+
 // ── Canvas ──────────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    try { ripple.resize(); } catch(e) {}
+}
 window.addEventListener('resize', resize);
 resize();
 
@@ -355,9 +754,11 @@ const STANDARD = [
     { key: 'julia',       name: 'depth',        chapter: 'depth',      duration: 75 },
     { key: 'psychedelic', name: 'dissolution',  chapter: 'depth',      duration: 65 },
     { key: 'humans',      name: 'connection',   chapter: 'connection', duration: 65 },
-    { key: 'abyss',       name: 'presence',     chapter: 'connection', duration: 60 },
-    { key: 'nacre',       name: 'iridescence',  chapter: 'return',     duration: 55 },
-    { key: 'breath',      name: 'return',       chapter: 'return',     duration: 55 },
+    { key: 'abyss',        name: 'presence',     chapter: 'connection', duration: 60 },
+    { key: 'breathring',   name: 'breath',       chapter: 'presence',   duration: 55 },
+    { key: 'solarmandala', name: 'solar',        chapter: 'mandalas',   duration: 55 },
+    { key: 'nacre',        name: 'iridescence',  chapter: 'return',     duration: 55 },
+    { key: 'breath',       name: 'return',       chapter: 'return',     duration: 55 },
 ];
 
 const FULL = [
@@ -377,6 +778,20 @@ const FULL = [
     // Connection — the human condition
     { key: 'humans',        name: 'connection',    chapter: 'connection', duration: 65 },
     { key: 'void',          name: 'singularity',   chapter: 'connection', duration: 45 },
+    // Presence — gaze-driven
+    { key: 'breathring',    name: 'breath',        chapter: 'presence',   duration: 60 },
+    { key: 'presence',      name: 'constellation', chapter: 'presence',   duration: 55 },
+    { key: 'mirrorgaze',    name: 'reflection',    chapter: 'presence',   duration: 55 },
+    // Bloom — new mandalas
+    { key: 'solarmandala',  name: 'solar',         chapter: 'mandalas',   duration: 55 },
+    { key: 'lunarmandala',  name: 'lunar',         chapter: 'mandalas',   duration: 55 },
+    { key: 'rosemandala',   name: 'rose',          chapter: 'mandalas',   duration: 55 },
+    { key: 'flowerlife',    name: 'flower',        chapter: 'mandalas',   duration: 50 },
+    { key: 'snowflake',     name: 'crystal',       chapter: 'mandalas',   duration: 50 },
+    { key: 'sumi',          name: 'ink',           chapter: 'mandalas',   duration: 50 },
+    { key: 'celtic',        name: 'woven',         chapter: 'mandalas',   duration: 50 },
+    { key: 'circuit',       name: 'signal',        chapter: 'mandalas',   duration: 50 },
+    { key: 'naturesort',    name: 'dissolve',      chapter: 'depth',      duration: 65 },
     // Return — coming back
     { key: 'abyss',         name: 'deep water',    chapter: 'return',     duration: 60 },
     { key: 'nacre',         name: 'iridescence',   chapter: 'return',     duration: 55 },
@@ -439,6 +854,25 @@ const DEMO = [
     { key: 'recursion',    name: 'recursion',      chapter: 'abstract',   duration: 25 },
     { key: 'orrery',       name: 'orrery',         chapter: 'abstract',   duration: 25 },
     { key: 'void',         name: 'void',           chapter: 'abstract',   duration: 25 },
+    // New mandala modes — batch 1
+    { key: 'solarmandala', name: 'solar mandala',  chapter: 'mandalas',   duration: 25 },
+    { key: 'lunarmandala', name: 'lunar mandala',  chapter: 'mandalas',   duration: 25 },
+    { key: 'rosemandala',  name: 'rose mandala',   chapter: 'mandalas',   duration: 25 },
+    { key: 'voidbloom',    name: 'void bloom',     chapter: 'mandalas',   duration: 25 },
+    { key: 'prismandala',  name: 'prism mandala',  chapter: 'mandalas',   duration: 25 },
+    // New mandala modes — batch 2
+    { key: 'flowerlife',   name: 'flower of life', chapter: 'mandalas',   duration: 25 },
+    { key: 'celtic',       name: 'celtic knot',    chapter: 'mandalas',   duration: 25 },
+    { key: 'snowflake',    name: 'snowflake',      chapter: 'mandalas',   duration: 25 },
+    { key: 'sumi',         name: 'sumi-e',         chapter: 'mandalas',   duration: 25 },
+    { key: 'circuit',      name: 'circuit',        chapter: 'mandalas',   duration: 25 },
+    { key: 'naturesort',   name: 'nature sort',    chapter: 'nature',     duration: 35 },
+    // New gaze/camera modes
+    { key: 'presence',     name: 'presence',       chapter: 'gaze',       duration: 25 },
+    { key: 'gazebloom',    name: 'gaze bloom',     chapter: 'gaze',       duration: 25 },
+    { key: 'eyetrail',     name: 'eye trail',      chapter: 'gaze',       duration: 25 },
+    { key: 'mirrorgaze',   name: 'mirror gaze',    chapter: 'gaze',       duration: 25 },
+    { key: 'breathring',   name: 'breath ring',    chapter: 'gaze',       duration: 25 },
 ];
 
 const TIERS = { quick: QUICK, standard: STANDARD, full: FULL, demo: DEMO };
@@ -492,46 +926,147 @@ const MODE_CLASSES = {
     gravity:     () => new GravityMode(ctx, canvas),
     swarm:       () => new SwarmMode(ctx, canvas),
     neurogenesis:() => new NeurogenesisMode(ctx, canvas),
-    soundgarden: () => new SoundGardenMode(ctx, canvas),
+    soundgarden:  () => new SoundGardenMode(ctx, canvas),
+    // New mandala modes — batch 1
+    solarmandala: () => new SolarMandalaMode(ctx, canvas),
+    lunarmandala: () => new LunarMandalaMode(ctx, canvas),
+    rosemandala:  () => new RoseMandalaMode(ctx, canvas),
+    voidbloom:    () => new VoidBloomMode(ctx, canvas),
+    prismandala:  () => new PrismMandalaMode(ctx, canvas),
+    // New mandala modes — batch 2
+    flowerlife:   () => new FlowerLifeMode(ctx, canvas),
+    celtic:       () => new CelticMandalaMode(ctx, canvas),
+    snowflake:    () => new SnowflakeMandalaMode(ctx, canvas),
+    sumi:         () => new SumiMandalaMode(ctx, canvas),
+    circuit:      () => new CircuitMandalaMode(ctx, canvas),
+    naturesort:   () => new NatureSortMode(ctx, canvas),
+    // New gaze/camera modes
+    presence:     () => new PresenceMode(ctx, canvas),
+    gazebloom:    () => new GazeBloomMode(ctx, canvas),
+    eyetrail:     () => new EyeTrailMode(ctx, canvas),
+    mirrorgaze:   () => new MirrorGazeMode(ctx, canvas),
+    breathring:   () => new BreathRingMode(ctx, canvas),
 };
 
 // Lazy-instantiate to avoid errors if some files are missing
 function getMode(key) {
     if (!MODES[key]) {
-        if (!MODE_CLASSES[key]) return null;
-        try { MODES[key] = MODE_CLASSES[key](); } catch(e) { return null; }
+        if (!MODE_CLASSES[key]) { console.warn('No class for mode:', key); return null; }
+        try { MODES[key] = MODE_CLASSES[key](); }
+        catch(e) { console.error('Failed to instantiate mode:', key, e.message); return null; }
     }
     return MODES[key];
 }
-// Pre-instantiate all modes used in journeys
-[...QUICK, ...STANDARD, ...FULL].forEach(s => getMode(s.key));
+// Pre-instantiate all modes (avoids first-frame jank on any tier)
+Object.keys(MODE_CLASSES).forEach(key => getMode(key));
 
 // ── Audio engine ─────────────────────────────────────────────────────
 const audio = new ZenAudio();
 
+// ── Water ripple post-process ─────────────────────────────────────────
+const ripple = new WaterRipple(canvas, ctx);
+
 // ── Camera / blink / hand tracking ───────────────────────────────────
-let _blinker = null;
-let _tracker = null;
+let _blinker  = null;
+let _tracker  = null;
+const _pip    = document.getElementById('cam-pip');
+const _flash  = document.getElementById('blink-flash');
+let _flashTimer = null;
+
+// Modes that have their own mouse interaction — don't overlay ripple on these
+const MOUSE_MODES = new Set([
+    'jelly','caustic','lava','iris','marble','wax','patina','nacre','membrane'
+]);
 
 function _routeHandMove(nx, ny) {
-    // nx/ny are normalised 0-1 — convert to canvas pixels
     if (_phase !== 'journey') return;
     const sc = _scenes[_sceneIdx];
     if (!sc) return;
     const m = getMode(sc.key);
-    if (m && m.onMouseMove) m.onMouseMove(nx * canvas.width, ny * canvas.height);
+    if (m && m.onMouseMove && MOUSE_MODES.has(sc.key)) {
+        // Mode owns its interaction — pass pixel coords
+        m.onMouseMove(nx * canvas.width, ny * canvas.height);
+    } else {
+        // No native interaction — drive water ripple
+        ripple.onHandMove(nx, ny);
+    }
+}
+
+function _showBlinkFlash() {
+    if (!_flash) return;
+    _flash.style.opacity = '1';
+    clearTimeout(_flashTimer);
+    _flashTimer = setTimeout(() => { _flash.style.opacity = '0'; }, 80);
+}
+
+// ── Blink counter for triple-blink scene advance ─────────────────────
+let _blinkSeq     = 0;       // blinks in current sequence
+let _blinkSeqTimer = null;   // resets count if gap > 2.5s
+
+function _onRawBlink() {
+    if (_phase !== 'journey') return;
+    _showBlinkFlash();
+    _blink();                               // trigger current scene's visual effect
+    _blinkSeq++;
+    _updateBlinkDots(false);
+    clearTimeout(_blinkSeqTimer);
+    if (_blinkSeq >= 3) {
+        _blinkSeq = 0;
+        _flashBlinkDots(() => _advance());   // flash all 3 then advance
+    } else {
+        _blinkSeqTimer = setTimeout(() => { _blinkSeq = 0; _updateBlinkDots(false); }, 2500);
+    }
+}
+
+function _onStillness() {
+    if (_phase !== 'journey') return;
+    _stillnessCount++;
+    _blink();
+}
+
+function _onGaze(nx, ny) {
+    if (_phase !== 'journey') return;
+    _gazeDot.style.left = (nx * window.innerWidth)  + 'px';
+    _gazeDot.style.top  = (ny * window.innerHeight) + 'px';
+    if (!_gazeActive) { _gazeActive = true; _gazeDot.style.opacity = '1'; }
+    clearTimeout(_gazeTimer);
+    _gazeTimer = setTimeout(() => { _gazeActive = false; _gazeDot.style.opacity = '0'; }, 2000);
+    // Route gaze to current mode if it supports it
+    const sc = _scenes[_sceneIdx];
+    if (sc) { const m = getMode(sc.key); if (m && m.onGaze) m.onGaze(nx, ny); }
 }
 
 async function _startTracking() {
-    // Blink detector
+    // Initialise ripple buffer to current canvas size
+    ripple.init();
+
+    // ── Blink detector ────────────────────────────────────────────────
     try {
-        _blinker = new BlinkDetector(() => _blink(), null);
+        _blinker = new BlinkDetector(
+            _onRawBlink,                // single blink — counts toward triple
+            _onGaze,                    // gaze — drives gaze dot
+            _onStillness,               // stillness — blooms scene
+            null                        // movement
+        );
         await _blinker.start();
+
+        // Camera preview pip — mirror the same stream
+        if (_blinker.video && _blinker.video.srcObject) {
+            const v = document.createElement('video');
+            v.autoplay    = true;
+            v.playsInline = true;
+            v.muted       = true;
+            v.srcObject   = _blinker.video.srcObject;
+            _pip.innerHTML = '';
+            _pip.appendChild(v);
+            _pip.style.opacity = '1';
+        }
     } catch(e) {
-        console.warn('Blink detection unavailable:', e.message);
+        console.warn('Blink detection unavailable:', e.message || e);
         _blinker = null;
     }
-    // Hand tracker
+
+    // ── Hand tracker ──────────────────────────────────────────────────
     try {
         _tracker = new HandTracker(
             (nx, ny) => _routeHandMove(nx, ny),
@@ -539,7 +1074,7 @@ async function _startTracking() {
         );
         await _tracker.start();
     } catch(e) {
-        console.warn('Hand tracking unavailable:', e.message);
+        console.warn('Hand tracking unavailable:', e.message || e);
         _tracker = null;
     }
 }
@@ -547,6 +1082,9 @@ async function _startTracking() {
 function _stopTracking() {
     if (_blinker) { try { _blinker.stop(); } catch(e) {} _blinker = null; }
     if (_tracker) { try { _tracker.stop(); } catch(e) {} _tracker = null; }
+    _pip.style.opacity = '0';
+    setTimeout(() => { _pip.innerHTML = ''; }, 1200);
+    ripple.stop();
 }
 
 // ── Session state ────────────────────────────────────────────────────
@@ -632,6 +1170,7 @@ async function beginJourney() {
     document.getElementById('arrival').classList.add('hidden');
     setTimeout(() => {
         document.getElementById('jhud').classList.remove('hidden');
+        if (_stillRing) _stillRing.style.opacity = '1';
         _startJourney();
     }, 1200);
 }
@@ -654,15 +1193,25 @@ function _updateDots(idx) {
 }
 
 function _startJourney() {
-    _phase        = 'journey';
-    _journeyStart = Date.now();
-    _sceneIdx     = 0;
-    _blinks       = 0;
+    _phase          = 'journey';
+    _journeyStart   = Date.now();
+    _sceneIdx       = 0;
+    _blinks         = 0;
+    _stillnessCount = 0;
+    _sceneTimings   = [];
     _buildDots();
+    ripple.init();     // init ripple buffer immediately — mouse works before camera grants
     _startScene(0);
     document.addEventListener('keydown', _onKey);
     document.addEventListener('dblclick', _onDblClick);
     _startTracking();   // request camera — browser will prompt
+
+    // Show blink dots + audio pulse
+    if (_blinkDotsEl)   _blinkDotsEl.style.opacity = '1';
+    if (_audioPulseEl)  _audioPulseEl.style.opacity = '1';
+
+    // Breath pacer — only if anchor is breath
+    if (_anchor === 'breath') _startBreathPacer();
 }
 
 function _onKey(e) {
@@ -703,6 +1252,7 @@ function _startScene(idx) {
     // Init mode — for mandala, set specific style if specified
     const m = getMode(sc.key);
     if (m) {
+        m._drawErrorLogged = false;   // reset error flag for fresh scene
         if (sc.key === 'mandala' && sc.mandalaStyle !== undefined) {
             m._style = sc.mandalaStyle;
             if (m._gen) m._gen.setStyle(sc.mandalaStyle);
@@ -711,43 +1261,107 @@ function _startScene(idx) {
     }
     audio.startScene(sc.key);
 
-    // Scene name overlay
+    // Scene name overlay — first scene lingers longer
     const nameEl = document.getElementById('scene-name');
     nameEl.style.opacity = '1';
     nameEl.textContent   = sc.name;
-    setTimeout(() => { nameEl.style.opacity = '0'; }, 3500);
+    setTimeout(() => { nameEl.style.opacity = '0'; }, idx === 0 ? 5000 : 3800);
 
     // Auto-advance timer
     if (_autoTimer) clearTimeout(_autoTimer);
     _autoTimer = setTimeout(_advance, sc.duration * 1000);
+
+    // Show keyboard hint on first scene after 5s, fade it out after 6s
+    if (_kbHintEl) {
+        clearTimeout(_kbHintTimer);
+        _kbHintEl.style.opacity = '0';
+        if (idx === 0) {
+            _kbHintTimer = setTimeout(() => {
+                _kbHintEl.style.opacity = '1';
+                _kbHintTimer = setTimeout(() => { _kbHintEl.style.opacity = '0'; }, 6000);
+            }, 5000);
+        }
+    }
 }
 
 function _advance() {
     if (_sceneIdx >= _scenes.length) return;
+    // Record time spent on this scene
+    _sceneTimings[_sceneIdx] = Date.now() - _sceneStart;
+    // Dismiss keyboard hint permanently once user advances
+    if (_kbHintEl) { clearTimeout(_kbHintTimer); _kbHintEl.style.opacity = '0'; }
     const next = _sceneIdx + 1;
-    if (next >= _scenes.length) _endJourney();
-    else _startScene(next);
+    _fadeScene(() => {
+        if (next >= _scenes.length) _endJourney();
+        else _startScene(next);
+    });
+}
+
+// ── Stillness ring update ─────────────────────────────────────────────
+const _stillRing = document.getElementById('stillness-ring');
+const _stillArc  = document.getElementById('still-arc');
+const CIRCUMF    = 87.96;  // 2π × 14
+
+function _updateStillRing() {
+    if (!_stillRing || !_stillArc) return;
+    const frames    = _blinker ? (_blinker._stillFrames || 0) : 0;
+    const threshold = _blinker ? (_blinker.STILL_FRAMES || 52) : 52;
+    const progress  = Math.min(1, frames / threshold);
+    const offset    = CIRCUMF * (1 - progress);
+    _stillArc.style.strokeDashoffset = offset;
+    // Colour shifts from cool blue → warm white as stillness deepens
+    const h = 200 + progress * 45;
+    const l = 52  + progress * 35;
+    const a = 0.28 + progress * 0.52;
+    _stillArc.style.stroke = `hsla(${h}, 72%, ${l}%, ${a})`;
 }
 
 // ── Animate loop ──────────────────────────────────────────────────────
 function _animate(ts) {
     _raf = requestAnimationFrame(_animate);
+    if (_phase === 'splash' || _phase === 'arrival') {
+        _drawArrivalBg(ts);
+        return;
+    }
     if (_phase !== 'journey') return;
     const sc = _scenes[_sceneIdx];
     if (!sc) return;
     const m = getMode(sc.key);
-    if (m && m.draw) { try { m.draw(ts); } catch(e) {} }
+    if (m && m.draw) {
+        try { m.draw(ts); }
+        catch(e) {
+            // Log draw errors once per scene to browser console
+            if (!m._drawErrorLogged) { m._drawErrorLogged = true; console.warn('draw() error in', sc.key, ':', e.message); }
+        }
+    }
+    // Apply water ripple on scenes without native mouse interaction
+    if (!MOUSE_MODES.has(sc.key)) { try { ripple.apply(); } catch(e) {} }
+    // Drive stillness ring
+    _updateStillRing();
 }
 _raf = requestAnimationFrame(_animate);
 
-// ── Mouse routing ─────────────────────────────────────────────────────
-canvas.addEventListener('mousemove', e => {
+// ── Mouse / touch routing ─────────────────────────────────────────────
+function _onPointerMove(clientX, clientY) {
     if (_phase !== 'journey') return;
     const sc = _scenes[_sceneIdx];
     if (!sc) return;
     const m = getMode(sc.key);
-    if (m && m.onMouseMove) m.onMouseMove(e.clientX, e.clientY);
-});
+    if (MOUSE_MODES.has(sc.key)) {
+        // Mode owns its own interaction
+        if (m && m.onMouseMove) m.onMouseMove(clientX, clientY);
+    } else {
+        // Drive water ripple for all other scenes
+        ripple.onHandMove(clientX / canvas.width, clientY / canvas.height);
+    }
+}
+
+canvas.addEventListener('mousemove', e => _onPointerMove(e.clientX, e.clientY));
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    if (t) _onPointerMove(t.clientX, t.clientY);
+}, { passive: false });
 
 // ── End journey ───────────────────────────────────────────────────────
 async function _endJourney() {
@@ -757,6 +1371,14 @@ async function _endJourney() {
     document.removeEventListener('dblclick', _onDblClick);
     _stopTracking();
     audio.end();
+
+    // Hide journey HUD overlays
+    if (_blinkDotsEl)  _blinkDotsEl.style.opacity  = '0';
+    if (_audioPulseEl) _audioPulseEl.style.opacity  = '0';
+    if (_breathPacerEl){ _breathPacerEl.style.opacity = '0'; _breathLabelEl.style.opacity = '0'; }
+    if (_breathRaf)    { cancelAnimationFrame(_breathRaf); _breathRaf = null; }
+    if (_gazeDot)      _gazeDot.style.opacity = '0';
+    if (_kbHintEl)     { clearTimeout(_kbHintTimer); _kbHintEl.style.opacity = '0'; }
 
     const dur = Math.round((Date.now() - _journeyStart) / 1000);
 
@@ -770,14 +1392,39 @@ async function _endJourney() {
     try { const r = await fetch('/api/analytics'); data = await r.json(); } catch(e) {}
 
     document.getElementById('jhud').classList.add('hidden');
+    if (_stillRing) _stillRing.style.opacity = '0';
     _buildAnalytics(dur, data);
-    setTimeout(() => document.getElementById('analytics').classList.remove('hidden'), 900);
+    setTimeout(() => {
+        const analyticsEl = document.getElementById('analytics');
+        analyticsEl.classList.remove('hidden');
+        analyticsEl.classList.add('entering');
+        setTimeout(() => analyticsEl.classList.remove('entering'), 2500);
+    }, 900);
 }
 
 function _fmt(s) { const m = Math.floor(s/60), x = s%60; return m ? `${m}m ${x}s` : `${x}s`; }
 
 function _buildAnalytics(dur, data) {
+    // Animate the title letter by letter
+    const titleEl = document.getElementById('arrived-title');
+    titleEl.innerHTML = '';
+    const titleText = 'you have arrived';
+    titleText.split('').forEach((ch, i) => {
+        const span = document.createElement('span');
+        span.textContent = ch === ' ' ? '\u00A0' : ch;
+        span.style.cssText = `opacity:0; transform:translateY(8px); display:inline-block; transition: opacity 0.5s ease ${i * 0.045}s, transform 0.5s ease ${i * 0.045}s;`;
+        titleEl.appendChild(span);
+    });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        titleEl.querySelectorAll('span').forEach(s => {
+            s.style.opacity = '1'; s.style.transform = 'translateY(0)';
+        });
+    }));
+
     document.getElementById('arrived-echo').textContent = _word ? `"${_word}"` : '';
+
+    // Build journey timeline
+    _buildTimeline();
 
     // Personal
     const pRows = [];
@@ -785,12 +1432,16 @@ function _buildAnalytics(dur, data) {
     pRows.push(
         ['anchor',           _anchor || 'none chosen', false],
         ['journey',          { quick:'quick', standard:'standard', full:'full', demo:'demo · all scenes' }[_tier] || _tier + ` · ${_scenes.length} scenes`, false],
-        ['time in stillness',_fmt(dur), false],
+        ['time in stillness', _fmt(dur), false],
+        ['moments of stillness', _stillnessCount > 0 ? `${_stillnessCount}` : '—', false],
         ['blinks',           _blinks > 0 ? `${_blinks}` : '—', false],
     );
     document.getElementById('personal-stats').innerHTML = pRows.map(([l, v, hl]) =>
         `<div class="stat-row"><span class="sl">${l}</span><span class="sv${hl?' hl':''}">${v}</span></div>`
     ).join('');
+
+    // Start analytics ambient particles
+    _startAnalyticsParticles();
 
     // Collective
     const N    = data.participants || 0;
@@ -823,6 +1474,10 @@ function _buildAnalytics(dur, data) {
             sp.className = 'cloud-word' + (ratio > 0.55 ? ' top' : ratio > 0.28 ? ' big' : '') + (w === _word ? ' mine' : '');
             sp.style.fontSize = fsize + 'px';
             sp.textContent = w;
+            // Float-in animation
+            sp.style.opacity = '0';
+            sp.style.transform = `translateY(${6 + Math.random() * 8}px)`;
+            sp.style.transition = `opacity 0.7s ease ${0.2 + a * 0.06}s, transform 0.7s ease ${0.2 + a * 0.06}s`;
             cloudEl.appendChild(sp);
             const r = 18 + a * 10;
             let x = CW * 0.5 + Math.cos(a * 2.42) * r;
@@ -832,6 +1487,11 @@ function _buildAnalytics(dur, data) {
             sp.style.left = x + 'px';
             sp.style.top  = y + 'px';
             a += 0.60 + ratio * 0.42;
+            // Trigger animation
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                sp.style.opacity   = '';
+                sp.style.transform = 'translateY(0)';
+            }));
         }
     }
 
@@ -846,9 +1506,242 @@ function _buildAnalytics(dur, data) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// ── NEW SYSTEMS ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Session counters ──────────────────────────────────────────────
+let _stillnessCount = 0;
+let _sceneTimings   = [];
+
+// ── DOM refs ─────────────────────────────────────────────────────
+const _transEl        = document.getElementById('scene-transition');
+const _blinkDotsEl    = document.getElementById('blink-dots');
+const _bdEls          = [0,1,2].map(i => document.getElementById('bd'+i));
+const _gazeDot        = document.getElementById('gaze-dot');
+const _breathPacerEl  = document.getElementById('breath-pacer');
+const _breathLabelEl  = document.getElementById('breath-label');
+const _breathArcEl    = document.getElementById('breath-arc');
+const _audioPulseEl   = document.getElementById('audio-pulse');
+const _kbHintEl       = document.getElementById('kb-hint');
+let _gazeActive = false;
+let _gazeTimer  = null;
+let _breathRaf  = null;
+let _kbHintTimer = null;
+
+// ── 1. SPLASH SCREEN ─────────────────────────────────────────────
+(function _runSplash() {
+    _phase = 'splash';
+    const logo    = document.getElementById('splash-word');
+    const sub     = document.getElementById('splash-sub');
+    const hint    = document.getElementById('splash-hint');
+    const splash  = document.getElementById('splash');
+    const arrival = document.getElementById('arrival');
+
+    'zentangle'.split('').forEach((ch, i) => {
+        const s = document.createElement('span');
+        s.textContent = ch;
+        logo.appendChild(s);
+        setTimeout(() => s.classList.add('vis'), 280 + i * 80);
+    });
+    setTimeout(() => sub.classList.add('vis'),  1300);
+    setTimeout(() => hint.classList.add('vis'), 2300);
+
+    let dismissed = false;
+    function dismiss() {
+        if (dismissed) return;
+        dismissed = true;
+        document.removeEventListener('click',   dismiss);
+        document.removeEventListener('keydown', onKey);
+        splash.classList.add('hidden');
+        _phase = 'arrival';
+        setTimeout(() => {
+        arrival.classList.remove('hidden');
+        arrival.classList.add('entering');
+        setTimeout(() => arrival.classList.remove('entering'), 2000);
+    }, 120);
+    }
+    function onKey(e) { if (e.code === 'Space' || e.code === 'Enter') dismiss(); }
+
+    setTimeout(() => {
+        document.addEventListener('click',   dismiss, { once: true });
+        document.addEventListener('keydown', onKey);
+    }, 900);
+    setTimeout(dismiss, 5200);
+})();
+
+// ── 2. ARRIVAL BACKGROUND PARTICLES ─────────────────────────────
+let _bgParts = null;
+function _initBgParts() {
+    const W = canvas.width, H = canvas.height;
+    _bgParts = Array.from({ length: 55 }, () => ({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.28,
+        vy: (Math.random() - 0.5) * 0.28,
+        r:  Math.random() * 1.8 + 0.4,
+        life: Math.random(),
+        col: Math.random() > 0.4 ? '140,185,255' : '200,220,255',
+    }));
+}
+function _drawArrivalBg() {
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = 'rgba(0,0,3,0.022)';
+    ctx.fillRect(0, 0, W, H);
+    if (!_bgParts) _initBgParts();
+    ctx.save();
+    for (const p of _bgParts) {
+        p.x += p.vx; p.y += p.vy;
+        p.life = (p.life + 0.0018) % 1;
+        if (p.x < -10) p.x = W + 5;
+        if (p.x > W+10) p.x = -5;
+        if (p.y < -10) p.y = H + 5;
+        if (p.y > H+10) p.y = -5;
+        const alpha = Math.sin(p.life * Math.PI) * 0.09;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${p.col},${alpha})`;
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ── 3. SCENE FADE TRANSITION ─────────────────────────────────────
+function _fadeScene(then) {
+    if (!_transEl) { then(); return; }
+    _transEl.classList.add('in');
+    setTimeout(() => {
+        then();
+        setTimeout(() => _transEl.classList.remove('in'), 30);
+    }, 320);
+}
+
+// ── 4. TRIPLE-BLINK DOTS ────────────────────────────────────────
+function _updateBlinkDots() {
+    _bdEls.forEach((el, i) => {
+        if (!el) return;
+        el.classList.remove('flash');
+        el.classList.toggle('lit', i < _blinkSeq);
+    });
+}
+function _flashBlinkDots(then) {
+    _bdEls.forEach(el => { if (el) { el.classList.add('lit'); el.classList.add('flash'); } });
+    setTimeout(() => {
+        _bdEls.forEach(el => { if (el) { el.classList.remove('lit'); el.classList.remove('flash'); } });
+        if (then) then();
+    }, 260);
+}
+
+// ── 5. BREATH PACER ─────────────────────────────────────────────
+const BREATH_CYCLE = 8000;
+const BREATH_CIRC  = 87.96;
+function _startBreathPacer() {
+    if (!_breathPacerEl || !_breathArcEl) return;
+    _breathPacerEl.style.opacity = '1';
+    if (_breathLabelEl) _breathLabelEl.classList.add('vis');
+    let t0 = null;
+    function tick(ts) {
+        if (_phase !== 'journey') {
+            _breathPacerEl.style.opacity = '0';
+            if (_breathLabelEl) _breathLabelEl.classList.remove('vis');
+            return;
+        }
+        if (!t0) t0 = ts;
+        const frac = ((ts - t0) % BREATH_CYCLE) / BREATH_CYCLE;
+        const prog = (1 - Math.cos(frac * Math.PI * 2)) * 0.5;
+        _breathArcEl.style.strokeDashoffset = BREATH_CIRC * (1 - prog);
+        _breathPacerEl.style.opacity = (0.52 + prog * 0.48) + '';
+        _breathRaf = requestAnimationFrame(tick);
+    }
+    _breathRaf = requestAnimationFrame(tick);
+}
+
+// ── 6. AUDIO PULSE BARS ─────────────────────────────────────────
+(function _initAudioPulse() {
+    if (!_audioPulseEl) return;
+    [3, 6, 11, 8, 14, 9, 5, 12, 7, 13, 4, 8, 10, 6, 3].forEach((h, i) => {
+        const bar = document.createElement('div');
+        bar.className = 'ap-bar';
+        bar.style.height = h + 'px';
+        bar.style.setProperty('--spd', (0.65 + Math.random() * 0.85).toFixed(2) + 's');
+        bar.style.animationDelay = (i * 0.07).toFixed(2) + 's';
+        _audioPulseEl.appendChild(bar);
+    });
+})();
+
+// ── 7. ANALYTICS AMBIENT PARTICLES ──────────────────────────────
+let _aParticlesRaf = null;
+function _startAnalyticsParticles() {
+    const c2 = document.getElementById('analytics-particles');
+    if (!c2) return;
+    c2.width  = window.innerWidth;
+    c2.height = window.innerHeight;
+    c2.classList.add('vis');
+    const ctx2 = c2.getContext('2d');
+    const pts = Array.from({ length: 38 }, () => ({
+        x: Math.random() * c2.width, y: Math.random() * c2.height,
+        vx: (Math.random() - 0.5) * 0.18,
+        vy: -0.12 - Math.random() * 0.22,
+        r:  Math.random() * 1.4 + 0.3,
+        life: Math.random(),
+    }));
+    function draw() {
+        if (_phase !== 'analytics') { c2.classList.remove('vis'); return; }
+        ctx2.clearRect(0, 0, c2.width, c2.height);
+        pts.forEach(p => {
+            p.x += p.vx; p.y += p.vy;
+            p.life = (p.life + 0.002) % 1;
+            if (p.y < -10) { p.y = c2.height + 5; p.x = Math.random() * c2.width; }
+            const alpha = Math.sin(p.life * Math.PI) * 0.05;
+            ctx2.beginPath(); ctx2.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx2.fillStyle = `rgba(160,200,255,${alpha})`; ctx2.fill();
+        });
+        _aParticlesRaf = requestAnimationFrame(draw);
+    }
+    _aParticlesRaf = requestAnimationFrame(draw);
+}
+
+// ── 8. JOURNEY TIMELINE ─────────────────────────────────────────
+const CHAP_COLORS = {
+    arrival:   '#6BA4D4', emergence: '#7DC47D', depth:    '#9B82C8',
+    connection:'#E8B86D', return:    '#7BBBC4', body:     '#E89B9B',
+    geometry:  '#8EA8D4', cosmos:    '#A87DC4', nature:   '#8DC47B',
+    material:  '#C4A87B', abstract:  '#C47B8E', mandalas: '#C4BC7B',
+};
+function _buildTimeline() {
+    const bar    = document.getElementById('timeline-bar');
+    const legend = document.getElementById('timeline-legend');
+    if (!bar) return;
+    bar.innerHTML = ''; if (legend) legend.innerHTML = '';
+    const totalMs = _sceneTimings.reduce((a, b) => a + (b || 0), 0) || 1;
+    const seenChap = new Map();
+    _scenes.forEach((sc, i) => {
+        const seg = document.createElement('div');
+        seg.className = 'tl-seg';
+        const ms  = _sceneTimings[i] || sc.duration * 1000;
+        seg.style.width      = Math.max(0.5, (ms / totalMs) * 100) + '%';
+        seg.style.background = CHAP_COLORS[sc.chapter] || '#6BA4D4';
+        seg.setAttribute('data-name', sc.name);
+        bar.appendChild(seg);
+        if (!seenChap.has(sc.chapter)) seenChap.set(sc.chapter, CHAP_COLORS[sc.chapter] || '#6BA4D4');
+        setTimeout(() => seg.classList.add('vis'), 150 + i * 55);
+    });
+    if (legend) {
+        seenChap.forEach((color, ch) => {
+            const d = document.createElement('div');
+            d.className = 'tl-chap';
+            d.innerHTML = `<div class="tl-chap-dot" style="background:${color}"></div><div class="tl-chap-label">${ch}</div>`;
+            legend.appendChild(d);
+        });
+    }
+}
+
 // ── Return to start ───────────────────────────────────────────────────
 document.getElementById('return-btn').addEventListener('click', () => {
     document.getElementById('analytics').classList.add('hidden');
+    // Stop analytics particles
+    if (_aParticlesRaf) { cancelAnimationFrame(_aParticlesRaf); _aParticlesRaf = null; }
+    const c2 = document.getElementById('analytics-particles');
+    if (c2) { c2.classList.remove('vis'); const ctx2 = c2.getContext('2d'); ctx2.clearRect(0,0,c2.width,c2.height); }
     setTimeout(() => {
         _word = ''; _anchor = null; _phase = 'arrival';
         document.getElementById('word-in').value = '';
@@ -859,7 +1752,11 @@ document.getElementById('return-btn').addEventListener('click', () => {
             const t    = data.total || 0;
             if (t > 0 && jcEl) jcEl.textContent = `you join ${t} others who have sat here`;
         });
-        document.getElementById('arrival').classList.remove('hidden');
+        const arr = document.getElementById('arrival');
+        arr.classList.remove('hidden');
+        arr.classList.add('entering');
+        setTimeout(() => arr.classList.remove('entering'), 2000);
+        // Clear canvas — arrival bg will draw over it
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }, 1200);

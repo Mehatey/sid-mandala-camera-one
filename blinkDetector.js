@@ -1,20 +1,39 @@
-// Blink Detector — MediaPipe FaceMesh + Eye Aspect Ratio
-// Calls onBlink() callback each time a complete blink is detected.
+// Blink Detector — MediaPipe FaceMesh + Eye Aspect Ratio + Stillness
+//
+// Callbacks:
+//   onBlink()        — fired on each complete blink
+//   onGaze(x, y)     — fired each frame with iris centre (normalised 0-1)
+//   onStillness()    — fired after ~2s of face stillness (cooldown 7s)
+//   onMovement()     — fired once when face starts moving after a still period
 class BlinkDetector {
-    constructor(onBlink, onGaze) {
+    constructor(onBlink, onGaze, onStillness, onMovement) {
         this.onBlink        = onBlink;
-        this.onGaze         = onGaze || null;
+        this.onGaze         = onGaze      || null;
+        this.onStillness    = onStillness || null;
+        this.onMovement     = onMovement  || null;
         this.isActive       = false;
         this.lastBlinkTime  = 0;
-        this.COOLDOWN_MS    = 600;   // min ms between registered blinks
-        this.EAR_THRESHOLD  = 0.21;  // updated adaptively once baseline is known
-        this.CONSEC_FRAMES  = 1;     // 1 frame is enough — faster response
+        this.COOLDOWN_MS    = 600;
+        this.EAR_THRESHOLD  = 0.21;
+        this.CONSEC_FRAMES  = 1;
         this.belowCount     = 0;
-        this.blinkLocked    = false; // prevents long squint from multi-firing
+        this.blinkLocked    = false;
 
-        // Adaptive baseline — calibrates to each user's open-eye EAR
+        // Adaptive EAR baseline
         this._earSamples    = [];
-        this._baselineEAR   = null;  // set after 40 steady frames
+        this._baselineEAR   = null;
+
+        // Stillness tracking — nose tip (landmark 1) position
+        this._prevNX        = null;
+        this._prevNY        = null;
+        this._movSmooth     = 0;        // exponential moving average of frame-to-frame movement
+        this._stillFrames   = 0;        // consecutive frames below threshold
+        this._wasStill      = false;
+        this._lastStillFire = 0;
+        // Thresholds (in normalised face-mesh coords, ~0-1 range)
+        this.STILL_THRESHOLD = 0.0028;  // movement EMA must be below this
+        this.STILL_FRAMES    = 52;      // ~2s at 26fps to confirm stillness
+        this.STILL_COOLDOWN  = 7000;    // ms between stillness events
 
         this.video    = null;
         this.faceMesh = null;
@@ -88,6 +107,34 @@ class BlinkDetector {
             const gazeY = (lm[468].y + lm[473].y) * 0.5;
             this.onGaze(gazeX, gazeY);
         }
+
+        // ── Stillness detection — nose tip movement ──────────────────────────
+        const nose = lm[1];
+        if (this._prevNX !== null) {
+            const dx  = nose.x - this._prevNX;
+            const dy  = nose.y - this._prevNY;
+            const mov = Math.sqrt(dx * dx + dy * dy);
+            // Exponential moving average — smooths out micro-jitter
+            this._movSmooth = this._movSmooth * 0.82 + mov * 0.18;
+
+            if (this._movSmooth < this.STILL_THRESHOLD) {
+                this._stillFrames++;
+                if (this._stillFrames >= this.STILL_FRAMES && !this._wasStill) {
+                    const now = Date.now();
+                    if (now - this._lastStillFire > this.STILL_COOLDOWN) {
+                        this._lastStillFire = now;
+                        this._wasStill = true;
+                        if (this.onStillness) this.onStillness();
+                    }
+                }
+            } else {
+                if (this._wasStill && this.onMovement) this.onMovement();
+                this._stillFrames = 0;
+                this._wasStill    = false;
+            }
+        }
+        this._prevNX = nose.x;
+        this._prevNY = nose.y;
 
         // ── Adaptive baseline calibration ────────────────────────────────────
         // Collect open-eye EAR samples until we have 40, then fix threshold

@@ -18,14 +18,27 @@ class EmbersMode {
 
     onBlink() {
         const cx = this.canvas.width / 2, cy = this.canvas.height / 2;
-        for (let i = 0; i < 22; i++) {
+        // Primary burst from centre
+        for (let i = 0; i < 45; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const dist  = Math.random() * 70;
+            const dist  = Math.random() * 90;
+            const speed = 0.8 + Math.random() * 2.2;
             this._spawnAt(
                 cx + Math.cos(angle) * dist,
                 cy + Math.sin(angle) * dist,
-                (Math.random() - 0.5) * 2.2,
-                -(0.6 + Math.random() * 1.4)
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed - 0.5
+            );
+        }
+        // Secondary ring of sparks at medium radius
+        for (let i = 0; i < 16; i++) {
+            const angle = (i / 16) * Math.PI * 2;
+            const dist  = 80 + Math.random() * 40;
+            this._spawnAt(
+                cx + Math.cos(angle) * dist,
+                cy + Math.sin(angle) * dist,
+                Math.cos(angle) * 1.8,
+                Math.sin(angle) * 1.8 - 1.2
             );
         }
         this._burst = 1.0;
