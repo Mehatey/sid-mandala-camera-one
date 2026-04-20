@@ -1144,14 +1144,9 @@ async function _startTracking() {
         _tracker = null;
     }
 
-    // ── Pose tracker ──────────────────────────────────────────────────
+    // ── Pose tracker — overlay only, does NOT drive ripple ────────────
     try {
-        _poseTracker = new PoseTracker((nx, ny, speed) => {
-            if (_phase !== 'journey') return;
-            const sc = _scenes[_sceneIdx];
-            if (!sc || MOUSE_MODES.has(sc.key)) return;
-            ripple.onHandMove(nx, ny);
-        });
+        _poseTracker = new PoseTracker(null);   // no ripple callback — hand-only
         await _poseTracker.start();
     } catch(e) {
         console.warn('Pose tracking unavailable:', e.message || e);
@@ -1353,6 +1348,8 @@ function _startScene(idx) {
         if (m.startScene) m.startScene();
     }
     audio.startScene(sc.key);
+    // Stop warp sound when leaving mandala scene
+    if (sc.key !== 'mandala') { _setWarpVolume(0); }
 
     // Scene name overlay — first scene lingers longer
     const nameEl = document.getElementById('scene-name');
@@ -1428,8 +1425,7 @@ function _animate(ts) {
     }
     // Apply water ripple on scenes without native mouse interaction
     if (!MOUSE_MODES.has(sc.key)) { try { ripple.apply(); } catch(e) {} }
-    // Body motion → ripple; mic level → mandala folds
-    _tickBodyMotion();
+    // Mic level → mandala folds (body motion detection removed — hand-only ripple)
     _tickMicLevel();
     // Update tracking overlay on pip
     _overlay.tick(_blinker, _tracker, _poseTracker);
@@ -1564,6 +1560,63 @@ function _tickMicLevel() {
     if (sc) { try { const m = getMode(sc.key); if (m && m.setMicLevel) m.setMicLevel(rms); } catch(e) {} }
     try { getMode('mandala').setMicLevel(rms); } catch(e) {}
 }
+
+// ── Mandala fold ting — Web Audio bell tone ───────────────────────────
+let _tingCtx = null;
+// Pentatonic scale pitches mapped to fold count 1–14
+const _TING_FREQS = [523,587,659,698,784,880,988,1047,1175,1319,1397,1568,1760,1976];
+window._playFoldTing = function(foldCount) {
+    try {
+        if (!_tingCtx) _tingCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx  = _tingCtx;
+        const freq = _TING_FREQS[Math.min(foldCount - 1, _TING_FREQS.length - 1)];
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.28, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.9);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.9);
+    } catch(e) {}
+};
+
+// ── Warp sound — plays looped when cursor is over mandala scene ───────
+const _warpAudio = new Audio('warp.wav');
+_warpAudio.loop   = true;
+_warpAudio.volume = 0;
+let _warpPlaying  = false;
+let _warpFadeRaf  = null;
+
+function _setWarpVolume(target) {
+    cancelAnimationFrame(_warpFadeRaf);
+    (function fade() {
+        const diff = target - _warpAudio.volume;
+        if (Math.abs(diff) < 0.005) { _warpAudio.volume = target; return; }
+        _warpAudio.volume = Math.max(0, Math.min(1, _warpAudio.volume + diff * 0.08));
+        _warpFadeRaf = requestAnimationFrame(fade);
+    })();
+}
+
+document.addEventListener('mousemove', e => {
+    if (_phase !== 'journey') return;
+    const sc = _scenes[_sceneIdx];
+    if (!sc || sc.key !== 'mandala') { _setWarpVolume(0); return; }
+    // Distance from canvas center
+    const cx = window.innerWidth  * 0.5;
+    const cy = window.innerHeight * 0.5;
+    const r  = Math.min(window.innerWidth, window.innerHeight) * 0.38;
+    const dx = e.clientX - cx, dy = e.clientY - cy;
+    const inside = Math.sqrt(dx*dx + dy*dy) < r;
+    if (inside && !_warpPlaying) {
+        _warpAudio.play().catch(() => {});
+        _warpPlaying = true;
+    }
+    _setWarpVolume(inside ? 0.35 : 0);
+    if (!inside) { setTimeout(() => { if (_warpAudio.volume < 0.01) { _warpAudio.pause(); _warpPlaying = false; } }, 1000); }
+});
 
 // ── End journey ───────────────────────────────────────────────────────
 async function _endJourney() {

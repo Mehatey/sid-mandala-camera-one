@@ -19,6 +19,7 @@ class MandalaMode {
         this._folds       = 0;
         this._targetFolds = 0;
         this._MAX_FOLDS   = 14;
+        this._lastRoundedFolds = 0;   // tracks integer changes for ting sound
 
         this._blinkFlash   = 0;
         this._humTimer     = 0;      // accumulated hum time
@@ -107,6 +108,12 @@ class MandalaMode {
         if (foldCount >= 1) {
             this._gen.drawMandala(W * 0.5, H * 0.5, foldCount, this.t, this._style, null);
         }
+
+        // Fire ting sound when a new integer fold appears
+        if (foldCount > this._lastRoundedFolds && foldCount >= 1) {
+            if (typeof window._playFoldTing === 'function') window._playFoldTing(foldCount);
+        }
+        this._lastRoundedFolds = foldCount;
 
         if (this._blinkFlash > 0.02) {
             const cx = W / 2, cy = H / 2;

@@ -13,7 +13,7 @@ class BlinkDetector {
         this.onMovement     = onMovement  || null;
         this.isActive       = false;
         this.lastBlinkTime  = 0;
-        this.COOLDOWN_MS    = 600;
+        this.COOLDOWN_MS    = 350;   // faster consecutive blink detection
         this.EAR_THRESHOLD  = 0.21;
         this.CONSEC_FRAMES  = 1;
         this.belowCount     = 0;
@@ -150,7 +150,7 @@ class BlinkDetector {
                     // Use median to ignore any accidental blinks during calibration
                     const median = sorted[Math.floor(sorted.length / 2)];
                     this._baselineEAR  = median;
-                    this.EAR_THRESHOLD = median * 0.68;
+                    this.EAR_THRESHOLD = median * 0.74;  // more sensitive — fires on lighter blinks
                 }
             }
         }
