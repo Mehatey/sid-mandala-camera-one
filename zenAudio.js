@@ -222,6 +222,11 @@ class ZenAudio {
             geode:        { wind:0.01, birds:0,     vol:0.65, voices:[{ freq:110, gain:0.06, lfoHz:0.02 }] },
             lichtenberg:  { wind:0.04, birds:0,     vol:0.65, voices:[{ freq:220, gain:0.04, lfoHz:0.10 }] },
             rainripple:   { wind:0.04, birds:16000, vol:0.90, voices:[{ freq:174, gain:0.06, lfoHz:0.05 }] },
+            spectrum:     { wind:0.01, birds:0,     vol:0.55, voices:[{ freq:174, gain:0.04, lfoHz:0.04 }] },
+            voronoi:      { wind:0.02, birds:18000, vol:0.75, voices:[{ freq:261, gain:0.05, lfoHz:0.05 }] },
+            interference: { wind:0.01, birds:0,     vol:0.65, voices:[{ freq:528, gain:0.04, lfoHz:0.03 }] },
+            epicycle:     { wind:0.02, birds:0,     vol:0.70, voices:[{ freq:220, gain:0.05, lfoHz:0.06 }] },
+            ridgeline:    { wind:0.05, birds:0,     vol:0.75, voices:[{ freq:110, gain:0.06, lfoHz:0.04 }] },
         };
         // Default: light rain, occasional birds, gentle tone
         return P[key] || { wind:0.03, birds:20000, vol:0.78, voices:[{ freq:220, gain:0.05, lfoHz:0.05 }] };

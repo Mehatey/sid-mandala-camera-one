@@ -749,6 +749,11 @@ html, body {
 <script src="eyeTrailMode.js"></script>
 <script src="mirrorGazeMode.js"></script>
 <script src="breathRingMode.js"></script>
+<script src="spectrumMode.js"></script>
+<script src="voronoiMode.js"></script>
+<script src="interferenceMode.js"></script>
+<script src="epicycleMode.js"></script>
+<script src="ridgelineMode.js"></script>
 <!-- Water ripple post-process -->
 <script src="waterRipple.js"></script>
 <!-- Tracking overlay (pip visualisation) -->
@@ -861,6 +866,12 @@ const FULL = [
     { key: 'rainripple',   name: 'rain',           chapter: 'nature',     duration: 50 },
     { key: 'geode',        name: 'crystal',        chapter: 'depth',      duration: 55 },
     { key: 'mitotic',      name: 'cell',           chapter: 'nature',     duration: 55 },
+    // New creative modes
+    { key: 'spectrum',      name: 'frequency',     chapter: 'presence',   duration: 60 },
+    { key: 'voronoi',       name: 'territory',     chapter: 'nature',     duration: 55 },
+    { key: 'interference',  name: 'interference',  chapter: 'depth',      duration: 60 },
+    { key: 'epicycle',      name: 'epicycles',     chapter: 'depth',      duration: 60 },
+    { key: 'ridgeline',     name: 'ridgeline',     chapter: 'emergence',  duration: 55 },
     // Return — coming back
     { key: 'abyss',         name: 'deep water',    chapter: 'return',     duration: 60 },
     { key: 'nacre',         name: 'iridescence',   chapter: 'return',     duration: 55 },
@@ -952,6 +963,12 @@ const DEMO = [
     { key: 'eyetrail',     name: 'eye trail',      chapter: 'gaze',       duration: 25 },
     { key: 'mirrorgaze',   name: 'mirror gaze',    chapter: 'gaze',       duration: 25 },
     { key: 'breathring',   name: 'breath ring',    chapter: 'gaze',       duration: 25 },
+    // New creative modes
+    { key: 'spectrum',     name: 'spectrum',       chapter: 'audio',      duration: 28 },
+    { key: 'voronoi',      name: 'voronoi',        chapter: 'geometry',   duration: 28 },
+    { key: 'interference', name: 'interference',   chapter: 'geometry',   duration: 28 },
+    { key: 'epicycle',     name: 'epicycles',      chapter: 'geometry',   duration: 28 },
+    { key: 'ridgeline',    name: 'ridgeline',      chapter: 'geometry',   duration: 28 },
 ];
 
 const TIERS = { quick: QUICK, standard: STANDARD, full: FULL, demo: DEMO };
@@ -1036,6 +1053,12 @@ const MODE_CLASSES = {
     eyetrail:     () => new EyeTrailMode(ctx, canvas),
     mirrorgaze:   () => new MirrorGazeMode(ctx, canvas),
     breathring:   () => new BreathRingMode(ctx, canvas),
+    // New creative modes
+    spectrum:     () => new SpectrumMode(ctx, canvas),
+    voronoi:      () => new VoronoiMode(ctx, canvas),
+    interference: () => new InterferenceMode(ctx, canvas),
+    epicycle:     () => new EpicycleMode(ctx, canvas),
+    ridgeline:    () => new RidgelineMode(ctx, canvas),
 };
 
 // Lazy-instantiate to avoid errors if some files are missing
