@@ -1125,8 +1125,8 @@ async function _startTracking() {
             v.srcObject   = _blinker.video.srcObject;
             _pip.innerHTML = '';
             _pip.appendChild(v);
-            _pip.style.opacity = '1';
-            _overlay.reattach();   // re-add overlay canvas on top of the new video
+            // pip stays hidden — display:none in CSS; camera runs for tracking only
+            _overlay.reattach();
         }
     } catch(e) {
         console.warn('Blink detection unavailable:', e.message || e);
