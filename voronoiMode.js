@@ -207,8 +207,8 @@ class VoronoiMode {
 
     // ── Main draw ───────────────────────────────────────────────────────
 
-    draw(ts) {
-        this.t += 0.016;
+    draw(dt) {
+        this.t += dt;
         this._flash = Math.max(0, this._flash - 0.04);
 
         const ctx = this.ctx;

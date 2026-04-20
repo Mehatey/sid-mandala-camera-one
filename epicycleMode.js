@@ -81,8 +81,7 @@ class EpicycleMode {
 
     // ── Main draw ───────────────────────────────────────────────────────
 
-    draw(ts) {
-        const dt = 0.016;
+    draw(dt) {
         this.t      += dt;
         // Base period ~40s
         const basePeriod = 40.0;

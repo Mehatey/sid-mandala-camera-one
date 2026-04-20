@@ -1336,6 +1336,7 @@ function _updateDots(idx) {
 function _startJourney() {
     _phase          = 'journey';
     _journeyStart   = Date.now();
+    _lastAnimTs     = 0;   // reset so first draw() gets dt=0.016 not a huge gap
     _sceneIdx       = 0;
     _blinks         = 0;
     _stillnessCount = 0;
@@ -1522,8 +1523,11 @@ function _updateStillRing() {
 }
 
 // ── Animate loop ──────────────────────────────────────────────────────
+let _lastAnimTs = 0;
 function _animate(ts) {
     _raf = requestAnimationFrame(_animate);
+    const dt = _lastAnimTs > 0 ? Math.min(0.1, (ts - _lastAnimTs) / 1000) : 0.016;
+    _lastAnimTs = ts;
     if (_phase === 'splash' || _phase === 'arrival') {
         _drawArrivalBg(ts);
         return;
@@ -1533,7 +1537,7 @@ function _animate(ts) {
     if (!sc) return;
     const m = getMode(sc.key);
     if (m && m.draw) {
-        try { m.draw(ts); }
+        try { m.draw(dt); }
         catch(e) {
             // Log draw errors once per scene to browser console
             if (!m._drawErrorLogged) { m._drawErrorLogged = true; console.warn('draw() error in', sc.key, ':', e.message); }

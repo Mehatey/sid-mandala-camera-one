@@ -394,8 +394,15 @@ class EyeSceneMode {
             ctx.restore();
         }
 
-        // Particles orbiting iris
+        // Main eye (drawn before particles so fireflies appear on top)
         const irisColor = this._irisColor(this.colorIdx, this.colorT);
+        const ew = W * 0.55, eh = W * 0.09;
+        const pupilR = H * 0.06;
+        ctx.save();
+        this._drawEye(ctx, cx, cy, ew, eh, irisR, pupilR, this.px, this.py, this.lidAmount, irisColor, 40);
+        ctx.restore();
+
+        // Particles orbiting iris — drawn after main eye so they float in front
         ctx.save();
         for (const p of this.particles) {
             if (p.bursting) {
@@ -418,13 +425,6 @@ class EyeSceneMode {
                 ctx.beginPath(); ctx.arc(px2, py2, p.size, 0, Math.PI * 2); ctx.fill();
             }
         }
-        ctx.restore();
-
-        // Main eye
-        const ew = W * 0.55, eh = W * 0.09;
-        const pupilR = H * 0.06;
-        ctx.save();
-        this._drawEye(ctx, cx, cy, ew, eh, irisR, pupilR, this.px, this.py, this.lidAmount, irisColor, 40);
         ctx.restore();
     }
 }

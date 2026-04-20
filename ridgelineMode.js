@@ -88,8 +88,8 @@ class RidgelineMode {
 
     // ── Main draw ───────────────────────────────────────────────────────
 
-    draw(ts) {
-        this.t += 0.016;
+    draw(dt) {
+        this.t += dt;
 
         const ctx = this.ctx;
         const W   = this.canvas.width;
