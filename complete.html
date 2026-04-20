@@ -754,6 +754,11 @@ html, body {
 <script src="interferenceMode.js"></script>
 <script src="epicycleMode.js"></script>
 <script src="ridgelineMode.js"></script>
+<script src="tunnel3dMode.js"></script>
+<script src="crystal3dMode.js"></script>
+<script src="lattice3dMode.js"></script>
+<script src="nebvol3dMode.js"></script>
+<script src="helix3dMode.js"></script>
 <!-- Water ripple post-process -->
 <script src="waterRipple.js"></script>
 <!-- Tracking overlay (pip visualisation) -->
@@ -872,6 +877,12 @@ const FULL = [
     { key: 'interference',  name: 'interference',  chapter: 'depth',      duration: 60 },
     { key: 'epicycle',      name: 'epicycles',     chapter: 'depth',      duration: 60 },
     { key: 'ridgeline',     name: 'ridgeline',     chapter: 'emergence',  duration: 55 },
+    // 3D modes
+    { key: 'tunnel3d',      name: 'wormhole',      chapter: 'depth',      duration: 60 },
+    { key: 'crystal3d',     name: 'crystal',       chapter: 'depth',      duration: 60 },
+    { key: 'lattice3d',     name: 'lattice',       chapter: 'emergence',  duration: 55 },
+    { key: 'nebvol3d',      name: 'nebula',        chapter: 'cosmos',     duration: 65 },
+    { key: 'helix3d',       name: 'helix',         chapter: 'nature',     duration: 60 },
     // Return — coming back
     { key: 'abyss',         name: 'deep water',    chapter: 'return',     duration: 60 },
     { key: 'nacre',         name: 'iridescence',   chapter: 'return',     duration: 55 },
@@ -969,6 +980,12 @@ const DEMO = [
     { key: 'interference', name: 'interference',   chapter: 'geometry',   duration: 28 },
     { key: 'epicycle',     name: 'epicycles',      chapter: 'geometry',   duration: 28 },
     { key: 'ridgeline',    name: 'ridgeline',      chapter: 'geometry',   duration: 28 },
+    // 3D modes
+    { key: 'tunnel3d',     name: 'tunnel',         chapter: '3d',         duration: 28 },
+    { key: 'crystal3d',    name: 'crystal',         chapter: '3d',         duration: 28 },
+    { key: 'lattice3d',    name: 'lattice',         chapter: '3d',         duration: 28 },
+    { key: 'nebvol3d',     name: 'nebula vol',      chapter: '3d',         duration: 28 },
+    { key: 'helix3d',      name: 'helix',           chapter: '3d',         duration: 28 },
 ];
 
 const TIERS = { quick: QUICK, standard: STANDARD, full: FULL, demo: DEMO };
@@ -1059,6 +1076,12 @@ const MODE_CLASSES = {
     interference: () => new InterferenceMode(ctx, canvas),
     epicycle:     () => new EpicycleMode(ctx, canvas),
     ridgeline:    () => new RidgelineMode(ctx, canvas),
+    // 3D modes
+    tunnel3d:     () => new Tunnel3DMode(ctx, canvas),
+    crystal3d:    () => new Crystal3DMode(ctx, canvas),
+    lattice3d:    () => new Lattice3DMode(ctx, canvas),
+    nebvol3d:     () => new NebVol3DMode(ctx, canvas),
+    helix3d:      () => new Helix3DMode(ctx, canvas),
 };
 
 // Lazy-instantiate to avoid errors if some files are missing

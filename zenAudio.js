@@ -227,6 +227,11 @@ class ZenAudio {
             interference: { wind:0.01, birds:0,     vol:0.65, voices:[{ freq:528, gain:0.04, lfoHz:0.03 }] },
             epicycle:     { wind:0.02, birds:0,     vol:0.70, voices:[{ freq:220, gain:0.05, lfoHz:0.06 }] },
             ridgeline:    { wind:0.05, birds:0,     vol:0.75, voices:[{ freq:110, gain:0.06, lfoHz:0.04 }] },
+            tunnel3d:     { wind:0.02, birds:0,     vol:0.60, voices:[{ freq:396, gain:0.04, lfoHz:0.05 }] },
+            crystal3d:    { wind:0.01, birds:0,     vol:0.65, voices:[{ freq:528, gain:0.04, lfoHz:0.03 }] },
+            lattice3d:    { wind:0.02, birds:0,     vol:0.65, voices:[{ freq:285, gain:0.05, lfoHz:0.04 }] },
+            nebvol3d:     { wind:0.01, birds:0,     vol:0.55, voices:[{ freq:174, gain:0.04, lfoHz:0.02 }] },
+            helix3d:      { wind:0.02, birds:18000, vol:0.75, voices:[{ freq:432, gain:0.05, lfoHz:0.06 }] },
         };
         // Default: light rain, occasional birds, gentle tone
         return P[key] || { wind:0.03, birds:20000, vol:0.78, voices:[{ freq:220, gain:0.05, lfoHz:0.05 }] };
