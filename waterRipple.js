@@ -166,6 +166,30 @@ class WaterRipple {
                (data[i01] * (1 - fx) + data[i11] * fx) * fy;
     }
 
+    // ── Cursor warp — continuous low-amplitude stir at cursor position ─
+    // Call every frame when cursor is over an interactive zone.
+    // No speed needed — creates a permanent standing-wave shimmer.
+    stirCursor(nx, ny) {
+        if (!this._active || !this._buf1) return;
+        const gx  = Math.round(nx * (this._RW - 2)) + 1;
+        const gy  = Math.round(ny * (this._RH - 2)) + 1;
+        // Small amplitude pulse — accumulates into visible warp
+        this._disturb(gx, gy, 3.5, 55);
+        this._hasWave = true;
+    }
+
+    // ── Pose wrist fallback — pre-filtered by PoseTracker speed ──────
+    // Keeps its own prev position to avoid interfering with onHandMove.
+    onPoseWave(nx, ny, speed) {
+        if (!this._active || !this._buf1) return;
+        const gx  = Math.round(nx * (this._RW - 2)) + 1;
+        const gy  = Math.round(ny * (this._RH - 2)) + 1;
+        const amp = Math.min(500, speed * 6000);
+        const rad = 2 + speed * 12;
+        this._disturb(gx, gy, rad, amp);
+        this._hasWave = true;
+    }
+
     stop() {
         this._active  = false;
         this._hasWave = false;

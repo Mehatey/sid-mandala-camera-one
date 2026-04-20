@@ -164,6 +164,21 @@ html, body {
     backdrop-filter: blur(8px) brightness(1.28) saturate(1.5);
     -webkit-backdrop-filter: blur(8px) brightness(1.28) saturate(1.5);
 }
+#water-cursor.warp {
+    width: 52px; height: 52px;
+    backdrop-filter: blur(12px) brightness(1.35) saturate(1.8) hue-rotate(10deg);
+    -webkit-backdrop-filter: blur(12px) brightness(1.35) saturate(1.8) hue-rotate(10deg);
+    border-color: rgba(180,210,255,0.55);
+    box-shadow:
+        0 0 22px rgba(120,190,255,0.28),
+        0 0 4px rgba(255,255,255,0.30) inset,
+        0 0 60px rgba(100,160,255,0.08);
+    animation: cursor-warp-pulse 2.2s ease-in-out infinite;
+}
+@keyframes cursor-warp-pulse {
+    0%,100% { transform: translate(-50%,-50%) scale(1);   }
+    50%      { transform: translate(-50%,-50%) scale(1.12); }
+}
 /* Click ripple rings */
 .cursor-ring {
     position: fixed; border-radius: 50%; pointer-events: none; z-index: 9998;
@@ -1146,7 +1161,12 @@ async function _startTracking() {
 
     // ── Pose tracker — overlay only, does NOT drive ripple ────────────
     try {
-        _poseTracker = new PoseTracker(null);   // no ripple callback — hand-only
+        _poseTracker = new PoseTracker((nx, ny, speed) => {
+            if (_phase !== 'journey') return;
+            const sc = _scenes[_sceneIdx];
+            if (!sc || MOUSE_MODES.has(sc.key)) return;
+            ripple.onPoseWave(nx, ny, speed);
+        });
         await _poseTracker.start();
     } catch(e) {
         console.warn('Pose tracking unavailable:', e.message || e);
@@ -1423,6 +1443,10 @@ function _animate(ts) {
             if (!m._drawErrorLogged) { m._drawErrorLogged = true; console.warn('draw() error in', sc.key, ':', e.message); }
         }
     }
+    // Cursor warp — stir ripple at cursor position when over mandala zone
+    if (sc.key === 'mandala' && _cursorOverMandala) {
+        try { ripple.stirCursor(_wCursorX / window.innerWidth, _wCursorY / window.innerHeight); } catch(e) {}
+    }
     // Apply water ripple on scenes without native mouse interaction
     if (!MOUSE_MODES.has(sc.key)) { try { ripple.apply(); } catch(e) {} }
     // Mic level → mandala folds (body motion detection removed — hand-only ripple)
@@ -1583,12 +1607,13 @@ window._playFoldTing = function(foldCount) {
     } catch(e) {}
 };
 
-// ── Warp sound — plays looped when cursor is over mandala scene ───────
+// ── Warp sound + cursor liquify — active when cursor is over mandala ──
 const _warpAudio = new Audio('warp.wav');
 _warpAudio.loop   = true;
 _warpAudio.volume = 0;
-let _warpPlaying  = false;
-let _warpFadeRaf  = null;
+let _warpPlaying       = false;
+let _warpFadeRaf       = null;
+let _cursorOverMandala = false;   // read by animate loop for ripple stir
 
 function _setWarpVolume(target) {
     cancelAnimationFrame(_warpFadeRaf);
@@ -1601,15 +1626,17 @@ function _setWarpVolume(target) {
 }
 
 document.addEventListener('mousemove', e => {
-    if (_phase !== 'journey') return;
+    if (_phase !== 'journey') { _cursorOverMandala = false; return; }
     const sc = _scenes[_sceneIdx];
-    if (!sc || sc.key !== 'mandala') { _setWarpVolume(0); return; }
+    if (!sc || sc.key !== 'mandala') { _cursorOverMandala = false; _wCursor.classList.remove('warp'); _setWarpVolume(0); return; }
     // Distance from canvas center
     const cx = window.innerWidth  * 0.5;
     const cy = window.innerHeight * 0.5;
     const r  = Math.min(window.innerWidth, window.innerHeight) * 0.38;
     const dx = e.clientX - cx, dy = e.clientY - cy;
     const inside = Math.sqrt(dx*dx + dy*dy) < r;
+    _cursorOverMandala = inside;
+    _wCursor.classList.toggle('warp', inside);
     if (inside && !_warpPlaying) {
         _warpAudio.play().catch(() => {});
         _warpPlaying = true;
