@@ -560,7 +560,7 @@ html, body {
 <div id="jhud" class="layer hidden">
   <div id="chapter-label"></div>
   <div id="scene-name"></div>
-  <div id="advance-hint">blink · be still · breathe</div>
+  <div id="advance-hint"></div>
   <div id="j-progress"></div>
 </div>
 <div id="kb-hint">space to advance</div>
@@ -594,7 +594,7 @@ html, body {
     <circle id="breath-arc" cx="16" cy="16" r="14"/>
   </svg>
 </div>
-<div id="breath-label">breathe</div>
+<div id="breath-label"></div>
 
 <!-- ── Audio pulse bars ──────────────────────────────────────────── -->
 <div id="audio-pulse"></div>
@@ -1432,18 +1432,24 @@ canvas.addEventListener('touchmove', e => {
     if (t) _onPointerMove(t.clientX, t.clientY);
 }, { passive: false });
 
-// Click / tap — activate mandala folds, or pass to mode if it handles clicks
+// Click / tap — +1 fold on mandala always; also route to current scene
 canvas.addEventListener('click', e => {
     if (_phase !== 'journey') return;
     const sc = _scenes[_sceneIdx];
     if (!sc) return;
-    try { getMode('mandala').onTap(); } catch(_) {}   // always nudge mandala if loaded
+    const nx = e.clientX / canvas.width, ny = e.clientY / canvas.height;
+    try { getMode('mandala').onTap(); } catch(_) {}
     const m = getMode(sc.key);
-    if (m && m.onClick) m.onClick(e.clientX / canvas.width, e.clientY / canvas.height);
+    if (m && m.onTap   && sc.key !== 'mandala') try { m.onTap(nx, ny); }   catch(_) {}
+    if (m && m.onClick && sc.key !== 'mandala') try { m.onClick(nx, ny); } catch(_) {}
 });
 canvas.addEventListener('touchend', e => {
     if (_phase !== 'journey') return;
     try { getMode('mandala').onTap(); } catch(_) {}
+    const sc = _scenes[_sceneIdx];
+    if (!sc) return;
+    const m = getMode(sc.key);
+    if (m && m.onTap && sc.key !== 'mandala') try { m.onTap(); } catch(_) {}
 });
 
 // ── Body-motion detection — frame differencing on camera video ─────────
@@ -1522,12 +1528,12 @@ async function _initMicAnalyser() {
 function _tickMicLevel() {
     if (!_micAnalyser || !_micDataBuf) return;
     _micAnalyser.getByteFrequencyData(_micDataBuf);
-    // Hum/om is typically 80–400Hz. At 44100Hz / FFT256, bin width ≈ 172Hz.
-    // Bins 0-3 = 0–516Hz covers fundamental and first harmonic of most hums.
-    // We take the peak bin value (not average) so a single strong hum bin pops.
     let peak = 0;
     for (let i = 0; i <= 3; i++) { if (_micDataBuf[i] > peak) peak = _micDataBuf[i]; }
-    const level = peak / 255;   // 0..1
+    const level = peak / 255;
+    // Route to current scene if it supports mic, always route to mandala
+    const sc = _scenes[_sceneIdx];
+    if (sc) { try { const m = getMode(sc.key); if (m && m.setMicLevel) m.setMicLevel(level); } catch(e) {} }
     try { getMode('mandala').setMicLevel(level); } catch(e) {}
 }
 
