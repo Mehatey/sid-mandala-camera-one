@@ -324,6 +324,14 @@ class SoundGardenMode {
         }
     }
 
+    stopScene() {
+        this._stopLoop();
+        if (this.audioCtx) {
+            try { this.audioCtx.close(); } catch(e) {}
+            this.audioCtx = null;
+        }
+    }
+
     // ── Sound loop management ────────────────────────────────────────────────
 
     _startLoop(type) {

@@ -16,8 +16,7 @@ html, body {
 }
 * { cursor: none !important; }
 #c { position: fixed; display: block; z-index: 0; }
-/* Hide non-dot UI during journey */
-#blink-dots, #audio-pulse, #gaze-dot, #stillness-ring, #breath-pacer { display: none !important; }
+/* Journey HUD elements — start hidden (opacity:0), shown by JS when journey begins */
 
 /* ── Layer utility ─────────────────────────────────────────────── */
 .layer {
@@ -789,6 +788,8 @@ function resize() {
     canvas.style.left   = Math.round((vw - w) / 2) + 'px';
     canvas.style.top    = Math.round((vh - h) / 2) + 'px';
     try { ripple.resize(); } catch(e) {}
+    // Propagate resize to modes that cache canvas dimensions
+    try { Object.values(MODES).forEach(m => { if (m && m.resize) m.resize(); }); } catch(e) {}
 }
 // Returns canvas bounding rect (cached — same values until next resize)
 function _cr() { return canvas.getBoundingClientRect(); }
@@ -1110,8 +1111,10 @@ function _onStillness() {
 
 function _onGaze(nx, ny) {
     if (_phase !== 'journey') return;
-    _gazeDot.style.left = (nx * window.innerWidth)  + 'px';
-    _gazeDot.style.top  = (ny * window.innerHeight) + 'px';
+    // Map normalised gaze (0-1) into canvas CSS coordinates
+    const _gcr = _cr();
+    _gazeDot.style.left = (_gcr.left + nx * _gcr.width)  + 'px';
+    _gazeDot.style.top  = (_gcr.top  + ny * _gcr.height) + 'px';
     if (!_gazeActive) { _gazeActive = true; _gazeDot.style.opacity = '1'; }
     clearTimeout(_gazeTimer);
     _gazeTimer = setTimeout(() => { _gazeActive = false; _gazeDot.style.opacity = '0'; }, 2000);
@@ -1160,6 +1163,10 @@ function _stopTracking() {
     _pip.style.opacity = '0';
     setTimeout(() => { _pip.innerHTML = ''; }, 1200);
     ripple.stop();
+    // Stop mic stream — prevents duplicate streams on "sit again"
+    if (_micStream) { try { _micStream.getTracks().forEach(t => t.stop()); } catch(e) {} _micStream = null; }
+    _micAnalyser = null;
+    _micDataBuf  = null;
 }
 
 // ── Session state ────────────────────────────────────────────────────
@@ -1274,6 +1281,10 @@ function _startJourney() {
     _blinks         = 0;
     _stillnessCount = 0;
     _sceneTimings   = [];
+    _blinkSeq       = 0;
+    _gazeActive     = false;
+    if (_gazeTimer) { clearTimeout(_gazeTimer); _gazeTimer = null; }
+    if (_blinkSeqTimer) { clearTimeout(_blinkSeqTimer); _blinkSeqTimer = null; }
     _buildDots();
     ripple.init();     // init ripple buffer immediately — mouse works before camera grants
     _startScene(0);
@@ -1319,6 +1330,13 @@ function _blink() {
 
 function _startScene(idx) {
     if (idx >= _scenes.length) { _endJourney(); return; }
+
+    // Stop previous mode (scene index differs = true transition, not first scene)
+    if (_sceneIdx !== idx) {
+        const prevSc = _scenes[_sceneIdx];
+        if (prevSc) { const pm = getMode(prevSc.key); if (pm && pm.stopScene) { try { pm.stopScene(); } catch(e) {} } }
+    }
+
     _sceneIdx  = idx;
     _sceneStart= Date.now();
     const sc   = _scenes[idx];
@@ -1386,6 +1404,45 @@ function _advance() {
     });
 }
 
+// ── Device orientation → subtle canvas tilt ──────────────────────────
+let _tiltX = 0, _tiltY = 0;
+(function _initDeviceOrientation() {
+    if (typeof DeviceOrientationEvent === 'undefined') return;
+    const handler = e => {
+        const tx = (e.gamma || 0) / 45;                    // left/right, ±45° → ±1
+        const ty = ((e.beta  || 0) - 45) / 45;             // forward/back around neutral 45°
+        _tiltX = _tiltX * 0.92 + Math.max(-1, Math.min(1, tx)) * 0.08;
+        _tiltY = _tiltY * 0.92 + Math.max(-1, Math.min(1, ty)) * 0.08;
+    };
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS 13+ — permission must come from a user gesture; expose a helper
+        window._requestOrientationPermission = async () => {
+            try {
+                if (await DeviceOrientationEvent.requestPermission() === 'granted')
+                    window.addEventListener('deviceorientation', handler);
+            } catch(e) {}
+        };
+    } else {
+        window.addEventListener('deviceorientation', handler);
+    }
+})();
+
+// ── Time-of-day colour tint ───────────────────────────────────────────
+function _applyTimeOfDay() {
+    const h = new Date().getHours() + new Date().getMinutes() / 60;
+    let hue = 0, bright = 1, sat = 1;
+    if      (h >= 5  && h < 7)  { hue =  18; bright = 0.88; sat = 1.15; }  // dawn — warm amber
+    else if (h >= 7  && h < 10) { hue =   8; bright = 0.95; sat = 1.08; }  // morning — golden
+    else if (h >= 18 && h < 20) { hue =  12; bright = 0.95; sat = 1.12; }  // dusk — rose
+    else if (h >= 20 && h < 22) { hue =  -8; bright = 0.90; sat = 0.95; }  // evening — cool
+    else if (h >= 22 || h < 5)  { hue = -18; bright = 0.82; sat = 0.85; }  // night — dim cool
+    // Midday (10-18): no tint applied (identity)
+    canvas.style.filter = `hue-rotate(${hue}deg) brightness(${bright}) saturate(${sat})`;
+}
+_applyTimeOfDay();
+// Refresh once per hour so long sessions pick up the shift
+setInterval(_applyTimeOfDay, 60 * 60 * 1000);
+
 // ── Stillness ring update ─────────────────────────────────────────────
 const _stillRing = document.getElementById('stillness-ring');
 const _stillArc  = document.getElementById('still-arc');
@@ -1427,6 +1484,11 @@ function _animate(ts) {
     if (sc.key === 'mandala' && _cursorOverMandala) {
         const _rcr = _cr(); try { ripple.stirCursor((_wCursorX - _rcr.left) / canvas.width, (_wCursorY - _rcr.top) / canvas.height); } catch(e) {}
     }
+    // Device-orientation tilt — very subtle parallax shift (max ±12px)
+    if (_tiltX !== 0 || _tiltY !== 0) {
+        const tx = (_tiltX * 12).toFixed(2), ty = (_tiltY * 8).toFixed(2);
+        canvas.style.transform = `translate(${tx}px, ${ty}px)`;
+    }
     // Apply water ripple on scenes without native mouse interaction
     if (!MOUSE_MODES.has(sc.key)) { try { ripple.apply(); } catch(e) {} }
     _tickMicLevel();
@@ -1445,12 +1507,14 @@ function _onPointerMove(clientX, clientY) {
     if (!sc) return;
     const m  = getMode(sc.key);
     const r  = _cr();
-    const px = clientX - r.left, py = clientY - r.top;   // canvas-relative pixels
+    const px = clientX - r.left, py = clientY - r.top;
     const nx = px / canvas.width,  ny = py / canvas.height;
     if (MOUSE_MODES.has(sc.key) && m && m.onMouseMove) {
         m.onMouseMove(px, py);
-    } else if (m && m.onGaze && !MOUSE_MODES.has(sc.key)) {
-        try { m.onGaze(nx, ny); } catch(_) {}
+    } else {
+        // All non-mouse-mode scenes: mouse drives ripple + gaze if supported
+        if (m && m.onGaze) { try { m.onGaze(nx, ny); } catch(_) {} }
+        ripple.onHandMove(nx, ny);   // mouse velocity → water ripple
     }
 }
 
@@ -1590,6 +1654,14 @@ function _tickMicLevel() {
     if (sc && sc.key !== 'mandala') { try { const m = getMode(sc.key); if (m && m.setMicLevel) m.setMicLevel(rms); } catch(e) {} }
     // Mandala always receives mic level (persists even when off-scene), but only once
     try { getMode('mandala').setMicLevel(rms); } catch(e) {}
+    // Mic amplitude → water ripple (breath/hum creates waves)
+    if (rms > 0.05 && _phase === 'journey' && sc && !MOUSE_MODES.has(sc.key)) {
+        ripple.onMotionDelta(
+            0.47 + Math.random() * 0.06,
+            0.47 + Math.random() * 0.06,
+            rms * 0.18
+        );
+    }
 }
 
 // ── Mandala fold ting — Web Audio bell tone ───────────────────────────
@@ -1658,6 +1730,17 @@ async function _endJourney() {
     if (_autoTimer) clearTimeout(_autoTimer);
     document.removeEventListener('keydown', _onKey);
     document.removeEventListener('dblclick', _onDblClick);
+
+    // Stop current mode — cleans up audio loops (soundGardenMode etc.)
+    const _curSc = _scenes[_sceneIdx];
+    if (_curSc) { const cm = getMode(_curSc.key); if (cm && cm.stopScene) { try { cm.stopScene(); } catch(e) {} } }
+
+    // Kill warp audio immediately
+    _cursorOverMandala = false;
+    cancelAnimationFrame(_warpFadeRaf);
+    try { _warpAudio.pause(); _warpAudio.currentTime = 0; _warpAudio.volume = 0; } catch(e) {}
+    _warpPlaying = false;
+
     _stopTracking();
     audio.end();
 
@@ -1668,6 +1751,8 @@ async function _endJourney() {
     if (_breathRaf)    { cancelAnimationFrame(_breathRaf); _breathRaf = null; }
     if (_gazeDot)      _gazeDot.style.opacity = '0';
     if (_kbHintEl)     { clearTimeout(_kbHintTimer); _kbHintEl.style.opacity = '0'; }
+    if (_blinkSeqTimer){ clearTimeout(_blinkSeqTimer); _blinkSeqTimer = null; }
+    _blinkSeq = 0; _gazeActive = false;
 
     const dur = Math.round((Date.now() - _journeyStart) / 1000);
 
