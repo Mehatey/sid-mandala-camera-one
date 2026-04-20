@@ -1469,8 +1469,11 @@ function _onPointerMove(clientX, clientY) {
     const m = getMode(sc.key);
     if (MOUSE_MODES.has(sc.key) && m && m.onMouseMove) {
         m.onMouseMove(clientX, clientY);
+    } else if (m && m.onGaze && !MOUSE_MODES.has(sc.key)) {
+        // Gaze modes: mouse movement simulates eye tracking when camera gaze isn't available
+        const nx = clientX / canvas.width, ny = clientY / canvas.height;
+        try { m.onGaze(nx, ny); } catch(_) {}
     }
-    // Ripple is no longer driven by cursor — only by hand/body from camera
 }
 
 canvas.addEventListener('mousemove', e => _onPointerMove(e.clientX, e.clientY));
@@ -1480,7 +1483,11 @@ canvas.addEventListener('touchmove', e => {
     if (t) _onPointerMove(t.clientX, t.clientY);
 }, { passive: false });
 
-// Click / tap — onTap/onClick if mode has it, otherwise trigger blink effect
+// Click / tap routing:
+//   onTap    → use it (mandala fold, etc.)
+//   onClick  → use it
+//   onGaze   → simulate gaze at click position + trigger blink effect
+//   fallback → blink effect
 canvas.addEventListener('click', e => {
     if (_phase !== 'journey') return;
     const sc = _scenes[_sceneIdx];
@@ -1489,15 +1496,27 @@ canvas.addEventListener('click', e => {
     const m = getMode(sc.key);
     if (m && m.onTap)        { try { m.onTap(nx, ny); } catch(_) {} }
     else if (m && m.onClick) { try { m.onClick(nx, ny); } catch(_) {} }
-    else                     { _blink(); }   // fallback: click = blink on scenes with no tap handler
+    else if (m && m.onGaze)  {
+        // Gaze mode: click position = simulated gaze point + blink burst at that spot
+        try { m.onGaze(nx, ny); } catch(_) {}
+        try { if (m.onBlink) m.onBlink(); } catch(_) {}
+    }
+    else { _blink(); }
 });
 canvas.addEventListener('touchend', e => {
     if (_phase !== 'journey') return;
     const sc = _scenes[_sceneIdx];
     if (!sc) return;
+    const touch = e.changedTouches[0];
+    const nx = touch ? touch.clientX / canvas.width  : 0.5;
+    const ny = touch ? touch.clientY / canvas.height : 0.5;
     const m = getMode(sc.key);
-    if (m && m.onTap) { try { m.onTap(); } catch(_) {} }
-    else              { _blink(); }
+    if (m && m.onTap)       { try { m.onTap(nx, ny); } catch(_) {} }
+    else if (m && m.onGaze) {
+        try { m.onGaze(nx, ny); } catch(_) {}
+        try { if (m.onBlink) m.onBlink(); } catch(_) {}
+    }
+    else { _blink(); }
 });
 
 // ── Body-motion detection — frame differencing on camera video ─────────
