@@ -35,9 +35,10 @@ class BlinkDetector {
         this.STILL_FRAMES    = 52;      // ~2s at 26fps to confirm stillness
         this.STILL_COOLDOWN  = 7000;    // ms between stillness events
 
-        this.video    = null;
-        this.faceMesh = null;
-        this.camera   = null;
+        this.video         = null;
+        this.faceMesh      = null;
+        this.camera        = null;
+        this.lastLandmarks = null;   // exposed for overlay
     }
 
     async start() {
@@ -90,8 +91,9 @@ class BlinkDetector {
     }
 
     _processResults(results) {
-        if (!results.multiFaceLandmarks?.length) return;
+        if (!results.multiFaceLandmarks?.length) { this.lastLandmarks = null; return; }
         const lm = results.multiFaceLandmarks[0];
+        this.lastLandmarks = lm;
 
         // MediaPipe FaceMesh landmark indices for 6-point EAR
         // Right eye: outer=33  topFar=160 topNear=158 inner=133 botNear=153 botFar=144

@@ -718,6 +718,8 @@ html, body {
 <script src="breathRingMode.js"></script>
 <!-- Water ripple post-process -->
 <script src="waterRipple.js"></script>
+<!-- Tracking overlay (pip visualisation) -->
+<script src="trackingOverlay.js"></script>
 <!-- Audio engine -->
 <script src="zenAudio.js"></script>
 <!-- Human & body -->
@@ -1014,6 +1016,7 @@ let _tracker  = null;
 const _pip    = document.getElementById('cam-pip');
 const _flash  = document.getElementById('blink-flash');
 let _flashTimer = null;
+const _overlay = new TrackingOverlay(_pip);
 
 // Modes that have their own mouse interaction — don't overlay ripple on these
 const MOUSE_MODES = new Set([
@@ -1381,6 +1384,8 @@ function _animate(ts) {
     // Body motion → ripple; mic level → mandala folds
     _tickBodyMotion();
     _tickMicLevel();
+    // Update tracking overlay on pip
+    _overlay.tick(_blinker, _tracker);
     // Drive stillness ring
     _updateStillRing();
 }

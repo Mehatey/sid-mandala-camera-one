@@ -12,7 +12,8 @@ class HandTracker {
         this.isActive    = false;
         this.PINCH_DIST  = 0.07;
         this._pinchState = {};   // label → boolean
-        this.lastPos     = null; // {x, y}
+        this.lastPos          = null; // {x, y}
+        this.lastAllLandmarks = null; // exposed for overlay — array of per-hand landmark arrays
     }
 
     async start() {
@@ -59,8 +60,10 @@ class HandTracker {
         if (!results.multiHandLandmarks?.length) {
             this._pinchState = {};
             this.lastPos = null;
+            this.lastAllLandmarks = null;
             return;
         }
+        this.lastAllLandmarks = results.multiHandLandmarks;
 
         // Use first detected hand for movement tracking
         const lm0  = results.multiHandLandmarks[0];
