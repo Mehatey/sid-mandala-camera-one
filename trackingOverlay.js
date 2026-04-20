@@ -30,8 +30,7 @@ class TrackingOverlay {
             pointerEvents: 'none',
             zIndex:        '2',
         });
-        // pip needs relative positioning for absolute child
-        pipEl.style.position = 'relative';
+        // pip is position:fixed which already acts as containing block — don't change it
         pipEl.appendChild(this._canvas);
 
         this._ctx = this._canvas.getContext('2d');
@@ -243,6 +242,11 @@ class TrackingOverlay {
         ctx.beginPath();
         ctx.arc(W - 5, 5, 1.5, 0, Math.PI * 2);
         ctx.fill();
+    }
+
+    // Call after the pip's innerHTML is reset and video re-added — re-appends the canvas on top
+    reattach() {
+        this._pip.appendChild(this._canvas);
     }
 
     tick(blinker, tracker) {

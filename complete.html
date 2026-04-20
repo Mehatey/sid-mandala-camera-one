@@ -1105,6 +1105,7 @@ async function _startTracking() {
             _pip.innerHTML = '';
             _pip.appendChild(v);
             _pip.style.opacity = '1';
+            _overlay.reattach();   // re-add overlay canvas on top of the new video
         }
     } catch(e) {
         console.warn('Blink detection unavailable:', e.message || e);
@@ -1122,6 +1123,9 @@ async function _startTracking() {
         console.warn('Hand tracking unavailable:', e.message || e);
         _tracker = null;
     }
+
+    // ── Mic — init here so AudioContext is created after user gesture ──
+    _initMicAnalyser();
 }
 
 function _stopTracking() {
@@ -1410,6 +1414,20 @@ canvas.addEventListener('touchmove', e => {
     if (t) _onPointerMove(t.clientX, t.clientY);
 }, { passive: false });
 
+// Click / tap — activate mandala folds, or pass to mode if it handles clicks
+canvas.addEventListener('click', e => {
+    if (_phase !== 'journey') return;
+    const sc = _scenes[_sceneIdx];
+    if (!sc) return;
+    try { getMode('mandala').onTap(); } catch(_) {}   // always nudge mandala if loaded
+    const m = getMode(sc.key);
+    if (m && m.onClick) m.onClick(e.clientX / canvas.width, e.clientY / canvas.height);
+});
+canvas.addEventListener('touchend', e => {
+    if (_phase !== 'journey') return;
+    try { getMode('mandala').onTap(); } catch(_) {}
+});
+
 // ── Body-motion detection — frame differencing on camera video ─────────
 let _motionCanvas = null, _motionCtx = null;
 let _motionPrev   = null;
@@ -1444,10 +1462,21 @@ function _tickBodyMotion() {
                   + Math.abs(cur[i+2] - _motionPrev[i+2]);
         }
         const norm = diff / (_MOTION_W * _MOTION_H * 765);  // 0..1
-        if (norm > 0.004) {
-            // Map motion magnitude to a ripple at the frame centre — small, light
-            const nx = 0.5 + (Math.random() - 0.5) * 0.15 * norm;
-            const ny = 0.5 + (Math.random() - 0.5) * 0.15 * norm;
+        if (norm > 0.002) {
+            // Find centroid of motion for a more natural ripple position
+            let mx = 0, my = 0, mc = 0;
+            for (let pi = 0; pi < cur.length; pi += 4) {
+                const d = Math.abs(cur[pi] - _motionPrev[pi])
+                        + Math.abs(cur[pi+1] - _motionPrev[pi+1])
+                        + Math.abs(cur[pi+2] - _motionPrev[pi+2]);
+                if (d > 30) {
+                    const gx = ((pi / 4) % _MOTION_W) / _MOTION_W;
+                    const gy = Math.floor((pi / 4) / _MOTION_W) / _MOTION_H;
+                    mx += gx; my += gy; mc++;
+                }
+            }
+            const nx = mc > 0 ? 1 - mx / mc : 0.5;   // mirror x for selfie view
+            const ny = mc > 0 ? my / mc     : 0.5;
             ripple.onHandMove(nx, ny);
         }
     }
@@ -1471,16 +1500,17 @@ async function _initMicAnalyser() {
         _micAnalyser = null;
     }
 }
-_initMicAnalyser();
 
 function _tickMicLevel() {
     if (!_micAnalyser || !_micDataBuf) return;
     _micAnalyser.getByteFrequencyData(_micDataBuf);
-    // Bins 1-5 capture hum (≈ 172–860 Hz at 44kHz / FFT256)
-    let sum = 0;
-    for (let i = 1; i <= 5; i++) sum += _micDataBuf[i];
-    const rms = (sum / 5) / 255;   // 0..1
-    try { getMode('mandala').setMicLevel(rms); } catch(e) {}
+    // Hum/om is typically 80–400Hz. At 44100Hz / FFT256, bin width ≈ 172Hz.
+    // Bins 0-3 = 0–516Hz covers fundamental and first harmonic of most hums.
+    // We take the peak bin value (not average) so a single strong hum bin pops.
+    let peak = 0;
+    for (let i = 0; i <= 3; i++) { if (_micDataBuf[i] > peak) peak = _micDataBuf[i]; }
+    const level = peak / 255;   // 0..1
+    try { getMode('mandala').setMicLevel(level); } catch(e) {}
 }
 
 // ── End journey ───────────────────────────────────────────────────────
