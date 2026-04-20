@@ -1,5 +1,5 @@
 // lattice3dMode.js — 3D cubic lattice of glowing points with wave displacement
-export class Lattice3DMode {
+class Lattice3DMode {
   constructor(ctx, canvas) {
     this.ctx = ctx;
     this.canvas = canvas;

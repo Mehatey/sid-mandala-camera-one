@@ -1,5 +1,5 @@
 // crystal3dMode.js — Rotating 3D icosahedron crystal gem with flat shading
-export class Crystal3DMode {
+class Crystal3DMode {
   constructor(ctx, canvas) {
     this.ctx = ctx;
     this.canvas = canvas;

@@ -1,5 +1,5 @@
 // helix3dMode.js — Double helix (DNA) rotating in 3D
-export class Helix3DMode {
+class Helix3DMode {
   constructor(ctx, canvas) {
     this.ctx = ctx;
     this.canvas = canvas;

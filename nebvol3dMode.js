@@ -1,5 +1,5 @@
 // nebvol3dMode.js — Software raymarched volumetric nebula at 1/4 resolution
-export class NebVol3DMode {
+class NebVol3DMode {
   constructor(ctx, canvas) {
     this.ctx = ctx;
     this.canvas = canvas;

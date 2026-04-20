@@ -1,5 +1,5 @@
 // tunnel3dMode.js — Infinite 3D tunnel flythrough
-export class Tunnel3DMode {
+class Tunnel3DMode {
   constructor(ctx, canvas) {
     this.ctx = ctx;
     this.canvas = canvas;

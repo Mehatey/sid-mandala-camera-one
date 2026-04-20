@@ -55,9 +55,10 @@ class SpectrumMode {
         this._sparkPhase   = 0;
         this._crystalPhase = 0;
         this._style = 0;
+        this._sceneId = (this._sceneId || 0) + 1;
         this._initSeeds();
         this._initBuffer();
-        this._initMic();
+        this._initMic(this._sceneId);
     }
 
     stopScene() {
@@ -115,9 +116,11 @@ class SpectrumMode {
         this._bufCtx = this._buf.getContext('2d');
     }
 
-    async _initMic() {
+    async _initMic(id) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            // Guard against stopScene() running before the mic was granted
+            if (id !== this._sceneId) { stream.getTracks().forEach(t => t.stop()); return; }
             this._micStream = stream;
             this._ac = new (window.AudioContext || window.webkitAudioContext)();
             this._sampleRate = this._ac.sampleRate;
@@ -399,8 +402,7 @@ class SpectrumMode {
 
     // ── Main draw ───────────────────────────────────────────────────────
 
-    draw(ts) {
-        const dt   = 0.016;
+    draw(dt) {
         this.t    += dt;
 
         const ctx = this.ctx;
