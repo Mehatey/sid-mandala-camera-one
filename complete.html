@@ -185,8 +185,7 @@ html, body {
 .jchap-dot   { width: 6px; height: 6px; border-radius: 50%; background: rgba(180,205,255,0.18); transition: background 0.5s; }
 .jchap-dot.active { background: rgba(180,210,255,0.55); }
 
-/* ── CAMERA PIP — hidden; camera still runs for tracking ─────────── */
-#cam-pip { display: none !important; }
+
 /* ── STILLNESS RING ─────────────────────────────────────────────── */
 #stillness-ring {
     position: fixed; top: 20px; right: 20px;
@@ -209,20 +208,34 @@ html, body {
 }
 
 #cam-pip {
-    position: fixed; bottom: 18px; right: 18px;
-    width: 112px; height: 84px;
-    border-radius: 6px; overflow: hidden;
-    border: 1px solid rgba(140, 185, 255, 0.18);
+    position: fixed; bottom: 22px; right: 22px;
+    width: 128px; height: 128px;
+    overflow: hidden;
     z-index: 20; opacity: 0;
-    transition: opacity 1.2s ease;
+    transition: opacity 1.4s ease;
     background: #000;
-    box-shadow: 0 2px 18px rgba(0,0,0,0.45);
+    border-radius: 62% 38% 44% 56% / 58% 46% 54% 42%;
+    animation: pip-blob 9s ease-in-out infinite;
+    box-shadow:
+        0 0 28px rgba(80,150,255,0.14),
+        0 0 6px  rgba(120,190,255,0.10) inset;
+}
+@keyframes pip-blob {
+    0%   { border-radius: 62% 38% 44% 56% / 58% 46% 54% 42%; }
+    16%  { border-radius: 44% 56% 62% 38% / 42% 58% 38% 62%; }
+    33%  { border-radius: 38% 62% 50% 50% / 55% 38% 62% 45%; }
+    50%  { border-radius: 54% 46% 38% 62% / 44% 56% 46% 54%; }
+    66%  { border-radius: 46% 54% 56% 44% / 62% 42% 56% 38%; }
+    83%  { border-radius: 56% 44% 46% 54% / 38% 62% 44% 56%; }
+    100% { border-radius: 62% 38% 44% 56% / 58% 46% 54% 42%; }
 }
 #cam-pip video {
-    width: 100%; height: 100%;
+    width: 112%; height: 112%;
+    margin: -6%;
     object-fit: cover;
-    transform: scaleX(-1);   /* mirror — selfie view */
+    transform: scaleX(-1);
     display: block;
+    filter: saturate(0.85) brightness(0.92);
 }
 #blink-flash {
     position: fixed; inset: 0; z-index: 19;
@@ -1125,7 +1138,7 @@ async function _startTracking() {
             v.srcObject   = _blinker.video.srcObject;
             _pip.innerHTML = '';
             _pip.appendChild(v);
-            // pip stays hidden — display:none in CSS; camera runs for tracking only
+            _pip.style.opacity = '1';
             _overlay.reattach();
         }
     } catch(e) {
