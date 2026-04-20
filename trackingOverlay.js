@@ -244,22 +244,65 @@ class TrackingOverlay {
         ctx.fill();
     }
 
+    // Pose skeleton — upper body only (lower often off-frame)
+    _drawPose(ctx, lm) {
+        const CONNECTIONS = [
+            [11, 12],          // shoulders
+            [11, 13], [13, 15], // left arm
+            [12, 14], [14, 16], // right arm
+            [11, 23], [12, 24], // torso sides
+            [23, 24],           // hips
+        ];
+        const WRISTS = new Set([15, 16]);
+        const JOINTS = new Set([11, 12, 13, 14, 15, 16, 23, 24]);
+
+        ctx.save();
+
+        // Bone lines
+        ctx.strokeStyle = 'rgba(160, 100, 255, 0.45)';
+        ctx.lineWidth   = 0.7;
+        for (const [a, b] of CONNECTIONS) {
+            if (!lm[a] || !lm[b]) continue;
+            if (lm[a].visibility < 0.4 || lm[b].visibility < 0.4) continue;
+            ctx.beginPath();
+            ctx.moveTo(this._lx(lm[a].x), this._ly(lm[a].y));
+            ctx.lineTo(this._lx(lm[b].x), this._ly(lm[b].y));
+            ctx.stroke();
+        }
+
+        // Joint dots
+        for (const idx of JOINTS) {
+            if (!lm[idx] || lm[idx].visibility < 0.4) continue;
+            const isWrist = WRISTS.has(idx);
+            ctx.fillStyle = isWrist
+                ? 'rgba(200, 140, 255, 0.95)'
+                : 'rgba(160, 100, 255, 0.55)';
+            ctx.beginPath();
+            ctx.arc(this._lx(lm[idx].x), this._ly(lm[idx].y), isWrist ? 2.2 : 1.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
     // Call after the pip's innerHTML is reset and video re-added — re-appends the canvas on top
     reattach() {
         this._pip.appendChild(this._canvas);
     }
 
-    tick(blinker, tracker) {
+    tick(blinker, tracker, poseTracker) {
         const ctx = this._ctx;
         const W = this._W, H = this._H;
         ctx.clearRect(0, 0, W, H);
 
-        const faceLM = blinker?.lastLandmarks   || null;
-        const handLMs = tracker?.lastAllLandmarks || null;
+        const faceLM  = blinker?.lastLandmarks      || null;
+        const handLMs = tracker?.lastAllLandmarks    || null;
+        const poseLM  = poseTracker?.lastLandmarks   || null;
 
         this._faceDetected = !!faceLM;
-        this._handDetected = !!(handLMs && handLMs.length);
+        this._handDetected = !!(handLMs && handLMs.length) || !!poseLM;
 
+        if (poseLM)  this._drawPose(ctx, poseLM);
         if (faceLM)  this._drawFace(ctx, faceLM);
         if (handLMs) for (const lm of handLMs) this._drawHand(ctx, lm);
 

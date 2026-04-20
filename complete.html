@@ -631,8 +631,10 @@ html, body {
 <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js" crossorigin="anonymous"></script>
 <script defer src="blinkDetector.js"></script>
 <script defer src="handTracker.js"></script>
+<script defer src="poseTracker.js"></script>
 
 <!-- ── Original mandala utility ─────────────────────────────────── -->
 <script src="mandalaGenerator.js"></script>
@@ -1010,9 +1012,10 @@ const audio = new ZenAudio();
 // ── Water ripple post-process ─────────────────────────────────────────
 const ripple = new WaterRipple(canvas, ctx);
 
-// ── Camera / blink / hand tracking ───────────────────────────────────
-let _blinker  = null;
-let _tracker  = null;
+// ── Camera / blink / hand / pose tracking ────────────────────────────
+let _blinker      = null;
+let _tracker      = null;
+let _poseTracker  = null;
 const _pip    = document.getElementById('cam-pip');
 const _flash  = document.getElementById('blink-flash');
 let _flashTimer = null;
@@ -1124,13 +1127,28 @@ async function _startTracking() {
         _tracker = null;
     }
 
+    // ── Pose tracker ──────────────────────────────────────────────────
+    try {
+        _poseTracker = new PoseTracker((nx, ny, speed) => {
+            if (_phase !== 'journey') return;
+            const sc = _scenes[_sceneIdx];
+            if (!sc || MOUSE_MODES.has(sc.key)) return;
+            ripple.onHandMove(nx, ny);
+        });
+        await _poseTracker.start();
+    } catch(e) {
+        console.warn('Pose tracking unavailable:', e.message || e);
+        _poseTracker = null;
+    }
+
     // ── Mic — init here so AudioContext is created after user gesture ──
     _initMicAnalyser();
 }
 
 function _stopTracking() {
-    if (_blinker) { try { _blinker.stop(); } catch(e) {} _blinker = null; }
-    if (_tracker) { try { _tracker.stop(); } catch(e) {} _tracker = null; }
+    if (_blinker)     { try { _blinker.stop();     } catch(e) {} _blinker     = null; }
+    if (_tracker)     { try { _tracker.stop();     } catch(e) {} _tracker     = null; }
+    if (_poseTracker) { try { _poseTracker.stop(); } catch(e) {} _poseTracker = null; }
     _pip.style.opacity = '0';
     setTimeout(() => { _pip.innerHTML = ''; }, 1200);
     ripple.stop();
@@ -1389,7 +1407,7 @@ function _animate(ts) {
     _tickBodyMotion();
     _tickMicLevel();
     // Update tracking overlay on pip
-    _overlay.tick(_blinker, _tracker);
+    _overlay.tick(_blinker, _tracker, _poseTracker);
     // Drive stillness ring
     _updateStillRing();
 }
