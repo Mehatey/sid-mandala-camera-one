@@ -29,13 +29,14 @@ class MandalaMode {
     }
 
     startScene() {
-        this.t            = 0;
-        this._folds       = 0;
-        this._targetFolds = 0;
-        this._blinkFlash  = 0;
-        this._humTimer    = 0;
-        this._lastInputMs = 0;
-        this._decayTimer  = 0;
+        this.t                 = 0;
+        this._folds            = 0;
+        this._targetFolds      = 0;
+        this._blinkFlash       = 0;
+        this._humTimer         = 0;
+        this._lastInputMs      = 0;
+        this._decayTimer       = 0;
+        this._lastRoundedFolds = 0;   // reset so tings fire from fold 1 each session
         this._gen.setStyle(this._style);
     }
 

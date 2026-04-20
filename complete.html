@@ -1369,7 +1369,11 @@ function _startScene(idx) {
     }
     audio.startScene(sc.key);
     // Stop warp sound when leaving mandala scene
-    if (sc.key !== 'mandala') { _setWarpVolume(0); }
+    if (sc.key !== 'mandala') {
+        _setWarpVolume(0);
+        _cursorOverMandala = false;
+        setTimeout(() => { try { _warpAudio.pause(); _warpAudio.currentTime = 0; } catch(e) {} _warpPlaying = false; }, 1500);
+    }
 
     // Scene name overlay — first scene lingers longer
     const nameEl = document.getElementById('scene-name');
@@ -1581,7 +1585,9 @@ function _tickMicLevel() {
     }
     const rms = Math.sqrt(sum / _micDataBuf.length);  // 0..1
     const sc = _scenes[_sceneIdx];
-    if (sc) { try { const m = getMode(sc.key); if (m && m.setMicLevel) m.setMicLevel(rms); } catch(e) {} }
+    // Route mic to current scene (skip mandala here — handled below)
+    if (sc && sc.key !== 'mandala') { try { const m = getMode(sc.key); if (m && m.setMicLevel) m.setMicLevel(rms); } catch(e) {} }
+    // Mandala always receives mic level (persists even when off-scene), but only once
     try { getMode('mandala').setMicLevel(rms); } catch(e) {}
 }
 
