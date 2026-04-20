@@ -12,8 +12,12 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     color: rgba(215, 225, 255, 0.88);
     -webkit-font-smoothing: antialiased;
+    cursor: none;
 }
+* { cursor: none !important; }
 #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+/* Hide non-dot UI during journey */
+#blink-dots, #audio-pulse, #gaze-dot, #stillness-ring, #breath-pacer { display: none !important; }
 
 /* ── Layer utility ─────────────────────────────────────────────── */
 .layer {
@@ -129,43 +133,47 @@ html, body {
 
 /* ── JOURNEY HUD ───────────────────────────────────────────────── */
 #jhud { pointer-events: none; z-index: 15; }
-#jhud #scene-nav { pointer-events: all; }
 
-#chapter-label {
-    position: fixed; top: 28px; left: 50%; transform: translateX(-50%);
-    font-size: 9px; letter-spacing: 0.30em; text-transform: uppercase;
-    color: rgba(140,168,215,0.22); transition: opacity 1s;
+/* Hide all text/button UI — only dots remain */
+#chapter-label, #scene-name, #advance-hint, #scene-nav, #kb-hint { display: none !important; }
+
+/* ── WATER CURSOR ──────────────────────────────────────────────── */
+#water-cursor {
+    position: fixed; top: 0; left: 0;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    backdrop-filter: blur(5px) brightness(1.18) saturate(1.3);
+    -webkit-backdrop-filter: blur(5px) brightness(1.18) saturate(1.3);
+    background: radial-gradient(circle at 32% 30%,
+        rgba(255,255,255,0.32) 0%,
+        rgba(180,220,255,0.10) 45%,
+        rgba(100,180,255,0.04) 70%,
+        transparent 100%);
+    border: 1px solid rgba(180,215,255,0.28);
+    box-shadow:
+        0 0 10px rgba(120,190,255,0.12),
+        0 0 2px  rgba(255,255,255,0.20) inset;
+    transition: transform 0.06s linear, width 0.12s, height 0.12s, opacity 0.3s;
+    opacity: 0;
 }
-#scene-name {
-    font-size: clamp(18px, 2.4vw, 26px); font-weight: 200;
-    letter-spacing: 0.22em; text-transform: lowercase;
-    color: rgba(215,228,255,0.85); text-align: center;
-    transition: opacity 2.2s ease; max-width: 600px; line-height: 1.35;
+#water-cursor.active { opacity: 1; }
+#water-cursor.pressed {
+    width: 24px; height: 24px;
+    backdrop-filter: blur(8px) brightness(1.28) saturate(1.5);
+    -webkit-backdrop-filter: blur(8px) brightness(1.28) saturate(1.5);
 }
-#advance-hint {
-    position: fixed; bottom: 58px; left: 50%; transform: translateX(-50%);
-    font-size: 9px; letter-spacing: 0.22em; color: rgba(140,165,215,0.18);
-    text-transform: lowercase; transition: opacity 1.2s ease;
-    white-space: nowrap;
+/* Click ripple rings */
+.cursor-ring {
+    position: fixed; border-radius: 50%; pointer-events: none; z-index: 9998;
+    border: 1px solid rgba(160,210,255,0.50);
+    transform: translate(-50%, -50%) scale(1);
+    animation: cursor-ring-out 0.6s ease-out forwards;
 }
-#scene-nav {
-    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 18px; z-index: 25; pointer-events: all;
-}
-#scene-nav button {
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(140,185,255,0.18);
-    color: rgba(180,210,255,0.55); font-size: 14px; width: 32px; height: 32px;
-    border-radius: 50%; cursor: pointer; display: flex; align-items: center;
-    justify-content: center; transition: background 0.2s, color 0.2s;
-    line-height: 1;
-}
-#scene-nav button:hover { background: rgba(255,255,255,0.12); color: rgba(200,225,255,0.9); }
-/* keyboard hint — fades in after 4s, fades out when scene advances */
-#kb-hint {
-    position: fixed; bottom: 22px; right: 22px;
-    font-size: 8px; letter-spacing: 0.18em; color: rgba(120,150,210,0.18);
-    text-transform: lowercase; pointer-events: none; z-index: 18;
-    transition: opacity 1.2s ease; opacity: 0;
+@keyframes cursor-ring-out {
+    from { width: 32px; height: 32px; opacity: 0.6; }
+    to   { width: 90px; height: 90px; opacity: 0; }
 }
 #j-progress {
     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
@@ -575,13 +583,10 @@ html, body {
   <div id="scene-name"></div>
   <div id="advance-hint"></div>
   <div id="j-progress"></div>
-  <div id="scene-nav">
-    <button id="nav-prev" aria-label="previous scene">&#8592;</button>
-    <button id="nav-next" aria-label="next scene">&#8594;</button>
-  </div>
 </div>
 <div id="kb-hint">← → to navigate</div>
 
+<div id="water-cursor"></div>
 <div id="cam-pip"></div>
 <div id="blink-flash"></div>
 <div id="stillness-ring">
@@ -1730,6 +1735,31 @@ let _gazeActive = false;
 let _gazeTimer  = null;
 let _breathRaf  = null;
 let _kbHintTimer = null;
+
+// ── Water cursor ──────────────────────────────────────────────────
+const _wCursor = document.getElementById('water-cursor');
+let _wCursorX = 0, _wCursorY = 0;
+
+document.addEventListener('mousemove', e => {
+    _wCursorX = e.clientX;
+    _wCursorY = e.clientY;
+    _wCursor.style.left = _wCursorX + 'px';
+    _wCursor.style.top  = _wCursorY + 'px';
+    _wCursor.classList.add('active');
+});
+document.addEventListener('mouseleave', () => _wCursor.classList.remove('active'));
+document.addEventListener('mouseenter', () => _wCursor.classList.add('active'));
+document.addEventListener('mousedown', () => _wCursor.classList.add('pressed'));
+document.addEventListener('mouseup',   () => {
+    _wCursor.classList.remove('pressed');
+    // Spawn click ripple ring
+    const ring = document.createElement('div');
+    ring.className = 'cursor-ring';
+    ring.style.left = _wCursorX + 'px';
+    ring.style.top  = _wCursorY + 'px';
+    document.body.appendChild(ring);
+    setTimeout(() => ring.remove(), 650);
+});
 
 // ── 1. SPLASH SCREEN ─────────────────────────────────────────────
 (function _runSplash() {
