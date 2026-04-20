@@ -76,8 +76,8 @@ class WaterRipple {
 
         const gx  = Math.round(nx * (this._RW - 2)) + 1;
         const gy  = Math.round(ny * (this._RH - 2)) + 1;
-        const amp = Math.min(1400, speed * 20000);
-        const rad = 1.8 + speed * 32;
+        const amp = Math.min(280, speed * 3800);
+        const rad = 1.2 + speed * 7;
 
         this._disturb(gx, gy, rad, amp);
         this._hasWave = true;
@@ -112,7 +112,7 @@ class WaterRipple {
             for (let x = 1; x < RW - 1; x++) {
                 const i   = y * RW + x;
                 const val = (b1[i - 1] + b1[i + 1] + b1[i - RW] + b1[i + RW]) * 0.5 - b2[i];
-                b2[i] = val * 0.987;            // damping — 0.987 ≈ 2s decay at 60fps
+                b2[i] = val * 0.972;            // damping — 0.972 ≈ 0.6s decay at 60fps
                 const av = b2[i] < 0 ? -b2[i] : b2[i];
                 if (av > maxAmp) maxAmp = av;
             }
@@ -135,7 +135,7 @@ class WaterRipple {
         const b   = this._buf1;
 
         // How many pixels of max displacement at unit wave amplitude
-        const DISP = 0.24;
+        const DISP = 0.08;
 
         for (let y = 1; y < RH - 1; y++) {
             for (let x = 1; x < RW - 1; x++) {
@@ -145,11 +145,10 @@ class WaterRipple {
                 const dx = (b[i + 1]  - b[i - 1])  * DISP;
                 const dy = (b[i + RW] - b[i - RW]) * DISP;
 
-                // Chromatic aberration — R, G, B refract at slightly different strengths
-                // Mimics how different wavelengths bend differently through water
+                // Chromatic aberration — subtle, just enough to feel like glass
                 const rx = x + dx * 1.00,  ry = y + dy * 1.00;
-                const gx = x + dx * 0.88,  gy = y + dy * 0.88;
-                const bx = x + dx * 0.76,  by = y + dy * 0.76;
+                const gx = x + dx * 0.94,  gy = y + dy * 0.94;
+                const bx = x + dx * 0.88,  by = y + dy * 0.88;
 
                 const oi   = (y * RW + x) * 4;
                 od[oi]     = this._bsamp(sd, RW, RH, rx, ry, 0);   // R

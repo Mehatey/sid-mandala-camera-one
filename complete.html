@@ -1378,24 +1378,24 @@ function _animate(ts) {
     }
     // Apply water ripple on scenes without native mouse interaction
     if (!MOUSE_MODES.has(sc.key)) { try { ripple.apply(); } catch(e) {} }
+    // Body motion → ripple; mic level → mandala folds
+    _tickBodyMotion();
+    _tickMicLevel();
     // Drive stillness ring
     _updateStillRing();
 }
 _raf = requestAnimationFrame(_animate);
 
-// ── Mouse / touch routing ─────────────────────────────────────────────
+// ── Mouse / touch routing — only for modes that own their interaction ──
 function _onPointerMove(clientX, clientY) {
     if (_phase !== 'journey') return;
     const sc = _scenes[_sceneIdx];
     if (!sc) return;
     const m = getMode(sc.key);
-    if (MOUSE_MODES.has(sc.key)) {
-        // Mode owns its own interaction
-        if (m && m.onMouseMove) m.onMouseMove(clientX, clientY);
-    } else {
-        // Drive water ripple for all other scenes
-        ripple.onHandMove(clientX / canvas.width, clientY / canvas.height);
+    if (MOUSE_MODES.has(sc.key) && m && m.onMouseMove) {
+        m.onMouseMove(clientX, clientY);
     }
+    // Ripple is no longer driven by cursor — only by hand/body from camera
 }
 
 canvas.addEventListener('mousemove', e => _onPointerMove(e.clientX, e.clientY));
@@ -1404,6 +1404,79 @@ canvas.addEventListener('touchmove', e => {
     const t = e.touches[0];
     if (t) _onPointerMove(t.clientX, t.clientY);
 }, { passive: false });
+
+// ── Body-motion detection — frame differencing on camera video ─────────
+let _motionCanvas = null, _motionCtx = null;
+let _motionPrev   = null;
+let _motionFrame  = 0;
+const _MOTION_W   = 40, _MOTION_H = 30;   // tiny — just enough to sense motion
+
+function _initMotionDetect() {
+    _motionCanvas = document.createElement('canvas');
+    _motionCanvas.width  = _MOTION_W;
+    _motionCanvas.height = _MOTION_H;
+    _motionCtx = _motionCanvas.getContext('2d', { willReadFrequently: true });
+}
+_initMotionDetect();
+
+function _tickBodyMotion() {
+    if (_phase !== 'journey') return;
+    if (!_blinker || !_blinker.video || _blinker.video.readyState < 2) return;
+    const sc = _scenes[_sceneIdx];
+    if (!sc || MOUSE_MODES.has(sc.key)) return;
+
+    _motionFrame++;
+    if (_motionFrame % 3 !== 0) return;   // sample every 3 frames
+
+    _motionCtx.drawImage(_blinker.video, 0, 0, _MOTION_W, _MOTION_H);
+    const cur = _motionCtx.getImageData(0, 0, _MOTION_W, _MOTION_H).data;
+
+    if (_motionPrev) {
+        let diff = 0;
+        for (let i = 0; i < cur.length; i += 4) {
+            diff += Math.abs(cur[i]   - _motionPrev[i])
+                  + Math.abs(cur[i+1] - _motionPrev[i+1])
+                  + Math.abs(cur[i+2] - _motionPrev[i+2]);
+        }
+        const norm = diff / (_MOTION_W * _MOTION_H * 765);  // 0..1
+        if (norm > 0.004) {
+            // Map motion magnitude to a ripple at the frame centre — small, light
+            const nx = 0.5 + (Math.random() - 0.5) * 0.15 * norm;
+            const ny = 0.5 + (Math.random() - 0.5) * 0.15 * norm;
+            ripple.onHandMove(nx, ny);
+        }
+    }
+    _motionPrev = cur.slice();
+}
+
+// ── Mic analyser — hum drives mandala fold count ───────────────────────
+let _micAnalyser = null, _micDataBuf = null, _micStream = null;
+
+async function _initMicAnalyser() {
+    try {
+        _micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        const actx  = new (window.AudioContext || window.webkitAudioContext)();
+        const src   = actx.createMediaStreamSource(_micStream);
+        _micAnalyser = actx.createAnalyser();
+        _micAnalyser.fftSize = 256;
+        src.connect(_micAnalyser);
+        _micDataBuf = new Uint8Array(_micAnalyser.frequencyBinCount);
+    } catch(e) {
+        console.warn('Mic unavailable for fold control:', e.message || e);
+        _micAnalyser = null;
+    }
+}
+_initMicAnalyser();
+
+function _tickMicLevel() {
+    if (!_micAnalyser || !_micDataBuf) return;
+    _micAnalyser.getByteFrequencyData(_micDataBuf);
+    // Bins 1-5 capture hum (≈ 172–860 Hz at 44kHz / FFT256)
+    let sum = 0;
+    for (let i = 1; i <= 5; i++) sum += _micDataBuf[i];
+    const rms = (sum / 5) / 255;   // 0..1
+    try { getMode('mandala').setMicLevel(rms); } catch(e) {}
+}
 
 // ── End journey ───────────────────────────────────────────────────────
 async function _endJourney() {
