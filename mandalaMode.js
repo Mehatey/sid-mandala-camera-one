@@ -24,7 +24,7 @@ class MandalaMode {
         this._humTimer     = 0;      // accumulated hum time
         this._lastInputMs  = 0;      // timestamp of last input
         this._GRACE_MS     = 10000;  // 10s before decay starts
-        this._DECAY_RATE   = 0.5;    // folds per second after grace period
+        this._decayTimer   = 0;      // counts up after grace period — 1 fold per 3s
     }
 
     startScene() {
@@ -34,6 +34,7 @@ class MandalaMode {
         this._blinkFlash  = 0;
         this._humTimer    = 0;
         this._lastInputMs = 0;
+        this._decayTimer  = 0;
         this._gen.setStyle(this._style);
     }
 
@@ -81,10 +82,16 @@ class MandalaMode {
         this.t += dt;
         this._blinkFlash = Math.max(0, this._blinkFlash - dt * 1.8);
 
-        // Only decay after grace period of no input
+        // Decay: 1 fold at a time, 3s apart, only after 10s grace period
         const silenceMs = this._lastInputMs > 0 ? Date.now() - this._lastInputMs : 0;
-        if (this._lastInputMs > 0 && silenceMs > this._GRACE_MS) {
-            this._targetFolds = Math.max(0, this._targetFolds - dt * this._DECAY_RATE);
+        if (this._lastInputMs > 0 && silenceMs > this._GRACE_MS && this._targetFolds > 0) {
+            this._decayTimer += dt;
+            if (this._decayTimer >= 3) {
+                this._decayTimer -= 3;
+                this._targetFolds = Math.max(0, this._targetFolds - 1);
+            }
+        } else if (silenceMs <= this._GRACE_MS) {
+            this._decayTimer = 0;
         }
 
         this._folds += (this._targetFolds - this._folds) * 0.05;

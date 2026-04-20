@@ -122,7 +122,7 @@ class WaterRipple {
         const od  = out.data;
         const b   = this._buf1;
 
-        const DISP = 0.08;
+        const DISP = 0.14;
 
         for (let y = 1; y < RH - 1; y++) {
             for (let x = 1; x < RW - 1; x++) {

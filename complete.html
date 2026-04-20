@@ -129,6 +129,7 @@ html, body {
 
 /* ── JOURNEY HUD ───────────────────────────────────────────────── */
 #jhud { pointer-events: none; z-index: 15; }
+#jhud #scene-nav { pointer-events: all; }
 
 #chapter-label {
     position: fixed; top: 28px; left: 50%; transform: translateX(-50%);
@@ -147,6 +148,18 @@ html, body {
     text-transform: lowercase; transition: opacity 1.2s ease;
     white-space: nowrap;
 }
+#scene-nav {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 18px; z-index: 25; pointer-events: all;
+}
+#scene-nav button {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(140,185,255,0.18);
+    color: rgba(180,210,255,0.55); font-size: 14px; width: 32px; height: 32px;
+    border-radius: 50%; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: background 0.2s, color 0.2s;
+    line-height: 1;
+}
+#scene-nav button:hover { background: rgba(255,255,255,0.12); color: rgba(200,225,255,0.9); }
 /* keyboard hint — fades in after 4s, fades out when scene advances */
 #kb-hint {
     position: fixed; bottom: 22px; right: 22px;
@@ -562,8 +575,12 @@ html, body {
   <div id="scene-name"></div>
   <div id="advance-hint"></div>
   <div id="j-progress"></div>
+  <div id="scene-nav">
+    <button id="nav-prev" aria-label="previous scene">&#8592;</button>
+    <button id="nav-next" aria-label="next scene">&#8594;</button>
+  </div>
 </div>
-<div id="kb-hint">space to advance</div>
+<div id="kb-hint">← → to navigate</div>
 
 <div id="cam-pip"></div>
 <div id="blink-flash"></div>
@@ -1054,16 +1071,11 @@ let _blinkSeqTimer = null;   // resets count if gap > 2.5s
 function _onRawBlink() {
     if (_phase !== 'journey') return;
     _showBlinkFlash();
-    _blink();                               // trigger current scene's visual effect
-    _blinkSeq++;
+    _blink();   // trigger current scene's visual effect — no scene advance on blink
+    _blinkSeq = (_blinkSeq + 1) % 3;
     _updateBlinkDots(false);
     clearTimeout(_blinkSeqTimer);
-    if (_blinkSeq >= 3) {
-        _blinkSeq = 0;
-        _flashBlinkDots(() => _advance());   // flash all 3 then advance
-    } else {
-        _blinkSeqTimer = setTimeout(() => { _blinkSeq = 0; _updateBlinkDots(false); }, 2500);
-    }
+    _blinkSeqTimer = setTimeout(() => { _blinkSeq = 0; _updateBlinkDots(false); }, 2500);
 }
 
 function _onStillness() {
@@ -1281,10 +1293,19 @@ function _startJourney() {
     if (_anchor === 'breath') _startBreathPacer();
 }
 
+function _prevScene() {
+    if (_sceneIdx > 0) { _sceneTimings[_sceneIdx] = Date.now() - _sceneStart; _fadeScene(() => _startScene(_sceneIdx - 1)); }
+}
+function _nextScene() {
+    if (_sceneIdx < _scenes.length - 1) { _sceneTimings[_sceneIdx] = Date.now() - _sceneStart; _fadeScene(() => _startScene(_sceneIdx + 1)); }
+    else _endJourney();
+}
 function _onKey(e) {
     if (_phase !== 'journey') return;
-    if (e.code === 'Space') { e.preventDefault(); _advance(); }
-    if (e.code === 'KeyB')  _blink();
+    if (e.code === 'ArrowLeft')  { e.preventDefault(); _prevScene(); }
+    if (e.code === 'ArrowRight') { e.preventDefault(); _nextScene(); }
+    if (e.code === 'Space')      { e.preventDefault(); _nextScene(); }
+    if (e.code === 'KeyB')       { _blink(); }
 }
 function _onDblClick() {
     if (_phase !== 'journey') return;
@@ -1334,9 +1355,8 @@ function _startScene(idx) {
     nameEl.textContent   = sc.name;
     setTimeout(() => { nameEl.style.opacity = '0'; }, idx === 0 ? 5000 : 3800);
 
-    // Auto-advance timer
-    if (_autoTimer) clearTimeout(_autoTimer);
-    _autoTimer = setTimeout(_advance, sc.duration * 1000);
+    // No auto-advance — scenes only change via ← → buttons or arrow keys
+    if (_autoTimer) { clearTimeout(_autoTimer); _autoTimer = null; }
 
     // Show keyboard hint on first scene after 5s, fade it out after 6s
     if (_kbHintEl) {
@@ -1432,24 +1452,22 @@ canvas.addEventListener('touchmove', e => {
     if (t) _onPointerMove(t.clientX, t.clientY);
 }, { passive: false });
 
-// Click / tap — +1 fold on mandala always; also route to current scene
+// Click / tap — route to current scene's onTap/onClick
 canvas.addEventListener('click', e => {
     if (_phase !== 'journey') return;
     const sc = _scenes[_sceneIdx];
     if (!sc) return;
     const nx = e.clientX / canvas.width, ny = e.clientY / canvas.height;
-    try { getMode('mandala').onTap(); } catch(_) {}
     const m = getMode(sc.key);
-    if (m && m.onTap   && sc.key !== 'mandala') try { m.onTap(nx, ny); }   catch(_) {}
-    if (m && m.onClick && sc.key !== 'mandala') try { m.onClick(nx, ny); } catch(_) {}
+    if (m && m.onTap)   try { m.onTap(nx, ny); }   catch(_) {}
+    if (m && m.onClick) try { m.onClick(nx, ny); }  catch(_) {}
 });
 canvas.addEventListener('touchend', e => {
     if (_phase !== 'journey') return;
-    try { getMode('mandala').onTap(); } catch(_) {}
     const sc = _scenes[_sceneIdx];
     if (!sc) return;
     const m = getMode(sc.key);
-    if (m && m.onTap && sc.key !== 'mandala') try { m.onTap(); } catch(_) {}
+    if (m && m.onTap) try { m.onTap(); } catch(_) {}
 });
 
 // ── Body-motion detection — frame differencing on camera video ─────────
@@ -1513,28 +1531,33 @@ let _micAnalyser = null, _micDataBuf = null, _micStream = null;
 async function _initMicAnalyser() {
     try {
         _micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        const actx  = new (window.AudioContext || window.webkitAudioContext)();
-        const src   = actx.createMediaStreamSource(_micStream);
+        const actx = new (window.AudioContext || window.webkitAudioContext)();
+        await actx.resume();
+        const src  = actx.createMediaStreamSource(_micStream);
         _micAnalyser = actx.createAnalyser();
-        _micAnalyser.fftSize = 256;
+        _micAnalyser.fftSize = 512;   // time-domain buffer
         src.connect(_micAnalyser);
-        _micDataBuf = new Uint8Array(_micAnalyser.frequencyBinCount);
+        _micDataBuf = new Uint8Array(_micAnalyser.fftSize);
+        console.log('Mic analyser ready');
     } catch(e) {
-        console.warn('Mic unavailable for fold control:', e.message || e);
+        console.warn('Mic unavailable:', e.message || e);
         _micAnalyser = null;
     }
 }
 
 function _tickMicLevel() {
     if (!_micAnalyser || !_micDataBuf) return;
-    _micAnalyser.getByteFrequencyData(_micDataBuf);
-    let peak = 0;
-    for (let i = 0; i <= 3; i++) { if (_micDataBuf[i] > peak) peak = _micDataBuf[i]; }
-    const level = peak / 255;
-    // Route to current scene if it supports mic, always route to mandala
+    // Time-domain RMS — detects any sustained sound regardless of pitch
+    _micAnalyser.getByteTimeDomainData(_micDataBuf);
+    let sum = 0;
+    for (let i = 0; i < _micDataBuf.length; i++) {
+        const v = (_micDataBuf[i] - 128) / 128;  // centre around 0
+        sum += v * v;
+    }
+    const rms = Math.sqrt(sum / _micDataBuf.length);  // 0..1
     const sc = _scenes[_sceneIdx];
-    if (sc) { try { const m = getMode(sc.key); if (m && m.setMicLevel) m.setMicLevel(level); } catch(e) {} }
-    try { getMode('mandala').setMicLevel(level); } catch(e) {}
+    if (sc) { try { const m = getMode(sc.key); if (m && m.setMicLevel) m.setMicLevel(rms); } catch(e) {} }
+    try { getMode('mandala').setMicLevel(rms); } catch(e) {}
 }
 
 // ── End journey ───────────────────────────────────────────────────────
@@ -1698,6 +1721,11 @@ const _breathLabelEl  = document.getElementById('breath-label');
 const _breathArcEl    = document.getElementById('breath-arc');
 const _audioPulseEl   = document.getElementById('audio-pulse');
 const _kbHintEl       = document.getElementById('kb-hint');
+// Nav buttons
+const _navPrev = document.getElementById('nav-prev');
+const _navNext = document.getElementById('nav-next');
+if (_navPrev) _navPrev.addEventListener('click', e => { e.stopPropagation(); if (_phase === 'journey') _prevScene(); });
+if (_navNext) _navNext.addEventListener('click', e => { e.stopPropagation(); if (_phase === 'journey') _nextScene(); });
 let _gazeActive = false;
 let _gazeTimer  = null;
 let _breathRaf  = null;
