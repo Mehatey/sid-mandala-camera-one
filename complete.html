@@ -699,6 +699,17 @@ html, body {
 <script src="circuitMandalaMode.js"></script>
 <!-- Nature pixel sort -->
 <script src="natureSortMode.js"></script>
+<!-- 10 new organic/emergent modes -->
+<script src="murmurationMode.js"></script>
+<script src="sandMandalaMode.js"></script>
+<script src="bioluminescentMode.js"></script>
+<script src="lichtenbergMode.js"></script>
+<script src="rainRippleMode.js"></script>
+<script src="geodeMode.js"></script>
+<script src="coralMode.js"></script>
+<script src="tidepoolMode.js"></script>
+<script src="smokeMode.js"></script>
+<script src="mitoticMode.js"></script>
 <!-- New camera/gaze modes -->
 <script src="presenceMode.js"></script>
 <script src="gazeBloomMode.js"></script>
@@ -792,6 +803,16 @@ const FULL = [
     { key: 'celtic',        name: 'woven',         chapter: 'mandalas',   duration: 50 },
     { key: 'circuit',       name: 'signal',        chapter: 'mandalas',   duration: 50 },
     { key: 'naturesort',    name: 'dissolve',      chapter: 'depth',      duration: 65 },
+    { key: 'murmuration',  name: 'murmuration',   chapter: 'nature',     duration: 55 },
+    { key: 'bioluminescent',name:'deep light',     chapter: 'cosmos',     duration: 55 },
+    { key: 'smoke',        name: 'incense',        chapter: 'arrival',    duration: 50 },
+    { key: 'lichtenberg',  name: 'discharge',      chapter: 'depth',      duration: 55 },
+    { key: 'sandmandala',  name: 'sand mandala',   chapter: 'mandalas',   duration: 60 },
+    { key: 'coral',        name: 'reef',           chapter: 'nature',     duration: 55 },
+    { key: 'tidepool',     name: 'microlife',      chapter: 'nature',     duration: 50 },
+    { key: 'rainripple',   name: 'rain',           chapter: 'nature',     duration: 50 },
+    { key: 'geode',        name: 'crystal',        chapter: 'depth',      duration: 55 },
+    { key: 'mitotic',      name: 'cell',           chapter: 'nature',     duration: 55 },
     // Return — coming back
     { key: 'abyss',         name: 'deep water',    chapter: 'return',     duration: 60 },
     { key: 'nacre',         name: 'iridescence',   chapter: 'return',     duration: 55 },
@@ -866,7 +887,17 @@ const DEMO = [
     { key: 'snowflake',    name: 'snowflake',      chapter: 'mandalas',   duration: 25 },
     { key: 'sumi',         name: 'sumi-e',         chapter: 'mandalas',   duration: 25 },
     { key: 'circuit',      name: 'circuit',        chapter: 'mandalas',   duration: 25 },
-    { key: 'naturesort',   name: 'nature sort',    chapter: 'nature',     duration: 35 },
+    { key: 'naturesort',    name: 'nature sort',    chapter: 'nature',     duration: 35 },
+    { key: 'murmuration',  name: 'murmuration',    chapter: 'nature',     duration: 30 },
+    { key: 'sandmandala',  name: 'sand mandala',   chapter: 'mandalas',   duration: 35 },
+    { key: 'bioluminescent',name:'bioluminescent',  chapter: 'cosmos',     duration: 30 },
+    { key: 'lichtenberg',  name: 'lichtenberg',    chapter: 'geometry',   duration: 30 },
+    { key: 'rainripple',   name: 'rain ripple',    chapter: 'nature',     duration: 30 },
+    { key: 'geode',        name: 'geode',          chapter: 'material',   duration: 30 },
+    { key: 'coral',        name: 'coral',          chapter: 'nature',     duration: 30 },
+    { key: 'tidepool',     name: 'tide pool',      chapter: 'nature',     duration: 30 },
+    { key: 'smoke',        name: 'smoke',          chapter: 'nature',     duration: 30 },
+    { key: 'mitotic',      name: 'mitotic',        chapter: 'nature',     duration: 30 },
     // New gaze/camera modes
     { key: 'presence',     name: 'presence',       chapter: 'gaze',       duration: 25 },
     { key: 'gazebloom',    name: 'gaze bloom',     chapter: 'gaze',       duration: 25 },
@@ -940,6 +971,17 @@ const MODE_CLASSES = {
     sumi:         () => new SumiMandalaMode(ctx, canvas),
     circuit:      () => new CircuitMandalaMode(ctx, canvas),
     naturesort:   () => new NatureSortMode(ctx, canvas),
+    // 10 new organic/emergent modes
+    murmuration:  () => new MurmurationMode(ctx, canvas),
+    sandmandala:  () => new SandMandalaMode(ctx, canvas),
+    bioluminescent:()=> new BioluminescentMode(ctx, canvas),
+    lichtenberg:  () => new LichtenbergMode(ctx, canvas),
+    rainripple:   () => new RainRippleMode(ctx, canvas),
+    geode:        () => new GeodeMode(ctx, canvas),
+    coral:        () => new CoralMode(ctx, canvas),
+    tidepool:     () => new TidepoolMode(ctx, canvas),
+    smoke:        () => new SmokeMode(ctx, canvas),
+    mitotic:      () => new MitoticMode(ctx, canvas),
     // New gaze/camera modes
     presence:     () => new PresenceMode(ctx, canvas),
     gazebloom:    () => new GazeBloomMode(ctx, canvas),
