@@ -46,8 +46,8 @@ class MandalaMode {
         if (rms > 0.06) {
             this._touch();
             this._humTimer += 0.016;
-            if (this._humTimer >= 1.5) {
-                this._humTimer -= 1.5;
+            if (this._humTimer >= 0.7) {
+                this._humTimer -= 0.7;
                 this._targetFolds = Math.min(this._MAX_FOLDS, this._targetFolds + 1);
             }
         } else {

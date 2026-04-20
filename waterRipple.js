@@ -68,8 +68,8 @@ class WaterRipple {
 
         const gx  = Math.round(nx * (this._RW - 2)) + 1;
         const gy  = Math.round(ny * (this._RH - 2)) + 1;
-        const amp = Math.min(280, speed * 3800);
-        const rad = 1.2 + speed * 7;
+        const amp = Math.min(600, speed * 7000);
+        const rad = 1.8 + speed * 14;
 
         this._disturb(gx, gy, rad, amp);
         this._hasWave = true;
@@ -102,7 +102,7 @@ class WaterRipple {
             for (let x = 1; x < RW - 1; x++) {
                 const i   = y * RW + x;
                 const val = (b1[i - 1] + b1[i + 1] + b1[i - RW] + b1[i + RW]) * 0.5 - b2[i];
-                b2[i] = val * 0.972;
+                b2[i] = val * 0.980;
                 const av = b2[i] < 0 ? -b2[i] : b2[i];
                 if (av > maxAmp) maxAmp = av;
             }
@@ -122,7 +122,7 @@ class WaterRipple {
         const od  = out.data;
         const b   = this._buf1;
 
-        const DISP = 0.14;
+        const DISP = 0.22;
 
         for (let y = 1; y < RH - 1; y++) {
             for (let x = 1; x < RW - 1; x++) {
