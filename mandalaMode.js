@@ -31,8 +31,7 @@ class MandalaMode {
         this._MAX_FOLDS   = 14;
 
         this._blinkFlash  = 0;
-        this._blinkFolds  = 0;   // accumulated blink energy (styles 2+3)
-        this._blinkDecay  = 0;   // seconds since last blink
+        this._humTimer    = 0;   // accumulates hum time; 1 fold per 1.5s
     }
 
     startScene() {
@@ -40,46 +39,44 @@ class MandalaMode {
         this._folds       = 0;
         this._targetFolds = 0;
         this._blinkFlash  = 0;
-        this._blinkFolds  = 0;
-        this._blinkDecay  = 0;
+        this._humTimer    = 0;
         this._gen.setStyle(this._style);
     }
 
     // Called each frame by the mic analyser — rms is 0..1 normalised hum level
+    // While humming above noise floor, adds 1 fold every 1.5s
     setMicLevel(rms) {
         if (this._style !== 0 && this._style !== 1) return;
-        // Only styles 0 & 1 respond to mic; rms needs to exceed ambient noise
-        const signal = Math.max(0, rms - 0.05);          // noise floor
-        const mapped = this._MAX_FOLDS * Math.min(1, signal * 6);
-        if (mapped > this._targetFolds) {
-            this._targetFolds = mapped;                   // only raise, decay handles lowering
+        if (rms > 0.06) {
+            this._humTimer += 0.016;
+            if (this._humTimer >= 1.5) {
+                this._humTimer -= 1.5;
+                this._targetFolds = Math.min(this._MAX_FOLDS, this._targetFolds + 1);
+            }
+        } else {
+            this._humTimer = 0;
         }
     }
 
-    // Called by canvas click — adds folds immediately
+    // Click — 1 fold
     onTap() {
-        this._targetFolds = Math.min(this._MAX_FOLDS, this._targetFolds + 3);
-        this._blinkFolds  = this._targetFolds;
-        this._blinkDecay  = 0;
-        this._blinkFlash  = 0.25;
+        this._targetFolds = Math.min(this._MAX_FOLDS, this._targetFolds + 1);
+        this._blinkFlash  = 0.18;
     }
 
     onBlink() {
         if (Math.round(this._folds) >= this._MAX_FOLDS - 1) {
-            // At max → cycle style and reset folds
+            // At max → cycle style and reset
             this._style       = (this._style + 1) % 7;
             this._gen.setStyle(this._style);
             this._folds       = 0;
             this._targetFolds = 0;
-            this._blinkFolds  = 0;
-            this._blinkDecay  = 0;
+            this._humTimer    = 0;
             this._blinkFlash  = 1.0;
         } else {
-            // Add folds
-            this._blinkFolds  = Math.min(this._MAX_FOLDS, this._blinkFolds + 2);
-            this._targetFolds = Math.min(this._MAX_FOLDS, this._targetFolds + 2);
-            this._blinkDecay  = 0;
-            this._blinkFlash  = 0.45;
+            // 1 fold per blink
+            this._targetFolds = Math.min(this._MAX_FOLDS, this._targetFolds + 1);
+            this._blinkFlash  = 0.30;
         }
     }
 
@@ -91,19 +88,16 @@ class MandalaMode {
         const style = this._style;
 
         // ── Decay target folds toward 0 when input stops ──────────────────
+        // All styles decay toward 0 when no input — rate differs by style
         if (style === 0 || style === 1) {
-            // Mic-driven: fast decay when quiet (~4s from max to 0)
-            this._targetFolds = Math.max(0, this._targetFolds - dt * 3.5);
+            // Mic-driven: drain when quiet (~5s from max to 0)
+            this._targetFolds = Math.max(0, this._targetFolds - dt * 2.8);
         } else if (style === 2 || style === 3) {
-            // Blink-driven: 2s grace period, then decay (~10s from max to 0)
-            this._blinkDecay += dt;
-            if (this._blinkDecay > 2.0) {
-                this._blinkFolds  = Math.max(0, this._blinkFolds  - dt * 1.4);
-                this._targetFolds = this._blinkFolds;
-            }
+            // Blink-driven: slower drain (~12s from max to 0)
+            this._targetFolds = Math.max(0, this._targetFolds - dt * 1.2);
         } else {
-            // Styles 4–6: very slow decay (~25s from max to 0)
-            this._targetFolds = Math.max(0, this._targetFolds - dt * 0.55);
+            // Styles 4–6: very slow drain (~20s from max to 0)
+            this._targetFolds = Math.max(0, this._targetFolds - dt * 0.7);
         }
 
         // Smooth lerp — organic, never jumps
