@@ -759,6 +759,9 @@ html, body {
 <script src="lattice3dMode.js"></script>
 <script src="nebvol3dMode.js"></script>
 <script src="helix3dMode.js"></script>
+<script src="omLotusMode.js"></script>
+<script src="evolutionMode.js"></script>
+<script src="eyeSceneMode.js"></script>
 <!-- Water ripple post-process -->
 <script src="waterRipple.js"></script>
 <!-- Tracking overlay (pip visualisation) -->
@@ -883,6 +886,9 @@ const FULL = [
     { key: 'lattice3d',     name: 'lattice',       chapter: 'emergence',  duration: 55 },
     { key: 'nebvol3d',      name: 'nebula',        chapter: 'cosmos',     duration: 65 },
     { key: 'helix3d',       name: 'helix',         chapter: 'nature',     duration: 60 },
+    { key: 'omlotus',       name: 'om & lotus',    chapter: 'arrival',    duration: 65 },
+    { key: 'evolution',     name: 'evolution',     chapter: 'emergence',  duration: 70 },
+    { key: 'eyescene',      name: 'the eye',       chapter: 'presence',   duration: 60 },
     // Return — coming back
     { key: 'abyss',         name: 'deep water',    chapter: 'return',     duration: 60 },
     { key: 'nacre',         name: 'iridescence',   chapter: 'return',     duration: 55 },
@@ -986,6 +992,9 @@ const DEMO = [
     { key: 'lattice3d',    name: 'lattice',         chapter: '3d',         duration: 28 },
     { key: 'nebvol3d',     name: 'nebula vol',      chapter: '3d',         duration: 28 },
     { key: 'helix3d',      name: 'helix',           chapter: '3d',         duration: 28 },
+    { key: 'omlotus',      name: 'om & lotus',      chapter: 'spiritual',  duration: 30 },
+    { key: 'evolution',    name: 'evolution',        chapter: 'spiritual',  duration: 35 },
+    { key: 'eyescene',     name: 'the eye',          chapter: 'spiritual',  duration: 28 },
 ];
 
 const TIERS = { quick: QUICK, standard: STANDARD, full: FULL, demo: DEMO };
@@ -1082,6 +1091,10 @@ const MODE_CLASSES = {
     lattice3d:    () => new Lattice3DMode(ctx, canvas),
     nebvol3d:     () => new NebVol3DMode(ctx, canvas),
     helix3d:      () => new Helix3DMode(ctx, canvas),
+    // Spiritual / thematic modes
+    omlotus:      () => new OmLotusMode(ctx, canvas),
+    evolution:    () => new EvolutionMode(ctx, canvas),
+    eyescene:     () => new EyeSceneMode(ctx, canvas),
 };
 
 // Lazy-instantiate to avoid errors if some files are missing

@@ -232,6 +232,9 @@ class ZenAudio {
             lattice3d:    { wind:0.02, birds:0,     vol:0.65, voices:[{ freq:285, gain:0.05, lfoHz:0.04 }] },
             nebvol3d:     { wind:0.01, birds:0,     vol:0.55, voices:[{ freq:174, gain:0.04, lfoHz:0.02 }] },
             helix3d:      { wind:0.02, birds:18000, vol:0.75, voices:[{ freq:432, gain:0.05, lfoHz:0.06 }] },
+            omlotus:      { wind:0.01, birds:22000, vol:0.85, voices:[{ freq:136, gain:0.07, lfoHz:0.02 }] },
+            evolution:    { wind:0.03, birds:14000, vol:0.75, voices:[{ freq:285, gain:0.05, lfoHz:0.04 }] },
+            eyescene:     { wind:0.01, birds:0,     vol:0.60, voices:[{ freq:432, gain:0.04, lfoHz:0.03 }] },
         };
         // Default: light rain, occasional birds, gentle tone
         return P[key] || { wind:0.03, birds:20000, vol:0.78, voices:[{ freq:220, gain:0.05, lfoHz:0.05 }] };
