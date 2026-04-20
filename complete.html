@@ -164,21 +164,6 @@ html, body {
     backdrop-filter: blur(8px) brightness(1.28) saturate(1.5);
     -webkit-backdrop-filter: blur(8px) brightness(1.28) saturate(1.5);
 }
-#water-cursor.warp {
-    width: 52px; height: 52px;
-    backdrop-filter: blur(12px) brightness(1.35) saturate(1.8) hue-rotate(10deg);
-    -webkit-backdrop-filter: blur(12px) brightness(1.35) saturate(1.8) hue-rotate(10deg);
-    border-color: rgba(180,210,255,0.55);
-    box-shadow:
-        0 0 22px rgba(120,190,255,0.28),
-        0 0 4px rgba(255,255,255,0.30) inset,
-        0 0 60px rgba(100,160,255,0.08);
-    animation: cursor-warp-pulse 2.2s ease-in-out infinite;
-}
-@keyframes cursor-warp-pulse {
-    0%,100% { transform: translate(-50%,-50%) scale(1);   }
-    50%      { transform: translate(-50%,-50%) scale(1.12); }
-}
 /* Click ripple rings */
 .cursor-ring {
     position: fixed; border-radius: 50%; pointer-events: none; z-index: 9998;
@@ -200,7 +185,8 @@ html, body {
 .jchap-dot   { width: 6px; height: 6px; border-radius: 50%; background: rgba(180,205,255,0.18); transition: background 0.5s; }
 .jchap-dot.active { background: rgba(180,210,255,0.55); }
 
-/* ── CAMERA PIP ─────────────────────────────────────────────────── */
+/* ── CAMERA PIP — hidden; camera still runs for tracking ─────────── */
+#cam-pip { display: none !important; }
 /* ── STILLNESS RING ─────────────────────────────────────────────── */
 #stillness-ring {
     position: fixed; top: 20px; right: 20px;
@@ -1453,8 +1439,8 @@ function _animate(ts) {
     }
     // Apply water ripple on scenes without native mouse interaction
     if (!MOUSE_MODES.has(sc.key)) { try { ripple.apply(); } catch(e) {} }
-    // Mic level → mandala folds (body motion detection removed — hand-only ripple)
     _tickMicLevel();
+    _tickBodyMotion();   // frame-diff hand wave → water ripple
     // Update tracking overlay on pip
     _overlay.tick(_blinker, _tracker, _poseTracker);
     // Drive stillness ring
@@ -1513,6 +1499,7 @@ function _initMotionDetect() {
 }
 _initMotionDetect();
 
+// Threshold 0.010 means only deliberate hand waves fire — breathing/head tilt stay below.
 function _tickBodyMotion() {
     if (_phase !== 'journey') return;
     if (!_blinker || !_blinker.video || _blinker.video.readyState < 2) return;
@@ -1533,14 +1520,13 @@ function _tickBodyMotion() {
                   + Math.abs(cur[i+2] - _motionPrev[i+2]);
         }
         const norm = diff / (_MOTION_W * _MOTION_H * 765);  // 0..1
-        if (norm > 0.002) {
-            // Find centroid of motion for a more natural ripple position
+        if (norm > 0.010) {   // deliberate hand wave threshold
             let mx = 0, my = 0, mc = 0;
             for (let pi = 0; pi < cur.length; pi += 4) {
                 const d = Math.abs(cur[pi] - _motionPrev[pi])
                         + Math.abs(cur[pi+1] - _motionPrev[pi+1])
                         + Math.abs(cur[pi+2] - _motionPrev[pi+2]);
-                if (d > 30) {
+                if (d > 40) {
                     const gx = ((pi / 4) % _MOTION_W) / _MOTION_W;
                     const gy = Math.floor((pi / 4) / _MOTION_W) / _MOTION_H;
                     mx += gx; my += gy; mc++;
@@ -1548,7 +1534,7 @@ function _tickBodyMotion() {
             }
             const nx = mc > 0 ? 1 - mx / mc : 0.5;   // mirror x for selfie view
             const ny = mc > 0 ? my / mc     : 0.5;
-            ripple.onHandMove(nx, ny);
+            ripple.onMotionDelta(nx, ny, norm);   // intensity-based — no speed-delta issue
         }
     }
     _motionPrev = cur.slice();
@@ -1634,7 +1620,7 @@ function _setWarpVolume(target) {
 document.addEventListener('mousemove', e => {
     if (_phase !== 'journey') { _cursorOverMandala = false; return; }
     const sc = _scenes[_sceneIdx];
-    if (!sc || sc.key !== 'mandala') { _cursorOverMandala = false; _wCursor.classList.remove('warp'); _setWarpVolume(0); return; }
+    if (!sc || sc.key !== 'mandala') { _cursorOverMandala = false; _setWarpVolume(0); return; }
     // Distance from canvas center
     const cx = window.innerWidth  * 0.5;
     const cy = window.innerHeight * 0.5;
@@ -1642,7 +1628,6 @@ document.addEventListener('mousemove', e => {
     const dx = e.clientX - cx, dy = e.clientY - cy;
     const inside = Math.sqrt(dx*dx + dy*dy) < r;
     _cursorOverMandala = inside;
-    _wCursor.classList.toggle('warp', inside);
     if (inside && !_warpPlaying) {
         _warpAudio.play().catch(() => {});
         _warpPlaying = true;

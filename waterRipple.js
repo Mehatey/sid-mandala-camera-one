@@ -166,15 +166,23 @@ class WaterRipple {
                (data[i01] * (1 - fx) + data[i11] * fx) * fy;
     }
 
-    // ── Cursor warp — continuous low-amplitude stir at cursor position ─
-    // Call every frame when cursor is over an interactive zone.
-    // No speed needed — creates a permanent standing-wave shimmer.
+    // ── Cursor warp — very subtle standing shimmer at cursor position ──
     stirCursor(nx, ny) {
+        if (!this._active || !this._buf1) return;
+        const gx = Math.round(nx * (this._RW - 2)) + 1;
+        const gy = Math.round(ny * (this._RH - 2)) + 1;
+        this._disturb(gx, gy, 1.8, 7);   // tiny — barely perceptible, not water-like
+        this._hasWave = true;
+    }
+
+    // ── Frame-diff motion — intensity comes from pixel delta (0..1) ───
+    onMotionDelta(nx, ny, intensity) {
         if (!this._active || !this._buf1) return;
         const gx  = Math.round(nx * (this._RW - 2)) + 1;
         const gy  = Math.round(ny * (this._RH - 2)) + 1;
-        // Small amplitude pulse — accumulates into visible warp
-        this._disturb(gx, gy, 3.5, 55);
+        const amp = Math.min(450, intensity * 12000);
+        const rad = 2.5 + intensity * 15;
+        this._disturb(gx, gy, rad, amp);
         this._hasWave = true;
     }
 
