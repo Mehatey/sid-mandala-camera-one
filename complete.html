@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="zentangle">
-<title>zentangle</title>
+<meta name="apple-mobile-web-app-title" content="bloom">
+<title>bloom</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
 html, body {
@@ -48,6 +48,16 @@ html, body {
     font-weight: 200; letter-spacing: 0.30em;
     text-transform: lowercase; color: rgba(215, 228, 255, 0.92);
     margin-bottom: 6px;
+    display: flex; align-items: center; gap: 0.35em;
+}
+/* ── Debug scene number overlay ──────────────────────────────────── */
+#debug-scene {
+    position: fixed; bottom: 28px; left: 28px;
+    font-size: 11px; letter-spacing: 0.14em;
+    color: rgba(180, 210, 255, 0.55);
+    pointer-events: none; z-index: 20;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    opacity: 0; transition: opacity 0.4s ease;
 }
 #arrival-tagline {
     font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.16em;
@@ -137,8 +147,9 @@ html, body {
 /* ── JOURNEY HUD ───────────────────────────────────────────────── */
 #jhud { pointer-events: none; z-index: 15; }
 
-/* Hide all text/button UI — only dots remain */
-#chapter-label, #scene-name, #advance-hint, #scene-nav, #kb-hint { display: none !important; }
+/* Hide all text/button UI — only camera pip + cursor remain */
+#chapter-label, #scene-name, #advance-hint, #scene-nav, #kb-hint,
+#j-progress, #blink-dots, #audio-pulse, #stillness-ring { display: none !important; }
 
 /* ── WATER CURSOR ──────────────────────────────────────────────── */
 #water-cursor {
@@ -226,7 +237,7 @@ html, body {
 
 #cam-pip {
     position: fixed; bottom: 22px; right: 22px;
-    width: 128px; height: 128px;
+    width: 64px; height: 64px;
     overflow: hidden;
     z-index: 20; opacity: 0;
     transition: opacity 1.4s ease;
@@ -338,22 +349,37 @@ html, body {
     0%,100% { transform: scale(0.80); opacity: 0.20; }
     50%      { transform: scale(1.15); opacity: 0.65; }
 }
-#splash-word {
-    font-size: clamp(30px, 5.5vw, 60px);
-    font-weight: 200;
-    letter-spacing: 0.04em;
-    text-transform: lowercase;
-    display: flex;
+/* ── BLOOM LOGO ──────────────────────────────────────────────────── */
+#bloom-logo-wrap {
+    display: flex; align-items: center; gap: 0.38em;
+    opacity: 0; transition: opacity 1.1s ease;
+    animation: bloomHolo 7s linear infinite;
 }
-#splash-word span {
-    opacity: 0;
-    transform: translateY(8px);
-    display: inline-block;
-    transition: opacity 0.55s ease, transform 0.55s ease;
-    color: rgba(215,228,255,0.90);
-    letter-spacing: 0.24em;
+#bloom-logo-wrap.vis { opacity: 1; }
+@keyframes bloomHolo {
+    0%   { filter: hue-rotate(0deg)   brightness(1.00); }
+    33%  { filter: hue-rotate(120deg) brightness(1.14); }
+    66%  { filter: hue-rotate(240deg) brightness(1.07); }
+    100% { filter: hue-rotate(360deg) brightness(1.00); }
 }
-#splash-word span.vis { opacity: 1; transform: translateY(0); }
+#bloom-text {
+    font-size: clamp(28px, 5.2vw, 60px);
+    font-weight: 900;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: rgba(215, 230, 255, 0.95);
+}
+#bloom-icon {
+    width: clamp(22px, 4.2vw, 50px);
+    height: clamp(22px, 4.2vw, 50px);
+    color: rgba(215, 230, 255, 0.90);
+    flex-shrink: 0;
+}
+.bloom-icon-sm {
+    width: 0.68em; height: 0.68em;
+    color: rgba(215, 228, 255, 0.65);
+    flex-shrink: 0;
+}
 #splash-sub {
     font-size: clamp(9px, 1.1vw, 11px);
     letter-spacing: 0.26em;
@@ -552,8 +578,19 @@ html, body {
 <!-- ──────────────────── PHASE 0: SPLASH ───────────────────────── -->
 <div id="splash" class="layer">
   <div id="splash-inner">
-    <div id="splash-orb"></div>
-    <div id="splash-word"></div>
+    <div id="bloom-logo-wrap">
+      <span id="bloom-text">BLOOM</span>
+      <svg id="bloom-icon" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g transform="translate(20,20)" fill="currentColor">
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(0)"/>
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(60)"/>
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(120)"/>
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(180)"/>
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(240)"/>
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(300)"/>
+        </g>
+      </svg>
+    </div>
     <div id="splash-sub">an open-eye meditation</div>
   </div>
   <div id="splash-hint">tap anywhere to enter</div>
@@ -562,7 +599,19 @@ html, body {
 <!-- ──────────────────── PHASE 1: ARRIVAL ──────────────────────── -->
 <div id="arrival" class="layer hidden">
   <div id="arrival-inner">
-    <div id="arrival-logo">zentangle</div>
+    <div id="arrival-logo">
+      <span>bloom</span>
+      <svg class="bloom-icon-sm" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g transform="translate(20,20)" fill="currentColor">
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(0)"/>
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(60)"/>
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(120)"/>
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(180)"/>
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(240)"/>
+          <path d="M 1 0 C 7 -2, 14 -12, 10 -15 C 5 -18, 0 -10, 1 0 Z" transform="rotate(300)"/>
+        </g>
+      </svg>
+    </div>
     <div id="arrival-tagline">an open-eye meditation</div>
 
     <div id="collective-cloud"></div>
@@ -622,6 +671,7 @@ html, body {
 </div>
 <div id="kb-hint">← → to navigate</div>
 
+<div id="debug-scene"></div>
 <div id="water-cursor"></div>
 <div id="cam-pip"></div>
 <div id="blink-flash"></div>
@@ -1475,6 +1525,10 @@ function _startScene(idx) {
 
     _updateDots(idx);
 
+    // Debug scene number — bottom-left overlay
+    const _dbg = document.getElementById('debug-scene');
+    if (_dbg) { _dbg.textContent = `${idx + 1} / ${_scenes.length}  ·  ${sc.name}`; _dbg.style.opacity = '1'; }
+
     // Chapter label
     const chapEl = document.getElementById('chapter-label');
     chapEl.textContent = sc.chapter || '';
@@ -1615,10 +1669,6 @@ function _animate(ts) {
             if (!m._drawErrorLogged) { m._drawErrorLogged = true; console.warn('draw() error in', sc.key, ':', e.message); }
         }
     }
-    // Cursor warp — stir ripple at cursor position when over mandala zone
-    if (sc.key === 'mandala' && _cursorOverMandala) {
-        const _rcr = _cr(); try { ripple.stirCursor((_wCursorX - _rcr.left) / canvas.width, (_wCursorY - _rcr.top) / canvas.height); } catch(e) {}
-    }
     // Device-orientation tilt — very subtle parallax shift (max ±12px)
     if (_tiltX !== 0 || _tiltY !== 0) {
         const tx = (_tiltX * 12).toFixed(2), ty = (_tiltY * 8).toFixed(2);
@@ -1647,9 +1697,8 @@ function _onPointerMove(clientX, clientY) {
     if (MOUSE_MODES.has(sc.key) && m && m.onMouseMove) {
         m.onMouseMove(px, py);
     } else {
-        // All non-mouse-mode scenes: mouse drives ripple + gaze if supported
+        // All non-mouse-mode scenes: gaze only — cursor no longer drives water ripple
         if (m && m.onGaze) { try { m.onGaze(nx, ny); } catch(_) {} }
-        ripple.onHandMove(nx, ny);   // mouse velocity → water ripple
     }
 }
 
@@ -1705,6 +1754,11 @@ let _motionPrev   = null;
 let _motionFrame  = 0;
 let _motionWarmup = 0;   // skip first N samples after camera init to avoid startup ripple burst
 const _MOTION_W   = 40, _MOTION_H = 30;   // tiny — just enough to sense motion
+// Sustained-shake gate: ripple only fires after ~3 continuous seconds of deliberate shaking
+let _motionSustainedTicks = 0;
+let _motionCooldownTicks  = 0;
+const MOTION_SHAKE_TICKS    = 60;   // 60 samples × 3 frames × ~16ms ≈ 2.9s sustained motion required
+const MOTION_FIRE_COOLDOWN  = 40;   // ~2s cooldown before next trigger
 
 function _initMotionDetect() {
     _motionCanvas = document.createElement('canvas');
@@ -1714,7 +1768,7 @@ function _initMotionDetect() {
 }
 _initMotionDetect();
 
-// Threshold 0.010 means only deliberate hand waves fire — breathing/head tilt stay below.
+// Ripple only fires after ~3s of continuous deliberate shaking (no minor body sway / accidental lifts).
 function _tickBodyMotion() {
     if (_phase !== 'journey') return;
     if (!_blinker || !_blinker.video || _blinker.video.readyState < 2) return;
@@ -1727,8 +1781,11 @@ function _tickBodyMotion() {
     _motionCtx.drawImage(_blinker.video, 0, 0, _MOTION_W, _MOTION_H);
     const cur = _motionCtx.getImageData(0, 0, _MOTION_W, _MOTION_H).data;
 
-    // Warm-up: skip first 40 samples after camera starts (avoids init-frame burst)
+    // Warm-up: skip first 40 samples after camera starts
     if (_motionWarmup < 40) { _motionWarmup++; _motionPrev = cur.slice(); return; }
+
+    // Post-fire cooldown
+    if (_motionCooldownTicks > 0) { _motionCooldownTicks--; _motionPrev = cur.slice(); return; }
 
     if (_motionPrev) {
         let diff = 0;
@@ -1738,21 +1795,31 @@ function _tickBodyMotion() {
                   + Math.abs(cur[i+2] - _motionPrev[i+2]);
         }
         const norm = diff / (_MOTION_W * _MOTION_H * 765);  // 0..1
-        if (norm > 0.010) {   // deliberate hand wave threshold
-            let mx = 0, my = 0, mc = 0;
-            for (let pi = 0; pi < cur.length; pi += 4) {
-                const d = Math.abs(cur[pi] - _motionPrev[pi])
-                        + Math.abs(cur[pi+1] - _motionPrev[pi+1])
-                        + Math.abs(cur[pi+2] - _motionPrev[pi+2]);
-                if (d > 40) {
-                    const gx = ((pi / 4) % _MOTION_W) / _MOTION_W;
-                    const gy = Math.floor((pi / 4) / _MOTION_W) / _MOTION_H;
-                    mx += gx; my += gy; mc++;
+
+        if (norm > 0.022) {   // raised threshold — filters breathing, head tilt, accidental arm lift
+            _motionSustainedTicks++;
+            if (_motionSustainedTicks >= MOTION_SHAKE_TICKS) {
+                // 3 seconds of sustained deliberate shaking — fire ripple once
+                let mx = 0, my = 0, mc = 0;
+                for (let pi = 0; pi < cur.length; pi += 4) {
+                    const d = Math.abs(cur[pi] - _motionPrev[pi])
+                            + Math.abs(cur[pi+1] - _motionPrev[pi+1])
+                            + Math.abs(cur[pi+2] - _motionPrev[pi+2]);
+                    if (d > 40) {
+                        const gx = ((pi / 4) % _MOTION_W) / _MOTION_W;
+                        const gy = Math.floor((pi / 4) / _MOTION_W) / _MOTION_H;
+                        mx += gx; my += gy; mc++;
+                    }
                 }
+                const nx = mc > 0 ? 1 - mx / mc : 0.5;
+                const ny = mc > 0 ? my / mc     : 0.5;
+                ripple.onMotionDelta(nx, ny, Math.min(0.75, norm * 12));
+                _motionSustainedTicks = 0;
+                _motionCooldownTicks  = MOTION_FIRE_COOLDOWN;
             }
-            const nx = mc > 0 ? 1 - mx / mc : 0.5;   // mirror x for selfie view
-            const ny = mc > 0 ? my / mc     : 0.5;
-            ripple.onMotionDelta(nx, ny, norm);   // intensity-based — no speed-delta issue
+        } else {
+            // Motion stopped — decay sustain counter so brief pauses don't reset everything
+            if (_motionSustainedTicks > 0) _motionSustainedTicks = Math.max(0, _motionSustainedTicks - 2);
         }
     }
     _motionPrev = cur.slice();
@@ -1884,6 +1951,7 @@ async function _endJourney() {
     audio.end();
 
     // Hide journey HUD overlays
+    const _dbgEnd = document.getElementById('debug-scene'); if (_dbgEnd) _dbgEnd.style.opacity = '0';
     if (_blinkDotsEl)  _blinkDotsEl.style.opacity  = '0';
     if (_audioPulseEl) _audioPulseEl.style.opacity  = '0';
     if (_breathPacerEl){ _breathPacerEl.style.opacity = '0'; _breathLabelEl.style.opacity = '0'; }
@@ -2050,6 +2118,7 @@ let _kbHintTimer = null;
 // ── Water cursor ──────────────────────────────────────────────────
 const _wCursor = document.getElementById('water-cursor');
 let _wCursorX = 0, _wCursorY = 0;
+let _wCursorHideTimer = null;
 
 document.addEventListener('mousemove', e => {
     _wCursorX = e.clientX;
@@ -2057,6 +2126,8 @@ document.addEventListener('mousemove', e => {
     _wCursor.style.left = _wCursorX + 'px';
     _wCursor.style.top  = _wCursorY + 'px';
     _wCursor.classList.add('active');
+    clearTimeout(_wCursorHideTimer);
+    _wCursorHideTimer = setTimeout(() => _wCursor.classList.remove('active'), 2000);
 });
 document.addEventListener('mouseleave', () => _wCursor.classList.remove('active'));
 document.addEventListener('mouseenter', () => _wCursor.classList.add('active'));
@@ -2075,20 +2146,15 @@ document.addEventListener('mouseup',   () => {
 // ── 1. SPLASH SCREEN ─────────────────────────────────────────────
 (function _runSplash() {
     _phase = 'splash';
-    const logo    = document.getElementById('splash-word');
-    const sub     = document.getElementById('splash-sub');
-    const hint    = document.getElementById('splash-hint');
-    const splash  = document.getElementById('splash');
-    const arrival = document.getElementById('arrival');
+    const sub      = document.getElementById('splash-sub');
+    const hint     = document.getElementById('splash-hint');
+    const splash   = document.getElementById('splash');
+    const arrival  = document.getElementById('arrival');
+    const logoWrap = document.getElementById('bloom-logo-wrap');
 
-    'zentangle'.split('').forEach((ch, i) => {
-        const s = document.createElement('span');
-        s.textContent = ch;
-        logo.appendChild(s);
-        setTimeout(() => s.classList.add('vis'), 280 + i * 80);
-    });
-    setTimeout(() => sub.classList.add('vis'),  1300);
-    setTimeout(() => hint.classList.add('vis'), 2300);
+    setTimeout(() => { if (logoWrap) logoWrap.classList.add('vis'); }, 180);
+    setTimeout(() => sub.classList.add('vis'),  900);
+    setTimeout(() => hint.classList.add('vis'), 2000);
 
     let dismissed = false;
     function dismiss() {

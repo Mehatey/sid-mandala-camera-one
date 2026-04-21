@@ -15,7 +15,7 @@ class WaterRipple {
         this.canvas = canvas;
         this.ctx    = ctx;
 
-        this._scale = 6;
+        this._scale = 4;   // 1/4 resolution — sharper than 1/6, less upscale blur
         this._RW    = 0;
         this._RH    = 0;
         this._buf1  = null;
@@ -102,7 +102,7 @@ class WaterRipple {
             for (let x = 1; x < RW - 1; x++) {
                 const i   = y * RW + x;
                 const val = (b1[i - 1] + b1[i + 1] + b1[i - RW] + b1[i + RW]) * 0.5 - b2[i];
-                b2[i] = val * 0.980;
+                b2[i] = val * 0.940;   // faster decay — ripple dies in ~2s not ~10s
                 const av = b2[i] < 0 ? -b2[i] : b2[i];
                 if (av > maxAmp) maxAmp = av;
             }
@@ -110,7 +110,7 @@ class WaterRipple {
         this._buf1 = b2;
         this._buf2 = b1;
 
-        if (maxAmp < 0.35) { this._hasWave = false; return; }
+        if (maxAmp < 2.5) { this._hasWave = false; return; }   // only displace pixels when waves are substantial
 
         const W = this.canvas.width;
         const H = this.canvas.height;
@@ -122,7 +122,7 @@ class WaterRipple {
         const od  = out.data;
         const b   = this._buf1;
 
-        const DISP = 0.22;
+        const DISP = 0.16;   // subtler displacement = cleaner lens effect, less smear
 
         for (let y = 1; y < RH - 1; y++) {
             for (let x = 1; x < RW - 1; x++) {
