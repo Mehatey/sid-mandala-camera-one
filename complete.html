@@ -584,6 +584,11 @@ html, body {
         <span class="dur-meta">all 52 scenes · 25–30 s each · ~22 min</span>
         <span class="dur-tick"></span>
       </button>
+      <button class="dur-btn" data-dur="meditation5">
+        <span class="dur-name">meditation</span>
+        <span class="dur-meta">8 scenes · exactly 5 min · thesis</span>
+        <span class="dur-tick"></span>
+      </button>
     </div>
 
     <button id="begin-btn">begin</button>
@@ -762,6 +767,12 @@ html, body {
 <script src="omLotusMode.js"></script>
 <script src="evolutionMode.js"></script>
 <script src="eyeSceneMode.js"></script>
+<!-- Kaleidoscope camera modes -->
+<script src="kaleidoClassicMode.js"></script>
+<script src="kaleidoPrismMode.js"></script>
+<script src="kaleidoFractalMode.js"></script>
+<script src="kaleidoWarpMode.js"></script>
+<script src="kaleidoHexMode.js"></script>
 <!-- Water ripple post-process -->
 <script src="waterRipple.js"></script>
 <!-- Tracking overlay (pip visualisation) -->
@@ -889,6 +900,12 @@ const FULL = [
     { key: 'omlotus',       name: 'om & lotus',    chapter: 'arrival',    duration: 65 },
     { key: 'evolution',     name: 'evolution',     chapter: 'emergence',  duration: 70 },
     { key: 'eyescene',      name: 'the eye',       chapter: 'presence',   duration: 60 },
+    // Kaleidoscope camera modes
+    { key: 'kaleidoclassic', name: 'mirror garden',  chapter: 'presence',   duration: 55 },
+    { key: 'kaleidoprism',   name: 'chromatic glass',chapter: 'presence',   duration: 55 },
+    { key: 'kaleidofractal', name: 'infinite depth', chapter: 'depth',      duration: 55 },
+    { key: 'kaleidowarp',    name: 'liquid mirror',  chapter: 'depth',      duration: 55 },
+    { key: 'kaleidohex',     name: 'honeycomb',      chapter: 'presence',   duration: 55 },
     // Return — coming back
     { key: 'abyss',         name: 'deep water',    chapter: 'return',     duration: 60 },
     { key: 'nacre',         name: 'iridescence',   chapter: 'return',     duration: 55 },
@@ -995,9 +1012,29 @@ const DEMO = [
     { key: 'omlotus',      name: 'om & lotus',      chapter: 'spiritual',  duration: 30 },
     { key: 'evolution',    name: 'evolution',        chapter: 'spiritual',  duration: 35 },
     { key: 'eyescene',     name: 'the eye',          chapter: 'spiritual',  duration: 28 },
+    // Kaleidoscope camera modes
+    { key: 'kaleidoclassic', name: 'mirror garden',   chapter: 'camera',     duration: 30 },
+    { key: 'kaleidoprism',   name: 'chromatic glass', chapter: 'camera',     duration: 30 },
+    { key: 'kaleidofractal', name: 'infinite depth',  chapter: 'camera',     duration: 30 },
+    { key: 'kaleidowarp',    name: 'liquid mirror',   chapter: 'camera',     duration: 30 },
+    { key: 'kaleidohex',     name: 'honeycomb mirror',chapter: 'camera',     duration: 30 },
 ];
 
-const TIERS = { quick: QUICK, standard: STANDARD, full: FULL, demo: DEMO };
+// ── 5-minute meditation — thesis presentation sequence ───────────────────
+// Arc: arrive → open → dissolve → return. Exactly 300 seconds.
+const MEDITATION5 = [
+    { key: 'smoke',        name: 'arrive',      chapter: 'arrival',   duration: 35 },
+    { key: 'breath',       name: 'breath',      chapter: 'arrival',   duration: 40 },
+    { key: 'mandala',      name: 'stillness',   chapter: 'mandalas',  duration: 40, mandalaStyle: 1 },
+    { key: 'omlotus',      name: 'om',          chapter: 'spiritual', duration: 45 },
+    { key: 'aurora',       name: 'open',        chapter: 'cosmos',    duration: 35 },
+    { key: 'interference', name: 'dissolve',    chapter: 'geometry',  duration: 35 },
+    { key: 'nebula',       name: 'cosmos',      chapter: 'cosmos',    duration: 35 },
+    { key: 'embers',       name: 'settle',      chapter: 'nature',    duration: 35 },
+];
+// Total: 35+40+40+45+35+35+35+35 = 300s = exactly 5 minutes
+
+const TIERS = { quick: QUICK, standard: STANDARD, full: FULL, demo: DEMO, meditation5: MEDITATION5 };
 
 // ── Instantiate all modes ────────────────────────────────────────────
 // (constructed once, reused across restarts)
@@ -1095,6 +1132,12 @@ const MODE_CLASSES = {
     omlotus:      () => new OmLotusMode(ctx, canvas),
     evolution:    () => new EvolutionMode(ctx, canvas),
     eyescene:     () => new EyeSceneMode(ctx, canvas),
+    // Kaleidoscope camera modes
+    kaleidoclassic: () => new KaleidoClassicMode(ctx, canvas),
+    kaleidoprism:   () => new KaleidoPrismMode(ctx, canvas),
+    kaleidofractal: () => new KaleidoFractalMode(ctx, canvas),
+    kaleidowarp:    () => new KaleidoWarpMode(ctx, canvas),
+    kaleidohex:     () => new KaleidoHexMode(ctx, canvas),
 };
 
 // Lazy-instantiate to avoid errors if some files are missing
@@ -1868,7 +1911,7 @@ function _buildAnalytics(dur, data) {
     if (_word) pRows.push(['word set down', _word, true]);
     pRows.push(
         ['anchor',           _anchor || 'none chosen', false],
-        ['journey',          { quick:'quick', standard:'standard', full:'full', demo:'demo · all scenes' }[_tier] || _tier + ` · ${_scenes.length} scenes`, false],
+        ['journey',          { quick:'quick', standard:'standard', full:'full', demo:'demo · all scenes', meditation5:'meditation · 5 min' }[_tier] || _tier + ` · ${_scenes.length} scenes`, false],
         ['time in stillness', _fmt(dur), false],
         ['moments of stillness', _stillnessCount > 0 ? `${_stillnessCount}` : '—', false],
         ['blinks',           _blinks > 0 ? `${_blinks}` : '—', false],
@@ -2228,6 +2271,30 @@ document.getElementById('return-btn').addEventListener('click', () => {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }, 1200);
 });
+</script>
+
+<!-- ── Vision Pro bridge ────────────────────────────────────────────────
+     Called from Swift via WKWebView.evaluateJavaScript().
+     Pinch gesture → _vpBlink() → current mode's onBlink().
+     Head orientation → _vpGaze(nx, ny) → current mode's onGaze().
+──────────────────────────────────────────────────────────────────────── -->
+<script>
+window._vpBlink = function() {
+    if (_phase !== 'journey') return;
+    const sc = _scenes[_sceneIdx];
+    if (!sc) return;
+    const m = getMode(sc.key);
+    if (m && m.onBlink) { try { m.onBlink(); } catch(e) {} }
+    if (typeof audio !== 'undefined') { try { audio.onBlink(); } catch(e) {} }
+};
+
+window._vpGaze = function(nx, ny) {
+    if (_phase !== 'journey') return;
+    const sc = _scenes[_sceneIdx];
+    if (!sc) return;
+    const m = getMode(sc.key);
+    if (m && m.onGaze) { try { m.onGaze(nx, ny); } catch(e) {} }
+};
 </script>
 </body>
 </html>
