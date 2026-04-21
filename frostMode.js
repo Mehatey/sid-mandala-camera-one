@@ -31,17 +31,20 @@ class FrostMode {
         }
         this._offCtx.fillStyle = '#01020c';
         this._offCtx.fillRect(0, 0, W, H);
-        // Start with centre + one slightly offset crystal
         this._seed(W / 2, H / 2);
-        this._nextSeed = 2.0 + Math.random() * 1.5;
+        this._nextSeed = Infinity;   // no auto-seeding — only blink adds new crystals
     }
 
     onBlink() {
+        // Cap at 3 crystals — start fading the oldest before adding new
+        if (this._crystals.length >= 3) this._crystals[0].phase = 'fading';
         const W = this.canvas.width || 800, H = this.canvas.height || 600;
         const x = W * (0.15 + Math.random() * 0.70);
         const y = H * (0.15 + Math.random() * 0.70);
         this._seed(x, y);
-        this._blinkBurst = 1.0;   // burst sparkles from all existing tips
+        this._blinkBurst = 1.0;
+        // Trim sparkle pool so burst never causes a perf spike
+        if (this._sparkles.length > 60) this._sparkles.length = 60;
     }
 
     _seed(x, y) {
@@ -138,13 +141,7 @@ class FrostMode {
         const H   = this.canvas.height || 600;
         const oc  = this._offCtx;
 
-        // Auto-seed — faster than before
-        if (this.t > this._nextSeed && this._crystals.length < 6) {
-            const x = W * (0.1 + Math.random() * 0.80);
-            const y = H * (0.1 + Math.random() * 0.80);
-            this._seed(x, y);
-            this._nextSeed = this.t + 1.8 + Math.random() * 2.5;
-        }
+        // No auto-seeding — crystals only appear on blink
 
         oc.fillStyle = 'rgba(1, 2, 12, 0.007)';
         oc.fillRect(0, 0, W, H);
@@ -153,8 +150,7 @@ class FrostMode {
             const c = this._crystals[ci];
 
             if (c.phase === 'growing') {
-                // Faster growth rate
-                c.growth += 0.0042 + (1 - c.growth) * 0.008;
+                c.growth += 0.0016 + (1 - c.growth) * 0.003;   // slow, meditative growth
                 c.a      += (0.92 - c.a) * 0.035;
                 if (c.growth >= 0.998) {
                     c.growth = 1;
@@ -221,7 +217,7 @@ class FrostMode {
         }
 
         // Sparkle particles
-        this._sparkles = this._sparkles.filter(s => s.life > 0);
+        this._sparkles = this._sparkles.filter(s => s.life > 0).slice(-120);   // hard cap — no memory leak
         for (const s of this._sparkles) {
             s.x    += s.vx;
             s.y    += s.vy;

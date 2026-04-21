@@ -980,39 +980,33 @@ const FULL = [
     { key: 'breath',        name: 'return',        chapter: 'return',     duration: 55 },
 ];
 
-// ── Demo — every single mode, 25 s each, for screen recording ──────
+// ── Demo — curated scene list (35 removed, 61 remain) ──────────────
 const DEMO = [
-    // Original 7 mandalas — each style shown individually
+    // Mandalas — original styles (6 of 7; luminary removed)
     { key: 'mandala', name: 'geometric',     chapter: 'mandalas', duration: 25, mandalaStyle: 0 },
     { key: 'mandala', name: 'thread lines',  chapter: 'mandalas', duration: 25, mandalaStyle: 1 },
     { key: 'mandala', name: 'interwoven',    chapter: 'mandalas', duration: 25, mandalaStyle: 2 },
     { key: 'mandala', name: 'ocean depths',  chapter: 'mandalas', duration: 25, mandalaStyle: 3 },
     { key: 'mandala', name: 'emerald forest',chapter: 'mandalas', duration: 25, mandalaStyle: 4 },
     { key: 'mandala', name: 'pixel art',     chapter: 'mandalas', duration: 25, mandalaStyle: 5 },
-    { key: 'mandala', name: 'luminary',      chapter: 'mandalas', duration: 25, mandalaStyle: 6 },
-    // Body & human
+    // Body
     { key: 'breath',       name: 'breath',        chapter: 'body',       duration: 25 },
-    { key: 'heart',        name: 'heart',          chapter: 'body',       duration: 25 },
     { key: 'meridian',     name: 'meridian',       chapter: 'body',       duration: 25 },
     { key: 'gaze',         name: 'gaze',           chapter: 'body',       duration: 25 },
     { key: 'humans',       name: 'humans',         chapter: 'connection', duration: 25 },
+    // Geometry
     { key: 'golden',       name: 'golden',         chapter: 'geometry',   duration: 25 },
     { key: 'julia',        name: 'julia',          chapter: 'geometry',   duration: 25 },
     { key: 'psychedelic',  name: 'psychedelic',    chapter: 'geometry',   duration: 25 },
-    { key: 'newton',       name: 'newton',         chapter: 'geometry',   duration: 25 },
     { key: 'harmonograph', name: 'harmonograph',   chapter: 'geometry',   duration: 25 },
     { key: 'cymatics',     name: 'cymatics',       chapter: 'geometry',   duration: 25 },
-    { key: 'attractor',    name: 'attractor',      chapter: 'geometry',   duration: 25 },
-    { key: 'vortex',       name: 'vortex',         chapter: 'geometry',   duration: 25 },
     { key: 'reaction',     name: 'reaction',       chapter: 'geometry',   duration: 25 },
     { key: 'gravity',      name: 'gravity',        chapter: 'geometry',   duration: 25 },
-    { key: 'nebula',       name: 'nebula',         chapter: 'cosmos',     duration: 25 },
-    { key: 'aurora',       name: 'aurora',         chapter: 'cosmos',     duration: 25 },
-    { key: 'abyss',        name: 'abyss',          chapter: 'cosmos',     duration: 25 },
+    // Cosmos
     { key: 'terrain',      name: 'terrain',        chapter: 'cosmos',     duration: 25 },
     { key: 'tide',         name: 'tide',           chapter: 'cosmos',     duration: 25 },
+    // Nature
     { key: 'mycelium',     name: 'mycelium',       chapter: 'nature',     duration: 25 },
-    { key: 'embers',       name: 'embers',         chapter: 'nature',     duration: 25 },
     { key: 'rain',         name: 'rain',           chapter: 'nature',     duration: 25 },
     { key: 'frost',        name: 'frost',          chapter: 'nature',     duration: 25 },
     { key: 'constellation',name: 'constellation',  chapter: 'nature',     duration: 25 },
@@ -1020,72 +1014,48 @@ const DEMO = [
     { key: 'swarm',        name: 'swarm',          chapter: 'nature',     duration: 25 },
     { key: 'neurogenesis', name: 'neurogenesis',   chapter: 'nature',     duration: 25 },
     { key: 'soundgarden',  name: 'sound garden',   chapter: 'nature',     duration: 30 },
-    { key: 'marble',       name: 'marble',         chapter: 'material',   duration: 25 },
-    { key: 'wax',          name: 'wax',            chapter: 'material',   duration: 25 },
+    // Material
     { key: 'patina',       name: 'patina',         chapter: 'material',   duration: 25 },
     { key: 'ink',          name: 'ink',            chapter: 'material',   duration: 25 },
     { key: 'nacre',        name: 'nacre',          chapter: 'material',   duration: 25 },
-    { key: 'iris',         name: 'iris',           chapter: 'material',   duration: 25 },
-    { key: 'lava',         name: 'lava',           chapter: 'material',   duration: 25 },
-    { key: 'caustic',      name: 'caustic',        chapter: 'material',   duration: 25 },
     { key: 'fabric',       name: 'fabric',         chapter: 'material',   duration: 25 },
+    // Abstract
     { key: 'membrane',     name: 'membrane',       chapter: 'abstract',   duration: 25 },
     { key: 'field',        name: 'field',          chapter: 'abstract',   duration: 25 },
     { key: 'flow',         name: 'flow',           chapter: 'abstract',   duration: 25 },
     { key: 'mirror',       name: 'mirror',         chapter: 'abstract',   duration: 25 },
     { key: 'recursion',    name: 'recursion',      chapter: 'abstract',   duration: 25 },
-    { key: 'orrery',       name: 'orrery',         chapter: 'abstract',   duration: 25 },
     { key: 'void',         name: 'void',           chapter: 'abstract',   duration: 25 },
-    // New mandala modes — batch 1
-    { key: 'solarmandala', name: 'solar mandala',  chapter: 'mandalas',   duration: 25 },
+    // New mandalas
     { key: 'lunarmandala', name: 'lunar mandala',  chapter: 'mandalas',   duration: 25 },
     { key: 'rosemandala',  name: 'rose mandala',   chapter: 'mandalas',   duration: 25 },
-    { key: 'voidbloom',    name: 'void bloom',     chapter: 'mandalas',   duration: 25 },
-    { key: 'prismandala',  name: 'prism mandala',  chapter: 'mandalas',   duration: 25 },
-    // New mandala modes — batch 2
     { key: 'flowerlife',   name: 'flower of life', chapter: 'mandalas',   duration: 25 },
-    { key: 'celtic',       name: 'celtic knot',    chapter: 'mandalas',   duration: 25 },
-    { key: 'snowflake',    name: 'snowflake',      chapter: 'mandalas',   duration: 25 },
     { key: 'sumi',         name: 'sumi-e',         chapter: 'mandalas',   duration: 25 },
-    { key: 'circuit',      name: 'circuit',        chapter: 'mandalas',   duration: 25 },
-    { key: 'naturesort',    name: 'nature sort',    chapter: 'nature',     duration: 35 },
-    { key: 'murmuration',  name: 'murmuration',    chapter: 'nature',     duration: 30 },
+    { key: 'naturesort',   name: 'nature sort',    chapter: 'nature',     duration: 35 },
     { key: 'sandmandala',  name: 'sand mandala',   chapter: 'mandalas',   duration: 35 },
-    { key: 'bioluminescent',name:'bioluminescent',  chapter: 'cosmos',     duration: 30 },
-    { key: 'lichtenberg',  name: 'lichtenberg',    chapter: 'geometry',   duration: 30 },
-    { key: 'rainripple',   name: 'rain ripple',    chapter: 'nature',     duration: 30 },
     { key: 'geode',        name: 'geode',          chapter: 'material',   duration: 30 },
     { key: 'coral',        name: 'coral',          chapter: 'nature',     duration: 30 },
-    { key: 'tidepool',     name: 'tide pool',      chapter: 'nature',     duration: 30 },
     { key: 'smoke',        name: 'smoke',          chapter: 'nature',     duration: 30 },
     { key: 'mitotic',      name: 'mitotic',        chapter: 'nature',     duration: 30 },
-    // New gaze/camera modes
+    // Gaze/camera
     { key: 'presence',     name: 'presence',       chapter: 'gaze',       duration: 25 },
     { key: 'gazebloom',    name: 'gaze bloom',     chapter: 'gaze',       duration: 25 },
     { key: 'eyetrail',     name: 'eye trail',      chapter: 'gaze',       duration: 25 },
     { key: 'mirrorgaze',   name: 'mirror gaze',    chapter: 'gaze',       duration: 25 },
-    { key: 'breathring',   name: 'breath ring',    chapter: 'gaze',       duration: 25 },
-    // New creative modes
+    // Creative
     { key: 'spectrum',     name: 'spectrum',       chapter: 'audio',      duration: 28 },
-    { key: 'voronoi',      name: 'voronoi',        chapter: 'geometry',   duration: 28 },
-    { key: 'interference', name: 'interference',   chapter: 'geometry',   duration: 28 },
     { key: 'epicycle',     name: 'epicycles',      chapter: 'geometry',   duration: 28 },
     { key: 'ridgeline',    name: 'ridgeline',      chapter: 'geometry',   duration: 28 },
-    // 3D modes
-    { key: 'tunnel3d',     name: 'tunnel',         chapter: '3d',         duration: 28 },
-    { key: 'crystal3d',    name: 'crystal',         chapter: '3d',         duration: 28 },
-    { key: 'lattice3d',    name: 'lattice',         chapter: '3d',         duration: 28 },
-    { key: 'nebvol3d',     name: 'nebula vol',      chapter: '3d',         duration: 28 },
-    { key: 'helix3d',      name: 'helix',           chapter: '3d',         duration: 28 },
-    { key: 'omlotus',      name: 'om & lotus',      chapter: 'spiritual',  duration: 30 },
-    { key: 'evolution',    name: 'evolution',        chapter: 'spiritual',  duration: 35 },
-    { key: 'eyescene',     name: 'the eye',          chapter: 'spiritual',  duration: 28 },
-    // Kaleidoscope camera modes
-    { key: 'kaleidoclassic', name: 'mirror garden',   chapter: 'camera',     duration: 30 },
-    { key: 'kaleidoprism',   name: 'chromatic glass', chapter: 'camera',     duration: 30 },
-    { key: 'kaleidofractal', name: 'infinite depth',  chapter: 'camera',     duration: 30 },
-    { key: 'kaleidowarp',    name: 'liquid mirror',   chapter: 'camera',     duration: 30 },
-    { key: 'kaleidohex',     name: 'honeycomb mirror',chapter: 'camera',     duration: 30 },
+    // 3D
+    { key: 'nebvol3d',     name: 'nebula vol',     chapter: '3d',         duration: 28 },
+    // Spiritual
+    { key: 'omlotus',      name: 'om & lotus',     chapter: 'spiritual',  duration: 30 },
+    { key: 'evolution',    name: 'evolution',      chapter: 'spiritual',  duration: 35 },
+    // Kaleidoscope camera
+    { key: 'kaleidoclassic', name: 'mirror garden',   chapter: 'camera',   duration: 30 },
+    { key: 'kaleidoprism',   name: 'chromatic glass', chapter: 'camera',   duration: 30 },
+    { key: 'kaleidofractal', name: 'infinite depth',  chapter: 'camera',   duration: 30 },
+    { key: 'kaleidohex',     name: 'honeycomb mirror',chapter: 'camera',   duration: 30 },
 ];
 
 // ── 5-minute meditation — thesis presentation sequence ───────────────────
