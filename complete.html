@@ -1776,7 +1776,7 @@ function _tickBodyMotion() {
         }
         const norm = diff / (_MOTION_W * _MOTION_H * 765);  // 0..1
 
-        if (norm > 0.022) {   // raised threshold — filters breathing, head tilt, accidental arm lift
+        if (norm > 0.055) {   // high threshold — filters light flicker, breathing, accidental movement
             _motionSustainedTicks++;
             if (_motionSustainedTicks >= MOTION_SHAKE_TICKS) {
                 // 3 seconds of sustained deliberate shaking — fire ripple once
