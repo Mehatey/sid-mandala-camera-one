@@ -127,6 +127,9 @@ html, body {
 }
 #begin-btn:hover { color: rgba(185,215,255,0.75); letter-spacing: 0.44em; }
 
+#onboarding-hints { margin-top: 32px; display: flex; flex-direction: column; gap: 9px; }
+.ob-hint { font-size: 9px; letter-spacing: 0.15em; text-transform: lowercase; color: rgba(130,158,220,0.22); line-height: 1.7; }
+
 /* Arrival entrance animation — triggered via .entering class */
 #arrival.entering #arrival-inner > * {
     animation: arrivalIn 0.7s ease both;
@@ -139,6 +142,7 @@ html, body {
 #arrival.entering #anchors            { animation-delay: 0.62s; }
 #arrival.entering #durations          { animation-delay: 0.74s; }
 #arrival.entering #begin-btn          { animation-delay: 0.88s; }
+#arrival.entering #onboarding-hints   { animation-delay: 1.06s; }
 @keyframes arrivalIn {
     from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -659,6 +663,11 @@ html, body {
     </div>
 
     <button id="begin-btn">begin</button>
+    <div id="onboarding-hints">
+      <span class="ob-hint">← → keys to move between scenes</span>
+      <span class="ob-hint">cursor is hidden — let yourself get lost in the scenes and music</span>
+      <span class="ob-hint">shake your hand steadily for 2–3 seconds to ripple the visuals</span>
+    </div>
   </div>
 </div>
 
@@ -1518,6 +1527,7 @@ function _startScene(idx) {
         if (m.startScene) m.startScene();
     }
     audio.startScene(sc.key);
+    if (idx === Math.floor(_scenes.length / 2)) audio.setCalmMode();
     // Stop warp sound when leaving mandala scene
     if (sc.key !== 'mandala') {
         _setWarpVolume(0);

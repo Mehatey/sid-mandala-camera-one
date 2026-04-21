@@ -294,6 +294,35 @@ class ZenAudio {
         osc.start(now); osc.stop(now + 1.1);
     }
 
+    // ── Calm mode — softer second half of demo ────────────────────────
+    setCalmMode() {
+        if (!this._ready) return;
+        const ac  = this._ac;
+        const now = ac.currentTime;
+
+        // Halve rain intensity — gentle, like drizzle fading
+        this._rainMist.g.gain.setTargetAtTime(0.08, now, 3.5);
+        this._rainDrop.g.gain.setTargetAtTime(0.05, now, 3.5);
+        this._rainLow.g.gain.setTargetAtTime(0.02, now, 3.5);
+
+        // Birds gone — silence
+        this._stopBirds();
+
+        // Wind almost imperceptible
+        if (this._wind) this._wind.g.gain.setTargetAtTime(0.005, now, 4.0);
+
+        // Fade out scene voices, replace with single soft 528Hz pad
+        for (const v of this._voices) {
+            v.g.gain.setTargetAtTime(0, now, 1.5);
+            setTimeout(() => { try { v.osc.stop(); v.lfo.stop(); } catch(e) {} }, 4000);
+        }
+        this._voices = [];
+        this._voices.push(this._voice(528, 0.035, 0.018));
+
+        // Lower master gently
+        this._master.gain.setTargetAtTime(0.58, now, 3.0);
+    }
+
     end() {
         if (!this._ac) return;
         this._stopBirds();
