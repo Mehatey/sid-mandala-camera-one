@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="zentangle">
 <title>zentangle</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
 html, body {
     background: #000; width: 100%; height: 100%;
     overflow: hidden;
@@ -13,6 +16,7 @@ html, body {
     color: rgba(215, 225, 255, 0.88);
     -webkit-font-smoothing: antialiased;
     cursor: none;
+    -webkit-tap-highlight-color: transparent;
 }
 * { cursor: none !important; }
 #c { position: fixed; display: block; z-index: 0; }
@@ -176,11 +180,25 @@ html, body {
 }
 #j-progress {
     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 9px; align-items: center;
+    display: flex; gap: 6px; align-items: center;
+    padding: 12px 16px;   /* larger tap target */
+    cursor: pointer !important;
 }
-.jdot { width: 4px; height: 4px; border-radius: 50%; background: rgba(140,185,255,0.16); transition: background 0.5s, transform 0.3s; }
-.jdot.active { background: rgba(140,185,255,0.62); transform: scale(1.3); }
-.jdot.done   { background: rgba(140,185,255,0.28); }
+/* Each dot has an invisible 24px tap zone around it for Vision Pro pinch */
+.jdot {
+    position: relative;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(140,185,255,0.18);
+    transition: background 0.4s, transform 0.3s;
+    cursor: pointer !important;
+    flex-shrink: 0;
+}
+.jdot::after {
+    content: ''; position: absolute;
+    top: -9px; left: -9px; right: -9px; bottom: -9px;
+}
+.jdot.active { background: rgba(140,185,255,0.75); transform: scale(1.6); }
+.jdot.done   { background: rgba(140,185,255,0.32); }
 .jchap-dot   { width: 6px; height: 6px; border-radius: 50%; background: rgba(180,205,255,0.18); transition: background 0.5s; }
 .jchap-dot.active { background: rgba(180,210,255,0.55); }
 
@@ -1363,9 +1381,19 @@ async function beginJourney() {
 function _buildDots() {
     const el = document.getElementById('j-progress');
     el.innerHTML = '';
-    _scenes.forEach((_, i) => {
+    _scenes.forEach((sc, i) => {
         const d = document.createElement('div');
-        d.className = 'jdot'; d.id = `jd-${i}`; el.appendChild(d);
+        d.className = 'jdot'; d.id = `jd-${i}`;
+        d.title = sc.name || '';
+        // Tap/click on any dot → jump to that scene immediately
+        d.addEventListener('pointerdown', e => {
+            e.stopPropagation();
+            if (_phase !== 'journey') return;
+            if (i === _sceneIdx) return;
+            _sceneTimings[_sceneIdx] = Date.now() - _sceneStart;
+            _fadeScene(() => _startScene(i));
+        });
+        el.appendChild(d);
     });
 }
 
@@ -1383,6 +1411,7 @@ function _startJourney() {
     _sceneIdx       = 0;
     _blinks         = 0;
     _stillnessCount = 0;
+    _motionWarmup   = 0;   // reset so camera re-init doesn't burst ripple
     _sceneTimings   = [];
     _blinkSeq       = 0;
     _gazeActive     = false;
@@ -1674,6 +1703,7 @@ canvas.addEventListener('touchend', e => {
 let _motionCanvas = null, _motionCtx = null;
 let _motionPrev   = null;
 let _motionFrame  = 0;
+let _motionWarmup = 0;   // skip first N samples after camera init to avoid startup ripple burst
 const _MOTION_W   = 40, _MOTION_H = 30;   // tiny — just enough to sense motion
 
 function _initMotionDetect() {
@@ -1696,6 +1726,9 @@ function _tickBodyMotion() {
 
     _motionCtx.drawImage(_blinker.video, 0, 0, _MOTION_W, _MOTION_H);
     const cur = _motionCtx.getImageData(0, 0, _MOTION_W, _MOTION_H).data;
+
+    // Warm-up: skip first 40 samples after camera starts (avoids init-frame burst)
+    if (_motionWarmup < 40) { _motionWarmup++; _motionPrev = cur.slice(); return; }
 
     if (_motionPrev) {
         let diff = 0;
