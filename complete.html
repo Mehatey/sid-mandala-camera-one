@@ -1225,9 +1225,6 @@ function _routeHandMove(nx, ny) {
     if (m && m.onMouseMove && MOUSE_MODES.has(sc.key)) {
         // Mode owns its interaction — pass pixel coords
         m.onMouseMove(nx * canvas.width, ny * canvas.height);
-    } else {
-        // No native interaction — drive water ripple
-        ripple.onHandMove(nx, ny);
     }
 }
 
@@ -1841,13 +1838,6 @@ function _tickMicLevel() {
     // Mandala always receives mic level (persists even when off-scene), but only once
     try { getMode('mandala').setMicLevel(rms); } catch(e) {}
     // Mic amplitude → water ripple (breath/hum creates waves)
-    if (rms > 0.05 && _phase === 'journey' && sc && !MOUSE_MODES.has(sc.key)) {
-        ripple.onMotionDelta(
-            0.47 + Math.random() * 0.06,
-            0.47 + Math.random() * 0.06,
-            rms * 0.18
-        );
-    }
 }
 
 // ── Mandala fold ting — Web Audio bell tone ───────────────────────────
