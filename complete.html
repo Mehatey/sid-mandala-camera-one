@@ -1438,6 +1438,7 @@ function _startJourney() {
     _blinks         = 0;
     _stillnessCount = 0;
     _motionWarmup   = 0;   // reset so camera re-init doesn't burst ripple
+    _calmTriggered  = false;
     _sceneTimings   = [];
     _blinkSeq       = 0;
     _gazeActive     = false;
@@ -1493,6 +1494,7 @@ function _startScene(idx) {
     if (_sceneIdx !== idx) {
         const prevSc = _scenes[_sceneIdx];
         if (prevSc) { const pm = getMode(prevSc.key); if (pm && pm.stopScene) { try { pm.stopScene(); } catch(e) {} } }
+        ripple.stop(); ripple.init();   // clear wave energy — no carry-over between scenes
     }
 
     _sceneIdx  = idx;
@@ -1524,7 +1526,7 @@ function _startScene(idx) {
         if (m.startScene) m.startScene();
     }
     audio.startScene(sc.key);
-    if (idx === Math.floor(_scenes.length / 2)) audio.setCalmMode();
+    if (idx === Math.floor(_scenes.length / 2) && !_calmTriggered) { _calmTriggered = true; audio.setCalmMode(); }
     // Stop warp sound when leaving mandala scene
     if (sc.key !== 'mandala') {
         _setWarpVolume(0);
@@ -1733,6 +1735,7 @@ let _motionWarmup = 0;   // skip first N samples after camera init to avoid star
 const _MOTION_W   = 40, _MOTION_H = 30;   // tiny — just enough to sense motion
 // Sustained-shake gate: ripple only fires after ~3 continuous seconds of deliberate shaking
 let _motionSustainedTicks = 0;
+let _calmTriggered = false;
 let _motionCooldownTicks  = 0;
 const MOTION_SHAKE_TICKS    = 60;   // 60 samples × 3 frames × ~16ms ≈ 2.9s sustained motion required
 const MOTION_FIRE_COOLDOWN  = 40;   // ~2s cooldown before next trigger
