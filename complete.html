@@ -1470,7 +1470,6 @@ function _onKey(e) {
     if (_phase !== 'journey') return;
     if (e.code === 'ArrowLeft')  { e.preventDefault(); _prevScene(); }
     if (e.code === 'ArrowRight') { e.preventDefault(); _nextScene(); }
-    if (e.code === 'Space')      { e.preventDefault(); _nextScene(); }
     if (e.code === 'KeyB')       { _blink(); }
 }
 function _onDblClick() {
@@ -1495,6 +1494,8 @@ function _startScene(idx) {
         const prevSc = _scenes[_sceneIdx];
         if (prevSc) { const pm = getMode(prevSc.key); if (pm && pm.stopScene) { try { pm.stopScene(); } catch(e) {} } }
         ripple.stop(); ripple.init();   // clear wave energy — no carry-over between scenes
+        _motionSustainedTicks = 0;      // reset shake counter — no primed trigger on next scene
+        _motionCooldownTicks  = 0;
     }
 
     _sceneIdx  = idx;

@@ -18,6 +18,7 @@ class ZenAudio {
         this._wind    = null;   // wind noise node
         this._birdRaf = null;   // bird chirp timer
         this._curKey  = null;
+        this._calmActive = false;
     }
 
     async init() {
@@ -253,8 +254,9 @@ class ZenAudio {
         const ac  = this._ac;
         const now = ac.currentTime;
 
-        // Master volume crossfade
-        this._master.gain.setTargetAtTime(p.vol, now, 1.2);
+        // Master volume crossfade — cap to 0.60 once calm mode is active
+        const vol = this._calmActive ? Math.min(p.vol, 0.60) : p.vol;
+        this._master.gain.setTargetAtTime(vol, now, 1.2);
 
         // Wind level
         if (this._wind) {
@@ -297,6 +299,7 @@ class ZenAudio {
     // ── Calm mode — softer second half of demo ────────────────────────
     setCalmMode() {
         if (!this._ready) return;
+        this._calmActive = true;
         const ac  = this._ac;
         const now = ac.currentTime;
 
@@ -325,6 +328,7 @@ class ZenAudio {
 
     end() {
         if (!this._ac) return;
+        this._calmActive = false;
         this._stopBirds();
         const now = this._ac.currentTime;
         this._master.gain.setTargetAtTime(0, now, 1.5);
