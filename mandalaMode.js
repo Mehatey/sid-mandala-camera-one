@@ -44,16 +44,17 @@ class MandalaMode {
 
     // Called each frame by the mic analyser — rms is 0..1
     setMicLevel(rms) {
-        if (this._style !== 0 && this._style !== 1) return;
         if (rms > 0.06) {
             this._touch();
             this._humTimer += 0.016;
-            if (this._humTimer >= 0.7) {
-                this._humTimer -= 0.7;
+            if (this._humTimer >= 0.5) {   // fold every 0.5s of sustained sound (was 0.7s)
+                this._humTimer -= 0.5;
                 this._targetFolds = Math.min(this._MAX_FOLDS, this._targetFolds + 1);
             }
         } else {
             this._humTimer = 0;
+            // Snap target to current visual position — stops growth the moment sound stops
+            this._targetFolds = Math.round(this._folds);
         }
     }
 
@@ -96,7 +97,7 @@ class MandalaMode {
             this._decayTimer = 0;
         }
 
-        this._folds += (this._targetFolds - this._folds) * 0.05;
+        this._folds += (this._targetFolds - this._folds) * 0.14;   // faster visual response (was 0.05)
 
         const ctx = this.ctx;
         const W   = this.canvas.width  || 800;

@@ -15,7 +15,7 @@ class BlinkDetector {
         this.lastBlinkTime  = 0;
         this.COOLDOWN_MS    = 350;   // faster consecutive blink detection
         this.EAR_THRESHOLD  = 0.21;
-        this.CONSEC_FRAMES  = 1;
+        this.CONSEC_FRAMES  = 3;   // 3 consecutive frames below EAR — filters 1-2 frame hand occlusions
         this.belowCount     = 0;
         this.blinkLocked    = false;
 

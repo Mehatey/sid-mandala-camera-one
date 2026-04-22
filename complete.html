@@ -1738,7 +1738,7 @@ const _MOTION_W   = 40, _MOTION_H = 30;   // tiny — just enough to sense motio
 let _motionSustainedTicks = 0;
 let _calmTriggered = false;
 let _motionCooldownTicks  = 0;
-const MOTION_SHAKE_TICKS    = 60;   // 60 samples × 3 frames × ~16ms ≈ 2.9s sustained motion required
+const MOTION_SHAKE_TICKS    = 45;   // 45 samples × 3 frames × ~16ms ≈ 2.2s sustained motion required
 const MOTION_FIRE_COOLDOWN  = 40;   // ~2s cooldown before next trigger
 
 function _initMotionDetect() {
@@ -1777,7 +1777,7 @@ function _tickBodyMotion() {
         }
         const norm = diff / (_MOTION_W * _MOTION_H * 765);  // 0..1
 
-        if (norm > 0.055) {   // high threshold — filters light flicker, breathing, accidental movement
+        if (norm > 0.038) {   // tuned threshold — filters light flicker but responds to actual hand shaking
             _motionSustainedTicks++;
             if (_motionSustainedTicks >= MOTION_SHAKE_TICKS) {
                 // 3 seconds of sustained deliberate shaking — fire ripple once
