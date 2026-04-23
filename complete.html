@@ -1229,6 +1229,7 @@ function _routeHandMove(nx, ny) {
 }
 
 function _showBlinkFlash() {
+    return;   // flash removed — distracting
     if (!_flash) return;
     _flash.style.opacity = '1';
     clearTimeout(_flashTimer);
@@ -1777,7 +1778,7 @@ function _tickBodyMotion() {
         }
         const norm = diff / (_MOTION_W * _MOTION_H * 765);  // 0..1
 
-        if (norm > 0.038) {   // tuned threshold — filters light flicker but responds to actual hand shaking
+        if (norm > 0.022) {   // original threshold — mouse/mic triggers removed so this is safe again
             _motionSustainedTicks++;
             if (_motionSustainedTicks >= MOTION_SHAKE_TICKS) {
                 // 3 seconds of sustained deliberate shaking — fire ripple once

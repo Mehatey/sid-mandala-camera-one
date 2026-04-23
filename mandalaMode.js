@@ -117,15 +117,5 @@ class MandalaMode {
         }
         this._lastRoundedFolds = foldCount;
 
-        if (this._blinkFlash > 0.02) {
-            const cx = W / 2, cy = H / 2;
-            const r  = Math.min(W, H) * 0.5 * this._blinkFlash;
-            const g  = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-            g.addColorStop(0,   `rgba(255, 255, 255, ${this._blinkFlash * 0.55})`);
-            g.addColorStop(0.3, `rgba(200, 220, 255, ${this._blinkFlash * 0.18})`);
-            g.addColorStop(1,   'rgba(0,0,0,0)');
-            ctx.fillStyle = g;
-            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-        }
     }
 }
