@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>bloom · live mandala</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #000;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+  body {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    color: rgba(232,225,210,0.85);
+  }
+
+  /* ── 3D Stage with perspective for parallax ─────────────────── */
+  #stage {
+    position: fixed; inset: 0;
+    perspective: 1400px;
+    perspective-origin: 50% 50%;
+    overflow: hidden;
+  }
+  #depth {
+    position: absolute; inset: 0;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+  /* Background nebula glow — parallax background */
+  #nebula {
+    position: absolute; inset: -10%;
+    background: radial-gradient(ellipse at 50% 50%, rgba(40,30,55,0.35) 0%, rgba(0,0,0,0) 60%);
+    transform: translateZ(-300px) scale(1.4);
+    will-change: transform;
+  }
+  /* Mid-plane stars — subtle */
+  #stars {
+    position: absolute; inset: 0;
+    transform: translateZ(-100px);
+    pointer-events: none;
+    will-change: transform;
+  }
+  /* Main canvas plane */
+  #cv-wrap {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) translateZ(0);
+    will-change: transform;
+  }
+  canvas#cv { display: block; }
+
+  /* ── Foreground UI ──────────────────────────────────────────── */
+  #title {
+    position: fixed; top: max(28px, env(safe-area-inset-top));
+    left: 0; right: 0; text-align: center;
+    font-style: italic; font-weight: 300;
+    font-size: clamp(20px, 5.5vw, 26px);
+    letter-spacing: 0.04em;
+    color: rgba(232,225,210,0.62);
+    pointer-events: none;
+    z-index: 5;
+  }
+  #title-mark {
+    font-size: 9px; letter-spacing: 0.36em; text-transform: lowercase;
+    color: rgba(232,225,210,0.32);
+    margin-bottom: 6px; font-style: normal;
+  }
+  #quote {
+    position: fixed;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    left: 0; right: 0; padding: 0 28px;
+    text-align: center;
+    font-style: italic; font-weight: 300;
+    font-size: clamp(13px, 3.6vw, 16px);
+    color: rgba(232,225,210,0.42);
+    pointer-events: none;
+    z-index: 5; line-height: 1.5;
+  }
+  #footer {
+    position: fixed;
+    bottom: calc(28px + env(safe-area-inset-bottom));
+    left: 0; right: 0; text-align: center;
+    color: rgba(232,225,210,0.20);
+    font-size: 9px; letter-spacing: 0.32em; text-transform: lowercase;
+    pointer-events: none; z-index: 5;
+  }
+  #fold-pip {
+    position: fixed;
+    top: calc(28px + env(safe-area-inset-top) + 56px);
+    left: 0; right: 0;
+    display: flex; justify-content: center; gap: 5px;
+    z-index: 5; pointer-events: none;
+    opacity: 0; transition: opacity 0.4s ease;
+  }
+  #fold-pip.visible { opacity: 0.55; }
+  #fold-pip span { width: 4px; height: 4px; border-radius: 50%; background: rgba(232,225,210,0.20); transition: background 0.3s, transform 0.25s; }
+  #fold-pip span.lit { background: rgba(232,225,210,0.85); transform: scale(1.4); }
+
+  /* ── Intro overlay ──────────────────────────────────────────── */
+  #intro {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.985);
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    gap: 24px; z-index: 100;
+    text-align: center; padding: 0 32px;
+    transition: opacity 0.9s ease;
+  }
+  #intro.gone { opacity: 0; pointer-events: none; }
+  #intro .mark { font-size: 10px; letter-spacing: 0.46em; text-transform: lowercase; color: rgba(232,225,210,0.45); margin-bottom: 18px; }
+  #intro h2 { font-style: italic; font-weight: 300; font-size: clamp(28px, 9vw, 42px); color: rgba(232,225,210,0.92); }
+  #intro p.q { font-style: italic; font-size: clamp(14px, 4vw, 17px); color: rgba(232,225,210,0.55); max-width: 320px; line-height: 1.6; }
+  #intro p.hint { font-size: 11px; letter-spacing: 0.18em; text-transform: lowercase; color: rgba(232,225,210,0.35); max-width: 280px; line-height: 1.7; margin-top: 10px; }
+  #intro button {
+    margin-top: 20px;
+    background: none;
+    border: 1px solid rgba(232,225,210,0.35);
+    color: rgba(232,225,210,0.92);
+    padding: 16px 38px;
+    font-family: inherit; font-size: 12px; letter-spacing: 0.32em; text-transform: lowercase;
+    cursor: pointer; transition: all 0.25s;
+  }
+  #intro button:hover, #intro button:active { background: rgba(232,225,210,0.06); letter-spacing: 0.40em; }
+
+  /* ── Permission denied state ───────────────────────────────── */
+  #intro.denied .denied-msg { display: block; }
+  .denied-msg { display: none; font-size: 11px; color: rgba(232,225,210,0.40); margin-top: 6px; max-width: 280px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="depth">
+    <div id="nebula"></div>
+    <div id="stars"></div>
+    <div id="cv-wrap"><canvas id="cv"></canvas></div>
+  </div>
+</div>
+
+<div id="title"><div id="title-mark">b l o o m</div><span id="title-text"></span></div>
+<div id="fold-pip"></div>
+<div id="quote"></div>
+<div id="footer">tap to bloom · tilt to feel</div>
+
+<div id="intro">
+  <div class="mark">b l o o m</div>
+  <h2 id="intro-title">geometric</h2>
+  <p class="q" id="intro-quote">"stillness is the altar of spirit"</p>
+  <p class="hint">a live mandala. tap to add folds. tilt the phone to feel its depth.</p>
+  <button id="begin">begin</button>
+  <p class="denied-msg">motion permission denied — you'll still see the mandala but it won't tilt with the phone</p>
+</div>
+
+<script>
+'use strict';
+
+// ──────────────────────────────────────────────────────────────────
+// AR-style live mandala. One animated piece per QR-printed poster.
+// Three styles: geometric · thread · interwoven (matches first 3 posters).
+// ──────────────────────────────────────────────────────────────────
+
+const POSTERS = {
+  '01-geometric':  { title: 'geometric',       quote: 'stillness is the altar of spirit',     hue: 38,  drone: { fund: 174, fifth: 261 }, draw: drawGeometric },
+  '02-thread':     { title: 'thread of being', quote: 'the universe weaves itself through us', hue: 196, drone: { fund: 196, fifth: 294 }, draw: drawThread },
+  '03-interwoven': { title: 'interwoven',      quote: 'all that lives, lives connected',       hue: 286, drone: { fund: 220, fifth: 330 }, draw: drawInterwoven },
+};
+
+const params = new URLSearchParams(location.search);
+const id = params.get('id') || '01-geometric';
+const config = POSTERS[id] || POSTERS['01-geometric'];
+
+document.title = `bloom · ${config.title}`;
+document.getElementById('title-text').textContent = config.title;
+document.getElementById('quote').textContent = `"${config.quote}"`;
+document.getElementById('intro-title').textContent = config.title;
+document.getElementById('intro-quote').textContent = `"${config.quote}"`;
+
+// ── CANVAS / DPR / RESIZE ─────────────────────────────────────────
+
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W = 0, H = 0, S = 0, DPR = 1;
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  S = Math.min(window.innerWidth, window.innerHeight) * 0.92;
+  cv.width  = Math.round(S * DPR);
+  cv.height = Math.round(S * DPR);
+  cv.style.width  = S + 'px';
+  cv.style.height = S + 'px';
+  W = cv.width;
+  H = cv.height;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  buildStars();
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+resize();
+
+// ── BACKGROUND STARS (subtle parallax) ────────────────────────────
+
+function buildStars() {
+  const el = document.getElementById('stars');
+  el.innerHTML = '';
+  const n = 36;
+  let seed = 31;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('div');
+    const sz = 0.8 + rnd() * 1.6;
+    const op = 0.10 + rnd() * 0.30;
+    s.style.cssText = `position:absolute; left:${rnd()*100}%; top:${rnd()*100}%; width:${sz}px; height:${sz}px; background:rgba(232,225,210,${op}); border-radius:50%; pointer-events:none;`;
+    el.appendChild(s);
+  }
+}
+
+// ── STATE ─────────────────────────────────────────────────────────
+
+let t = 0;
+const MAX_FOLDS = 12;
+let folds       = 5;
+let targetFolds = 5;
+let foldFlash   = 0;
+
+let tiltX = 0, tiltY = 0;
+let smoothX = 0, smoothY = 0;
+let baseline = null;
+
+// ── PATTERN: GEOMETRIC ────────────────────────────────────────────
+
+function drawGeometric(ctx, cx, cy, R, t, foldCount, hue) {
+  const sides = 12;
+  const rotBase = t * 0.04;
+
+  // Concentric polygons
+  for (let l = 1; l <= foldCount; l++) {
+    const r = R * l / foldCount;
+    const rot = rotBase + l * 0.10 + Math.sin(t * 0.3 + l) * 0.02;
+    ctx.beginPath();
+    for (let i = 0; i <= sides; i++) {
+      const a = rot + (i / sides) * Math.PI * 2 - Math.PI / 2;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    const opacity = 0.42 + (l / foldCount) * 0.45;
+    ctx.strokeStyle = `hsla(${hue}, 28%, 88%, ${opacity})`;
+    ctx.lineWidth = 1.0 + Math.sin(t + l) * 0.25;
+    ctx.stroke();
+  }
+
+  // Radial spokes
+  for (let i = 0; i < sides; i++) {
+    const a = rotBase + (i / sides) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * R * 0.18, cy + Math.sin(a) * R * 0.18);
+    ctx.lineTo(cx + Math.cos(a) * R * 0.99, cy + Math.sin(a) * R * 0.99);
+    ctx.strokeStyle = `hsla(${hue}, 24%, 82%, 0.40)`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // Inner ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * 0.18, 0, Math.PI * 2);
+  ctx.strokeStyle = `hsla(${hue}, 32%, 90%, 0.85)`;
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+
+  // Center glow
+  const glowR = R * 0.10 + foldFlash * R * 0.18;
+  const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+  grd.addColorStop(0, `hsla(${hue}, 50%, 92%, ${0.60 + foldFlash * 0.40})`);
+  grd.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ── PATTERN: THREAD OF BEING ──────────────────────────────────────
+
+function drawThread(ctx, cx, cy, R, t, foldCount, hue) {
+  const N = 16 + (foldCount - 5) * 2;     // more vertices as folds grow
+  const rot = t * 0.025;
+  const verts = [];
+  for (let i = 0; i < N; i++) {
+    const a = rot + (i / N) * Math.PI * 2 - Math.PI / 2;
+    verts.push({ x: cx + Math.cos(a) * R, y: cy + Math.sin(a) * R });
+  }
+
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.strokeStyle = `hsla(${hue}, 32%, 86%, 0.70)`;
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+
+  // Threads — connect each vertex to those further along
+  // Animate a "weaving" wave along the connections
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 3; j < N && j - i <= N / 2; j++) {
+      const phase = ((i + j) / (N * 2) + t * 0.06) % 1;
+      const opacity = 0.10 + Math.sin(phase * Math.PI * 2) * 0.12 + 0.10;
+      ctx.beginPath();
+      ctx.moveTo(verts[i].x, verts[i].y);
+      ctx.lineTo(verts[j].x, verts[j].y);
+      ctx.strokeStyle = `hsla(${hue}, 38%, 88%, ${Math.max(0, opacity)})`;
+      ctx.lineWidth = 0.45;
+      ctx.stroke();
+    }
+  }
+
+  // Vertex dots
+  for (const v of verts) {
+    ctx.beginPath();
+    ctx.arc(v.x, v.y, 1.6, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${hue}, 40%, 92%, 0.88)`;
+    ctx.fill();
+  }
+
+  // Center glow
+  const glowR = R * 0.08 + foldFlash * R * 0.20;
+  const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+  grd.addColorStop(0, `hsla(${hue}, 55%, 92%, ${0.70 + foldFlash * 0.30})`);
+  grd.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ── PATTERN: INTERWOVEN ───────────────────────────────────────────
+
+function drawInterwoven(ctx, cx, cy, R, t, foldCount, hue) {
+  const petals = 8;
+  const layers = Math.max(1, Math.min(4, Math.round(foldCount / 3)));
+  const baseRot = t * 0.018;
+
+  for (let l = 0; l < layers; l++) {
+    const r = R * (0.40 + l * 0.20);
+    const rot = baseRot + l * (Math.PI / petals) + l * 0.04 * Math.sin(t * 0.3);
+    const opacity = 0.35 + (l / layers) * 0.40;
+
+    for (let i = 0; i < petals; i++) {
+      const a = rot + (i / petals) * Math.PI * 2;
+      const tipX = cx + Math.cos(a) * r;
+      const tipY = cy + Math.sin(a) * r;
+      const c1x = cx + Math.cos(a + 0.32) * r * 0.78;
+      const c1y = cy + Math.sin(a + 0.32) * r * 0.78;
+      const c2x = cx + Math.cos(a - 0.32) * r * 0.78;
+      const c2y = cy + Math.sin(a - 0.32) * r * 0.78;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.quadraticCurveTo(c1x, c1y, tipX, tipY);
+      ctx.quadraticCurveTo(c2x, c2y, cx, cy);
+      ctx.strokeStyle = `hsla(${hue}, 38%, 88%, ${opacity})`;
+      ctx.lineWidth = 1.0 - l * 0.15;
+      ctx.stroke();
+    }
+  }
+
+  // Inner mandala ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * 0.20, 0, Math.PI * 2);
+  ctx.strokeStyle = `hsla(${hue}, 38%, 90%, 0.80)`;
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+
+  // Center glow
+  const glowR = R * 0.10 + foldFlash * R * 0.22;
+  const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+  grd.addColorStop(0, `hsla(${hue}, 55%, 92%, ${0.65 + foldFlash * 0.35})`);
+  grd.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ── ANIMATION LOOP ────────────────────────────────────────────────
+
+const depth   = document.getElementById('depth');
+const nebula  = document.getElementById('nebula');
+const stars   = document.getElementById('stars');
+const cvWrap  = document.getElementById('cv-wrap');
+
+let lastFrame = performance.now();
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - lastFrame) / 1000);
+  lastFrame = now;
+  t += dt;
+
+  // Smooth tilt (low-pass)
+  smoothX += (tiltX - smoothX) * 0.10;
+  smoothY += (tiltY - smoothY) * 0.10;
+
+  // Layered parallax — different depths shift at different rates
+  cvWrap.style.transform = `translate(-50%, -50%) translateZ(0) rotateY(${smoothX * 6}deg) rotateX(${-smoothY * 6}deg)`;
+  nebula.style.transform = `translateZ(-300px) scale(1.4) translate(${-smoothX * 30}px, ${-smoothY * 30}px)`;
+  stars.style.transform  = `translateZ(-100px) translate(${-smoothX * 14}px, ${-smoothY * 14}px)`;
+
+  // Folds → ease toward target
+  folds     += (targetFolds - folds) * 0.10;
+  foldFlash *= 0.93;
+
+  // Trail fade — gives the mandala a soft persistence
+  ctx.fillStyle = 'rgba(0, 0, 6, 0.10)';
+  ctx.fillRect(0, 0, S, S);
+
+  // Drive audio breath from foldFlash
+  if (audio.ready) audio.pulse(foldFlash);
+
+  // Draw
+  config.draw(ctx, S / 2, S / 2, S * 0.42, t, Math.max(1, Math.round(folds)), config.hue);
+
+  // Update fold pip indicator
+  updateFoldPip();
+}
+requestAnimationFrame(frame);
+
+// ── FOLD PIP INDICATOR ────────────────────────────────────────────
+
+const foldPipEl = document.getElementById('fold-pip');
+const PIP_COUNT = MAX_FOLDS;
+for (let i = 0; i < PIP_COUNT; i++) foldPipEl.appendChild(document.createElement('span'));
+function updateFoldPip() {
+  const round = Math.max(1, Math.round(folds));
+  for (let i = 0; i < PIP_COUNT; i++) {
+    const lit = i < round;
+    const span = foldPipEl.children[i];
+    if (lit !== span.classList.contains('lit')) span.classList.toggle('lit', lit);
+  }
+}
+
+// ── INTERACTION ───────────────────────────────────────────────────
+
+let lastTap = 0;
+function onTap(e) {
+  if (e && e.cancelable) e.preventDefault();
+  const now = Date.now();
+  if (now - lastTap < 80) return;            // debounce double-fire (touch+click)
+  lastTap = now;
+
+  if (Math.round(targetFolds) >= MAX_FOLDS) {
+    // At max — reset (a soft "completion")
+    targetFolds = 1;
+  } else {
+    targetFolds = Math.min(MAX_FOLDS, Math.round(targetFolds) + 1);
+  }
+  foldFlash = 1.0;
+  audio.ping();
+  foldPipEl.classList.add('visible');
+  clearTimeout(foldPipEl._hideTimer);
+  foldPipEl._hideTimer = setTimeout(() => foldPipEl.classList.remove('visible'), 1800);
+}
+document.addEventListener('touchstart', onTap, { passive: false });
+document.addEventListener('click', onTap);
+
+// Mouse parallax fallback (desktop)
+window.addEventListener('mousemove', e => {
+  if (baseline !== null) return;             // don't override gyro
+  const nx = (e.clientX / window.innerWidth)  * 2 - 1;
+  const ny = (e.clientY / window.innerHeight) * 2 - 1;
+  tiltX = Math.max(-1, Math.min(1, nx));
+  tiltY = Math.max(-1, Math.min(1, ny));
+});
+
+// ── DEVICE ORIENTATION (gyro) ─────────────────────────────────────
+
+function handleOrientation(e) {
+  if (e.gamma === null || e.beta === null) return;
+
+  // Capture neutral pose on first reading after permission
+  if (baseline === null) baseline = { gamma: e.gamma, beta: e.beta };
+
+  const dGamma = e.gamma - baseline.gamma;   // left-right
+  const dBeta  = e.beta  - baseline.beta;    // front-back
+
+  tiltX = Math.max(-1, Math.min(1, dGamma / 30));
+  tiltY = Math.max(-1, Math.min(1, dBeta  / 30));
+}
+
+async function requestMotionPermission() {
+  // iOS 13+ requires explicit permission via user gesture
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const result = await DeviceOrientationEvent.requestPermission();
+      if (result === 'granted') {
+        window.addEventListener('deviceorientation', handleOrientation);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('Motion permission error:', err);
+      return false;
+    }
+  }
+  // Android & desktop — just listen
+  window.addEventListener('deviceorientation', handleOrientation);
+  return true;
+}
+
+// ── WAKE LOCK (keep screen on) ────────────────────────────────────
+
+let wakeLock = null;
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (err) {
+    console.warn('WakeLock error:', err);
+  }
+}
+// Re-acquire on visibility change (browsers release wake lock on tab switch)
+document.addEventListener('visibilitychange', () => {
+  if (wakeLock === null && document.visibilityState === 'visible') requestWakeLock();
+});
+
+// ── AUDIO (Web Audio synthesis — soft drone + ping on tap) ────────
+
+const audio = {
+  ctx: null,
+  master: null,
+  pulseGain: null,
+  ready: false,
+
+  start() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AC({ latencyHint: 'playback' });
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+    } catch (e) { console.warn('Audio unavailable:', e); return; }
+
+    const ac = this.ctx;
+    const now = ac.currentTime;
+
+    // Master with slow fade-in
+    this.master = ac.createGain();
+    this.master.gain.setValueAtTime(0, now);
+    this.master.gain.linearRampToValueAtTime(0.16, now + 4.0);
+    this.master.connect(ac.destination);
+
+    // Convolution-style reverb (synthesised impulse)
+    const irLen = ac.sampleRate * 3.0;
+    const ir = ac.createBuffer(2, irLen, ac.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = ir.getChannelData(c);
+      for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 2.5);
+    }
+    const conv = ac.createConvolver();
+    conv.buffer = ir;
+    conv.connect(this.master);
+
+    // Drone — fundamental + perfect fifth, very quiet
+    const makeVoice = (freq, gain, lfoHz) => {
+      const osc = ac.createOscillator();
+      const g   = ac.createGain();
+      const lfo = ac.createOscillator();
+      const lfoG= ac.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      g.gain.value = 0;
+      g.gain.linearRampToValueAtTime(gain, now + 4.5);
+      lfo.frequency.value = lfoHz;
+      lfoG.gain.value = gain * 0.20;
+      lfo.connect(lfoG); lfoG.connect(g.gain);
+      osc.connect(g); g.connect(conv);
+      osc.start(now); lfo.start(now);
+      return g;
+    };
+    makeVoice(config.drone.fund,   0.085, 0.05);
+    makeVoice(config.drone.fifth,  0.055, 0.07);
+    makeVoice(config.drone.fund/2, 0.045, 0.03);    // sub-octave depth
+
+    // Pulse-driven gain (responds to fold flash)
+    this.pulseGain = ac.createGain();
+    this.pulseGain.gain.value = 1.0;
+    this.master.gain.value = 0.16;
+
+    this.ready = true;
+  },
+
+  pulse(amount) {
+    if (!this.ready) return;
+    const target = 0.16 + amount * 0.04;     // gently swell on each fold
+    this.master.gain.setTargetAtTime(target, this.ctx.currentTime, 0.4);
+  },
+
+  ping() {
+    if (!this.ready) return;
+    const ac = this.ctx;
+    const now = ac.currentTime;
+    const osc = ac.createOscillator();
+    const g   = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(587, now + 0.55);
+    g.gain.setValueAtTime(0.001, now);
+    g.gain.linearRampToValueAtTime(0.10, now + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+    osc.connect(g); g.connect(this.master);
+    osc.start(now); osc.stop(now + 1.3);
+  },
+};
+
+// ── BEGIN ─────────────────────────────────────────────────────────
+
+const intro    = document.getElementById('intro');
+const beginBtn = document.getElementById('begin');
+
+beginBtn.addEventListener('click', async () => {
+  beginBtn.disabled = true;
+  beginBtn.textContent = 'opening…';
+
+  audio.start();
+  const motionOK = await requestMotionPermission();
+  if (!motionOK) intro.classList.add('denied');
+
+  await requestWakeLock();
+
+  intro.classList.add('gone');
+  setTimeout(() => intro.remove(), 1100);
+
+  // Reveal fold pip briefly so user notices it
+  setTimeout(() => {
+    foldPipEl.classList.add('visible');
+    setTimeout(() => foldPipEl.classList.remove('visible'), 2400);
+  }, 1400);
+});
+</script>
+
+</body>
+</html>

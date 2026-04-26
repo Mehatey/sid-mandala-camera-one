@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <title>bloom — poster archive</title>
+<!-- QR code generator (synchronous matrix-based, ~5KB minified) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <style>
   :root { --bg:#15151a; --ink:#e6e3d8; --muted:#9a958a; --card:#f6f1e6; --line:#1a1814; }
   * { box-sizing: border-box; }
@@ -579,10 +581,14 @@ function breath(cx, cy, R) {
 
 // ── POSTERS (20 designs) ──────────────────────────────────────────
 
+// AR base URL — set to your deployed site (or http://localhost:3000 for testing).
+// Posters with `ar: true` get a QR code rendered in the bottom-right that points to /ar/?id=<id>
+const AR_BASE = 'https://mehatey.github.io/sid-mandala-camera-one/';
+
 const POSTERS = [
-  { id:'01-geometric',     title:'geometric',        quote:'stillness is the altar of spirit',                     author:'hazrat inayat khan',  render: geometric },
-  { id:'02-thread',        title:'thread of being',  quote:'the universe weaves itself through us',                author:'',                    render: threadLines },
-  { id:'03-interwoven',    title:'interwoven',       quote:'all that lives, lives connected',                       author:'',                    render: interwoven },
+  { id:'01-geometric',     title:'geometric',        quote:'stillness is the altar of spirit',                     author:'hazrat inayat khan',  render: geometric,    ar:true },
+  { id:'02-thread',        title:'thread of being',  quote:'the universe weaves itself through us',                author:'',                    render: threadLines,  ar:true },
+  { id:'03-interwoven',    title:'interwoven',       quote:'all that lives, lives connected',                       author:'',                    render: interwoven,   ar:true },
   { id:'04-ocean',         title:'ocean depths',     quote:'the deepest stillness moves in waves',                  author:'',                    render: oceanDepths },
   { id:'05-emerald',       title:'emerald forest',   quote:'every leaf remembers the seed',                         author:'',                    render: emeraldForest },
   { id:'06-frost',         title:'frost',            quote:'in every crystal, the breath of winter',                author:'',                    render: frost },
@@ -602,10 +608,43 @@ const POSTERS = [
   { id:'20-tide',          title:'tide',             quote:'the ocean teaches patience, slowly',                    author:'',                    render: tide },
 ];
 
+// ── QR CODE GENERATOR (synchronous, matrix-based via qrcode-generator lib) ──
+
+function qrSVG(text, x, y, size) {
+  // Type 0 = auto-detect smallest matrix that fits. Error correction Q (~25%
+  // of QR can be obscured/damaged and still scan) — important for print.
+  const qr = qrcode(0, 'Q');
+  qr.addData(text);
+  qr.make();
+  const cells = qr.getModuleCount();
+  const cell  = size / cells;
+  let dark = '';
+  for (let r = 0; r < cells; r++) {
+    for (let c = 0; c < cells; c++) {
+      if (qr.isDark(r, c)) {
+        dark += `M${(c*cell).toFixed(2)} ${(r*cell).toFixed(2)}h${cell.toFixed(2)}v${cell.toFixed(2)}h-${cell.toFixed(2)}z`;
+      }
+    }
+  }
+  // Quiet zone (4-cell margin) is part of QR spec — we already place the QR
+  // on a white card with margin, but add a small explicit quiet zone here too.
+  return `<g transform="translate(${x},${y})">
+    <rect x="-6" y="-6" width="${size+12}" height="${size+12}" fill="#f6f1e6"/>
+    <path d="${dark}" fill="#1a1814"/>
+  </g>`;
+}
+
 // ── BUILD POSTER SVG ──────────────────────────────────────────────
 
 function buildPoster(p) {
   const patternSVG = p.render(CX, PCY, PR);
+  const qrSize  = 92;
+  const qrX     = W - M - 16 - qrSize;
+  const qrY     = H - M - 16 - qrSize;
+  const qrBlock = p.ar ? `
+<!-- AR QR code — points to ${AR_BASE}ar/?id=${p.id} -->
+${qrSVG(AR_BASE + 'ar/?id=' + p.id, qrX, qrY, qrSize)}
+<text x="${qrX + qrSize/2}" y="${qrY + qrSize + 14}" text-anchor="middle" class="small" font-size="7" fill="#1a1814" letter-spacing="3">scan to bloom</text>` : '';
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
 <defs>
   <style>
@@ -648,6 +687,7 @@ ${p.author ? `<text x="${CX}" y="${PCY + PR + 185}" text-anchor="middle" class="
 <!-- Footer -->
 <text x="${CX}" y="${H - M - 22}" text-anchor="middle" class="small" font-size="9" fill="#1a1814" letter-spacing="6">${p.id.split('-')[0]}  ·  bloom archive  ·  open-eye meditation</text>
 
+${qrBlock}
 </svg>`;
 }
 
