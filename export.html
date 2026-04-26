@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>bloom — poster archive</title>
+<style>
+  :root { --bg:#15151a; --ink:#e6e3d8; --muted:#9a958a; --card:#f6f1e6; --line:#1a1814; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:'Cormorant Garamond','Georgia',serif; padding:48px 40px 80px; }
+  header { max-width:1400px; margin:0 auto 40px; }
+  h1 { font-weight:300; font-size:36px; letter-spacing:0.32em; text-transform:lowercase; margin:0 0 6px; }
+  .sub { font-size:13px; letter-spacing:0.18em; color:var(--muted); text-transform:lowercase; margin:0 0 20px; }
+  .actions { display:flex; gap:12px; align-items:center; }
+  button { background:none; border:1px solid rgba(230,227,216,0.30); color:var(--ink); font-family:inherit; font-size:12px; letter-spacing:0.20em; text-transform:lowercase; padding:10px 20px; cursor:pointer; transition:all 0.18s; }
+  button:hover { border-color:rgba(230,227,216,0.70); color:#fff; }
+  .grid { max-width:1400px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:28px; }
+  .card { background:var(--card); border-radius:2px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.5); }
+  .card svg { display:block; width:100%; height:auto; background:var(--card); }
+  .card .info { padding:12px 14px 14px; color:#333; display:flex; justify-content:space-between; align-items:center; }
+  .card .info .name { font-size:13px; letter-spacing:0.16em; text-transform:lowercase; color:#3a3530; }
+  .card .info button { color:#3a3530; border-color:rgba(0,0,0,0.18); padding:6px 12px; font-size:10px; }
+  .card .info button:hover { border-color:#3a3530; }
+</style>
+</head>
+<body>
+<header>
+  <h1>bloom</h1>
+  <p class="sub">poster archive — 20 designs · letter size · vector · laser-cut + print ready</p>
+  <div class="actions">
+    <button id="download-all">download all 20</button>
+    <button id="download-zip" style="display:none">download as zip</button>
+  </div>
+</header>
+<div class="grid" id="grid"></div>
+
+<script>
+// ──────────────────────────────────────────────────────────────────
+// 20 hand-crafted poster designs. Each is a self-contained SVG.
+// Letter size: 850 × 1100 (8.5" × 11" at 100dpi)
+// All strokes black on cream (var --card). Convert to outlines in
+// Inkscape if your laser software doesn't recognise embedded fonts.
+// ──────────────────────────────────────────────────────────────────
+
+const W = 850, H = 1100;
+const M = 60;                          // margin
+const CX = W / 2;
+const PCY = 530;                       // pattern center Y
+const PR  = 280;                       // pattern radius
+
+// Helper utilities
+const TAU = Math.PI * 2;
+const DEG = Math.PI / 180;
+function pt(cx, cy, r, a) { return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; }
+function n(v) { return v.toFixed(2); }
+function pathPolygon(cx, cy, r, sides, rot=0) {
+  const p = [];
+  for (let i = 0; i < sides; i++) {
+    const a = rot + (i / sides) * TAU - Math.PI/2;
+    const [x,y] = pt(cx,cy,r,a);
+    p.push((i===0?'M':'L') + n(x) + ' ' + n(y));
+  }
+  return p.join(' ') + ' Z';
+}
+function circle(cx, cy, r, sw=1.4) {
+  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="none" stroke="#1a1814" stroke-width="${sw}"/>`;
+}
+function line(x1,y1,x2,y2,sw=1) {
+  return `<line x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}" stroke="#1a1814" stroke-width="${sw}" stroke-linecap="round"/>`;
+}
+function path(d, sw=1.4, fill='none') {
+  return `<path d="${d}" fill="${fill}" stroke="#1a1814" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+// ── PATTERN FUNCTIONS ─────────────────────────────────────────────
+
+function geometric(cx, cy, R) {
+  let s = '';
+  const layers = 5, sides = 12;
+  for (let l = 1; l <= layers; l++) {
+    const r = R * l / layers;
+    s += path(pathPolygon(cx, cy, r, sides, l * 0.10), 1.0);
+  }
+  // radial spokes
+  for (let i = 0; i < sides; i++) {
+    const a = (i / sides) * TAU - Math.PI/2;
+    const [x1,y1] = pt(cx,cy, R*0.18, a);
+    const [x2,y2] = pt(cx,cy, R*0.99, a);
+    s += line(x1,y1,x2,y2, 0.7);
+  }
+  s += circle(cx,cy, R*0.18, 1.6);
+  s += circle(cx,cy, R*0.06, 1.2);
+  return s;
+}
+
+function threadLines(cx, cy, R) {
+  let s = '';
+  const sides = 16;
+  const points = [];
+  for (let i = 0; i < sides; i++) {
+    const a = (i / sides) * TAU - Math.PI/2;
+    points.push(pt(cx, cy, R, a));
+  }
+  for (let i = 0; i < sides; i++) {
+    for (let j = i+3; j < sides && j-i <= sides/2; j++) {
+      const [x1,y1] = points[i], [x2,y2] = points[j];
+      s += line(x1,y1,x2,y2, 0.5);
+    }
+  }
+  s += circle(cx,cy, R, 1.6);
+  return s;
+}
+
+function interwoven(cx, cy, R) {
+  let s = '';
+  const petals = 8;
+  for (let l = 0; l < 3; l++) {
+    const r = R * (0.4 + l * 0.30);
+    for (let i = 0; i < petals; i++) {
+      const a = (i / petals) * TAU + l * 0.30;
+      const [x1,y1] = pt(cx,cy, r*0.55, a);
+      const [x2,y2] = pt(cx,cy, r, a + 0.45);
+      const [x3,y3] = pt(cx,cy, r, a - 0.45);
+      const d = `M ${n(x1)} ${n(y1)} Q ${n(cx + Math.cos(a)*r*0.85)} ${n(cy + Math.sin(a)*r*0.85)} ${n(x2)} ${n(y2)} M ${n(x1)} ${n(y1)} Q ${n(cx + Math.cos(a)*r*0.85)} ${n(cy + Math.sin(a)*r*0.85)} ${n(x3)} ${n(y3)}`;
+      s += path(d, 1.0);
+    }
+  }
+  s += circle(cx,cy, R*0.18, 1.4);
+  return s;
+}
+
+function oceanDepths(cx, cy, R) {
+  let s = '';
+  const petals = 12;
+  for (let l = 0; l < 5; l++) {
+    const r = R * (0.30 + l * 0.16);
+    for (let i = 0; i < petals; i++) {
+      const a = (i / petals) * TAU + l * 0.10;
+      const [tx,ty] = pt(cx,cy, r, a);
+      const [px,py] = pt(cx,cy, r*0.78, a + 0.18);
+      const [qx,qy] = pt(cx,cy, r*0.78, a - 0.18);
+      s += path(`M ${n(px)} ${n(py)} Q ${n(tx)} ${n(ty)} ${n(qx)} ${n(qy)}`, 0.8);
+    }
+  }
+  s += circle(cx,cy, R*0.22, 1.4);
+  s += circle(cx,cy, R*0.12, 1.0);
+  return s;
+}
+
+function emeraldForest(cx, cy, R) {
+  let s = '';
+  const fronds = 14;
+  for (let i = 0; i < fronds; i++) {
+    const a = (i / fronds) * TAU - Math.PI/2;
+    const tipX = cx + Math.cos(a) * R;
+    const tipY = cy + Math.sin(a) * R;
+    const c1x = cx + Math.cos(a + 0.30) * R * 0.55;
+    const c1y = cy + Math.sin(a + 0.30) * R * 0.55;
+    const c2x = cx + Math.cos(a - 0.30) * R * 0.55;
+    const c2y = cy + Math.sin(a - 0.30) * R * 0.55;
+    s += path(`M ${n(cx)} ${n(cy)} Q ${n(c1x)} ${n(c1y)} ${n(tipX)} ${n(tipY)} Q ${n(c2x)} ${n(c2y)} ${n(cx)} ${n(cy)}`, 1.0);
+    // veins
+    for (let v = 0.30; v < 0.85; v += 0.20) {
+      const [vx,vy] = pt(cx,cy, R*v, a);
+      const [vbx,vby] = pt(cx,cy, R*(v+0.10), a + 0.12);
+      s += line(vx,vy,vbx,vby, 0.5);
+    }
+  }
+  s += circle(cx,cy, R*0.10, 1.4);
+  return s;
+}
+
+function frost(cx, cy, R) {
+  let s = '';
+  const arms = 6;
+  for (let i = 0; i < arms; i++) {
+    const a = (i / arms) * TAU;
+    const [tx,ty] = pt(cx,cy, R, a);
+    s += line(cx,cy,tx,ty, 1.4);
+    // sub-branches
+    for (let f = 0.25; f < 0.95; f += 0.18) {
+      const [bx,by] = pt(cx,cy, R*f, a);
+      const subLen = R * (0.18 - f * 0.10);
+      const [b1x,b1y] = pt(bx,by, subLen, a + 60*DEG);
+      const [b2x,b2y] = pt(bx,by, subLen, a - 60*DEG);
+      s += line(bx,by,b1x,b1y, 0.6);
+      s += line(bx,by,b2x,b2y, 0.6);
+      // tertiary
+      const [t1x,t1y] = pt(b1x,b1y, subLen*0.35, a + 60*DEG);
+      const [t2x,t2y] = pt(b2x,b2y, subLen*0.35, a - 60*DEG);
+      s += line(b1x,b1y,t1x,t1y, 0.4);
+      s += line(b2x,b2y,t2x,t2y, 0.4);
+    }
+  }
+  s += circle(cx,cy, 4, 1.0);
+  return s;
+}
+
+function flowerOfLife(cx, cy, R) {
+  let s = '';
+  const r = R * 0.32;
+  s += circle(cx, cy, r, 1.2);
+  for (let ring = 1; ring <= 2; ring++) {
+    const count = ring * 6;
+    const ringR = r * ring;
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * TAU - Math.PI/2 + (ring === 2 ? Math.PI/6 : 0);
+      const [x,y] = pt(cx, cy, ringR, a);
+      s += circle(x, y, r, 1.2);
+    }
+  }
+  s += circle(cx,cy, R, 1.8);
+  return s;
+}
+
+function mycelium(cx, cy, R) {
+  let s = '';
+  function branch(x, y, a, len, depth) {
+    if (depth > 4 || len < 4) return;
+    const tx = x + Math.cos(a) * len;
+    const ty = y + Math.sin(a) * len;
+    s += line(x, y, tx, ty, Math.max(0.3, 1.6 - depth*0.30));
+    branch(tx, ty, a + 0.42 + (Math.random()-0.5)*0.20, len * 0.72, depth+1);
+    branch(tx, ty, a - 0.42 + (Math.random()-0.5)*0.20, len * 0.72, depth+1);
+    if (depth < 2 && Math.random() < 0.5) branch(tx, ty, a + (Math.random()-0.5)*0.15, len * 0.55, depth+1);
+  }
+  const seed = 12;
+  for (let i = 0; i < seed; i++) {
+    const a = (i / seed) * TAU;
+    branch(cx, cy, a, R * 0.32, 0);
+  }
+  s += circle(cx,cy, 6, 1.4);
+  return s;
+}
+
+function lunarMandala(cx, cy, R) {
+  let s = '';
+  const phases = 12;
+  s += circle(cx,cy, R*0.30, 1.4);
+  for (let i = 0; i < phases; i++) {
+    const a = (i / phases) * TAU - Math.PI/2;
+    const [x,y] = pt(cx,cy, R*0.66, a);
+    const phase = i / phases;
+    s += circle(x, y, R*0.10, 1.2);
+    if (phase < 0.5) {
+      // shaded crescent — add an arc
+      const offset = (phase * 2 - 0.5) * R * 0.10;
+      s += `<path d="M ${n(x+offset)} ${n(y - R*0.10)} A ${n(R*0.10*Math.abs(0.5-phase)*2)} ${n(R*0.10)} 0 0 ${phase < 0.25 ? 0 : 1} ${n(x+offset)} ${n(y + R*0.10)}" fill="#1a1814" stroke="none"/>`;
+    }
+  }
+  s += circle(cx,cy, R, 1.6);
+  s += circle(cx,cy, R*0.96, 0.6);
+  return s;
+}
+
+function roseMandala(cx, cy, R) {
+  let s = '';
+  const petals = 12;
+  for (let l = 0; l < 3; l++) {
+    const ofs = l * (Math.PI / petals);
+    const r = R * (0.55 + l*0.15);
+    for (let i = 0; i < petals; i++) {
+      const a = (i / petals) * TAU + ofs;
+      const [tx,ty] = pt(cx,cy, r, a);
+      const [c1x,c1y] = pt(cx,cy, r*0.78, a + 0.30);
+      const [c2x,c2y] = pt(cx,cy, r*0.78, a - 0.30);
+      s += path(`M ${n(cx)} ${n(cy)} Q ${n(c1x)} ${n(c1y)} ${n(tx)} ${n(ty)} Q ${n(c2x)} ${n(c2y)} ${n(cx)} ${n(cy)}`, 0.8);
+    }
+  }
+  s += circle(cx,cy, R*0.20, 1.4);
+  s += circle(cx,cy, R*0.10, 1.0);
+  return s;
+}
+
+function constellation(cx, cy, R) {
+  let s = '';
+  // Pseudo-random but deterministic
+  const stars = [];
+  let seed = 7;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed/233280; };
+  for (let i = 0; i < 28; i++) {
+    const a = rnd() * TAU;
+    const r = Math.sqrt(rnd()) * R;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    const sz = 1.2 + rnd() * 2.6;
+    stars.push({x,y,sz});
+  }
+  // Connection lines
+  for (let i = 0; i < stars.length; i++) {
+    for (let j = i+1; j < stars.length; j++) {
+      const dx = stars[i].x - stars[j].x;
+      const dy = stars[i].y - stars[j].y;
+      const d = Math.sqrt(dx*dx+dy*dy);
+      if (d < R*0.32) s += line(stars[i].x, stars[i].y, stars[j].x, stars[j].y, 0.4);
+    }
+  }
+  for (const st of stars) s += `<circle cx="${n(st.x)}" cy="${n(st.y)}" r="${n(st.sz)}" fill="#1a1814"/>`;
+  s += circle(cx,cy, R, 1.4);
+  return s;
+}
+
+function golden(cx, cy, R) {
+  let s = '';
+  // Golden spiral via fibonacci squares
+  const phi = 1.618;
+  let r = R * 0.04;
+  let x = cx, y = cy, a = 0;
+  const points = [`M ${n(x)} ${n(y)}`];
+  for (let i = 0; i < 11; i++) {
+    const nr = r * phi;
+    const ex = x + Math.cos(a) * nr;
+    const ey = y + Math.sin(a) * nr;
+    points.push(`A ${n(nr)} ${n(nr)} 0 0 1 ${n(ex)} ${n(ey)}`);
+    x = ex; y = ey; r = nr; a += Math.PI/2;
+  }
+  // Center the spiral
+  s += `<g transform="translate(${n(-R*0.40)},${n(-R*0.20)})">${path(points.join(' '), 1.4)}</g>`;
+  // Sunflower seed pattern
+  for (let i = 0; i < 144; i++) {
+    const angle = i * 137.508 * DEG;
+    const dist = 6 * Math.sqrt(i);
+    if (dist > R*0.95) break;
+    s += `<circle cx="${n(cx + Math.cos(angle)*dist)}" cy="${n(cy + Math.sin(angle)*dist)}" r="2" fill="#1a1814"/>`;
+  }
+  s += circle(cx,cy, R, 1.6);
+  return s;
+}
+
+function julia(cx, cy, R) {
+  let s = '';
+  // Layered concentric distorted shapes — fractal-feel
+  const layers = 7;
+  for (let l = 1; l <= layers; l++) {
+    const r = R * l / layers;
+    const sides = 6 + l * 2;
+    let d = '';
+    for (let i = 0; i <= sides; i++) {
+      const a = (i / sides) * TAU - Math.PI/2;
+      const wob = 1 + Math.sin(a * 5 + l) * 0.10;
+      const [x,y] = pt(cx, cy, r * wob, a);
+      d += (i===0?'M':'L') + n(x) + ' ' + n(y) + ' ';
+    }
+    s += path(d + 'Z', 0.8);
+  }
+  s += circle(cx, cy, 4, 1.4);
+  return s;
+}
+
+function sumi(cx, cy, R) {
+  let s = '';
+  // Single calligraphic enso circle — incomplete on purpose
+  const segs = 60;
+  let d = '';
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    const a = -Math.PI/2 + t * TAU * 0.92;     // ~92% ring
+    const wobble = Math.sin(t * 12) * 4;
+    const r = R * (0.85 + wobble * 0.01);
+    const [x,y] = pt(cx, cy, r, a);
+    d += (i===0?'M':'L') + n(x) + ' ' + n(y) + ' ';
+  }
+  // Use thicker stroke for ink feel
+  s += `<path d="${d}" fill="none" stroke="#1a1814" stroke-width="14" stroke-linecap="round"/>`;
+  // Drip / texture detail
+  s += `<circle cx="${n(cx)}" cy="${n(cy + R)}" r="3" fill="#1a1814"/>`;
+  return s;
+}
+
+function omLotus(cx, cy, R) {
+  let s = '';
+  const petals = 8;
+  // Lotus petals
+  for (let i = 0; i < petals; i++) {
+    const a = (i / petals) * TAU - Math.PI/2;
+    const [tx,ty] = pt(cx,cy, R*0.95, a);
+    const [c1x,c1y] = pt(cx,cy, R*0.65, a + 0.32);
+    const [c2x,c2y] = pt(cx,cy, R*0.65, a - 0.32);
+    s += path(`M ${n(cx)} ${n(cy)} Q ${n(c1x)} ${n(c1y)} ${n(tx)} ${n(ty)} Q ${n(c2x)} ${n(c2y)} ${n(cx)} ${n(cy)}`, 1.2);
+  }
+  // Inner petals
+  for (let i = 0; i < petals; i++) {
+    const a = (i / petals) * TAU + (Math.PI/petals);
+    const [tx,ty] = pt(cx,cy, R*0.50, a);
+    const [c1x,c1y] = pt(cx,cy, R*0.32, a + 0.24);
+    const [c2x,c2y] = pt(cx,cy, R*0.32, a - 0.24);
+    s += path(`M ${n(cx)} ${n(cy)} Q ${n(c1x)} ${n(c1y)} ${n(tx)} ${n(ty)} Q ${n(c2x)} ${n(c2y)} ${n(cx)} ${n(cy)}`, 0.8);
+  }
+  // Central Om-like glyph (stylized, not literal)
+  s += `<text x="${cx}" y="${cy+12}" text-anchor="middle" font-family="Georgia, serif" font-size="42" font-style="italic" fill="#1a1814">ॐ</text>`;
+  return s;
+}
+
+function coral(cx, cy, R) {
+  let s = '';
+  function branch(x, y, a, len, depth) {
+    if (depth > 5 || len < 5) return;
+    const ex = x + Math.cos(a) * len;
+    const ey = y + Math.sin(a) * len;
+    const cmx = x + Math.cos(a + 0.4) * len * 0.5;
+    const cmy = y + Math.sin(a + 0.4) * len * 0.5;
+    s += path(`M ${n(x)} ${n(y)} Q ${n(cmx)} ${n(cmy)} ${n(ex)} ${n(ey)}`, Math.max(0.4, 1.8 - depth*0.30));
+    branch(ex, ey, a + 0.55, len * 0.68, depth+1);
+    branch(ex, ey, a - 0.45, len * 0.68, depth+1);
+  }
+  for (let i = 0; i < 7; i++) {
+    const a = -Math.PI/2 + (i - 3) * 0.36;
+    branch(cx, cy + R*0.6, a, R * 0.30, 0);
+  }
+  // Base line
+  s += line(cx-R*0.85, cy+R*0.65, cx+R*0.85, cy+R*0.65, 1.0);
+  return s;
+}
+
+function geode(cx, cy, R) {
+  let s = '';
+  // Outer organic shape
+  const segs = 20;
+  let d = '';
+  let seed = 13;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed/233280; };
+  for (let i = 0; i <= segs; i++) {
+    const a = (i / segs) * TAU - Math.PI/2;
+    const r = R * (0.85 + rnd() * 0.15);
+    const [x,y] = pt(cx,cy, r, a);
+    d += (i===0?'M':'L') + n(x) + ' ' + n(y) + ' ';
+  }
+  s += path(d + 'Z', 1.6);
+  // Crystal facets inside
+  for (let i = 0; i < 26; i++) {
+    const a1 = rnd() * TAU;
+    const r1 = rnd() * R * 0.85;
+    const [x1,y1] = pt(cx,cy,r1,a1);
+    const a2 = rnd() * TAU;
+    const r2 = rnd() * R * 0.85;
+    const [x2,y2] = pt(cx,cy,r2,a2);
+    s += line(x1,y1,x2,y2, 0.6);
+  }
+  // Inner concentric outline
+  let d2 = '';
+  for (let i = 0; i <= segs; i++) {
+    const a = (i / segs) * TAU - Math.PI/2;
+    const r = R * (0.50 + Math.sin(a*3) * 0.08);
+    const [x,y] = pt(cx,cy, r, a);
+    d2 += (i===0?'M':'L') + n(x) + ' ' + n(y) + ' ';
+  }
+  s += path(d2 + 'Z', 1.0);
+  return s;
+}
+
+function mitotic(cx, cy, R) {
+  let s = '';
+  // Two cells dividing
+  const sep = R * 0.42;
+  s += circle(cx - sep, cy, R*0.55, 1.6);
+  s += circle(cx + sep, cy, R*0.55, 1.6);
+  // Inner nuclei
+  s += circle(cx - sep, cy, R*0.20, 1.0);
+  s += circle(cx + sep, cy, R*0.20, 1.0);
+  // Connecting fibres (mitotic spindle)
+  for (let i = -3; i <= 3; i++) {
+    const yo = i * 8;
+    s += path(`M ${n(cx-sep+R*0.20)} ${n(cy+yo)} Q ${n(cx)} ${n(cy+yo*1.3)} ${n(cx+sep-R*0.20)} ${n(cy+yo)}`, 0.5);
+  }
+  // Surrounding cells (faint)
+  for (let i = 0; i < 8; i++) {
+    const a = (i/8) * TAU;
+    const [x,y] = pt(cx,cy, R*1.10, a);
+    s += circle(x, y, R*0.16, 0.6);
+  }
+  return s;
+}
+
+function sandMandala(cx, cy, R) {
+  let s = '';
+  const rings = 6, sides = 24;
+  for (let r = 1; r <= rings; r++) {
+    const rr = R * r/rings;
+    s += circle(cx,cy, rr, 0.6);
+    if (r % 2 === 1) {
+      for (let i = 0; i < sides; i++) {
+        const a = (i / sides) * TAU;
+        const [x,y] = pt(cx,cy, rr, a);
+        s += `<circle cx="${n(x)}" cy="${n(y)}" r="2" fill="#1a1814"/>`;
+      }
+    }
+  }
+  // Outer petals
+  const outerPetals = 16;
+  for (let i = 0; i < outerPetals; i++) {
+    const a = (i/outerPetals) * TAU;
+    const [tx,ty] = pt(cx,cy, R*1.05, a);
+    const [c1x,c1y] = pt(cx,cy, R*0.95, a + 0.10);
+    const [c2x,c2y] = pt(cx,cy, R*0.95, a - 0.10);
+    s += path(`M ${n(c1x)} ${n(c1y)} Q ${n(tx)} ${n(ty)} ${n(c2x)} ${n(c2y)}`, 1.0);
+  }
+  return s;
+}
+
+function tide(cx, cy, R) {
+  let s = '';
+  // Concentric wave arcs
+  for (let r = 0.20; r <= 1.0; r += 0.10) {
+    const rr = R * r;
+    const segs = 80;
+    let d = '';
+    for (let i = 0; i <= segs; i++) {
+      const a = (i / segs) * TAU - Math.PI/2;
+      const wobble = Math.sin(a * 5 + r * 8) * R * 0.025;
+      const [x,y] = pt(cx,cy, rr + wobble, a);
+      d += (i===0?'M':'L') + n(x) + ' ' + n(y) + ' ';
+    }
+    s += path(d + 'Z', 0.7);
+  }
+  return s;
+}
+
+function smoke(cx, cy, R) {
+  let s = '';
+  // Vertical wisps
+  for (let i = 0; i < 7; i++) {
+    const x0 = cx - R*0.55 + i * R*0.18;
+    let d = `M ${n(x0)} ${n(cy + R*0.85)}`;
+    for (let t = 0; t < 12; t++) {
+      const ty = cy + R*0.85 - (t+1) * R*0.14;
+      const tx = x0 + Math.sin(t * 0.7 + i) * R*0.10;
+      d += ` Q ${n(x0 + Math.sin(t*0.5+i)*R*0.08)} ${n(ty + R*0.07)} ${n(tx)} ${n(ty)}`;
+    }
+    s += path(d, 0.8);
+  }
+  // Base ember
+  s += circle(cx, cy + R*0.85, R*0.04, 1.2);
+  return s;
+}
+
+function crystal(cx, cy, R) {
+  let s = '';
+  // Hexagonal crystal lattice
+  const points = [];
+  for (let row = -3; row <= 3; row++) {
+    for (let col = -3; col <= 3; col++) {
+      const x = cx + col * R*0.32 + (row%2 ? R*0.16 : 0);
+      const y = cy + row * R*0.28;
+      const dist = Math.sqrt((x-cx)**2 + (y-cy)**2);
+      if (dist < R) points.push({x,y});
+    }
+  }
+  // Connect nearby points
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i+1; j < points.length; j++) {
+      const dx = points[i].x - points[j].x;
+      const dy = points[i].y - points[j].y;
+      const d = Math.sqrt(dx*dx+dy*dy);
+      if (d < R*0.36) s += line(points[i].x, points[i].y, points[j].x, points[j].y, 0.5);
+    }
+  }
+  for (const p of points) s += `<circle cx="${n(p.x)}" cy="${n(p.y)}" r="3" fill="#1a1814"/>`;
+  // Outer hexagon
+  s += path(pathPolygon(cx, cy, R, 6), 1.6);
+  return s;
+}
+
+function breath(cx, cy, R) {
+  let s = '';
+  // Breathing concentric circles + dotted ring
+  for (let i = 1; i <= 6; i++) {
+    s += circle(cx, cy, R * i/6, 0.8);
+  }
+  // Outer dotted ring
+  const dots = 36;
+  for (let i = 0; i < dots; i++) {
+    const a = (i / dots) * TAU;
+    const [x,y] = pt(cx,cy, R*1.12, a);
+    s += `<circle cx="${n(x)}" cy="${n(y)}" r="${i%2 ? 2.2 : 1.2}" fill="#1a1814"/>`;
+  }
+  // Innermost dot
+  s += `<circle cx="${n(cx)}" cy="${n(cy)}" r="3.5" fill="#1a1814"/>`;
+  return s;
+}
+
+// ── POSTERS (20 designs) ──────────────────────────────────────────
+
+const POSTERS = [
+  { id:'01-geometric',     title:'geometric',        quote:'stillness is the altar of spirit',                     author:'hazrat inayat khan',  render: geometric },
+  { id:'02-thread',        title:'thread of being',  quote:'the universe weaves itself through us',                author:'',                    render: threadLines },
+  { id:'03-interwoven',    title:'interwoven',       quote:'all that lives, lives connected',                       author:'',                    render: interwoven },
+  { id:'04-ocean',         title:'ocean depths',     quote:'the deepest stillness moves in waves',                  author:'',                    render: oceanDepths },
+  { id:'05-emerald',       title:'emerald forest',   quote:'every leaf remembers the seed',                         author:'',                    render: emeraldForest },
+  { id:'06-frost',         title:'frost',            quote:'in every crystal, the breath of winter',                author:'',                    render: frost },
+  { id:'07-flower',        title:'flower of life',   quote:'all that is — was, and will be',                        author:'',                    render: flowerOfLife },
+  { id:'08-mycelium',      title:'mycelium',         quote:'the forest speaks in roots',                            author:'',                    render: mycelium },
+  { id:'09-lunar',         title:'lunar mandala',    quote:'the moon does not fight — she illuminates',             author:'',                    render: lunarMandala },
+  { id:'10-rose',          title:'rose mandala',     quote:'what we plant in soil, we plant in the soul',           author:'',                    render: roseMandala },
+  { id:'11-constellation', title:'constellation',    quote:'we are made of star-stuff',                             author:'carl sagan',          render: constellation },
+  { id:'12-golden',        title:'golden ratio',     quote:'in the spiral, the infinite begins',                    author:'',                    render: golden },
+  { id:'13-julia',         title:'julia',            quote:'between order and chaos — a quiet beauty',              author:'',                    render: julia },
+  { id:'14-sumi',          title:'sumi-e',           quote:'one stroke holds a thousand years',                     author:'',                    render: sumi },
+  { id:'15-omlotus',       title:'om & lotus',       quote:'the lotus rises from the mud unsoiled',                 author:'',                    render: omLotus },
+  { id:'16-coral',         title:'coral',            quote:'patience is the architecture of the sea',               author:'',                    render: coral },
+  { id:'17-geode',         title:'geode',            quote:'beauty lies hidden — then revealed',                    author:'',                    render: geode },
+  { id:'18-mitotic',       title:'mitotic',          quote:'from one — many; from many — one',                      author:'',                    render: mitotic },
+  { id:'19-sand',          title:'sand mandala',     quote:'all that we hold, we must release',                     author:'',                    render: sandMandala },
+  { id:'20-tide',          title:'tide',             quote:'the ocean teaches patience, slowly',                    author:'',                    render: tide },
+];
+
+// ── BUILD POSTER SVG ──────────────────────────────────────────────
+
+function buildPoster(p) {
+  const patternSVG = p.render(CX, PCY, PR);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+<defs>
+  <style>
+    .ink   { fill: #1a1814; }
+    .title { font-family: 'Cormorant Garamond', 'Playfair Display', 'Georgia', serif; font-style: italic; font-weight: 400; }
+    .quote { font-family: 'Cormorant Garamond', 'Georgia', serif; font-style: italic; font-weight: 300; }
+    .author{ font-family: 'Cormorant Garamond', 'Georgia', serif; font-weight: 400; letter-spacing: 0.18em; text-transform: lowercase; }
+    .small { font-family: 'Cormorant Garamond', 'Georgia', serif; letter-spacing: 0.30em; text-transform: lowercase; }
+  </style>
+</defs>
+<rect x="0" y="0" width="${W}" height="${H}" fill="#f6f1e6"/>
+
+<!-- Outer thin border -->
+<rect x="${M}" y="${M}" width="${W - M*2}" height="${H - M*2}" fill="none" stroke="#1a1814" stroke-width="0.8"/>
+<rect x="${M+8}" y="${M+8}" width="${W - M*2 - 16}" height="${H - M*2 - 16}" fill="none" stroke="#1a1814" stroke-width="0.4"/>
+
+<!-- Bloom mark -->
+<g transform="translate(${CX-50},${M+38}) scale(0.7)">
+  <text x="0" y="0" class="small" font-size="14" fill="#1a1814">b l o o m</text>
+</g>
+
+<!-- Decorative divider above title -->
+<line x1="${CX-30}" y1="${M+78}" x2="${CX+30}" y2="${M+78}" stroke="#1a1814" stroke-width="0.6"/>
+
+<!-- Title -->
+<text x="${CX}" y="${M+128}" text-anchor="middle" class="title ink" font-size="48">${p.title}</text>
+
+<!-- Pattern -->
+<g>${patternSVG}</g>
+
+<!-- Decorative divider below pattern -->
+<line x1="${CX-110}" y1="${PCY + PR + 90}" x2="${CX+110}" y2="${PCY + PR + 90}" stroke="#1a1814" stroke-width="0.4"/>
+<circle cx="${CX}" cy="${PCY + PR + 90}" r="2" fill="#1a1814"/>
+
+<!-- Quote -->
+<text x="${CX}" y="${PCY + PR + 145}" text-anchor="middle" class="quote ink" font-size="26">"${p.quote}"</text>
+
+${p.author ? `<text x="${CX}" y="${PCY + PR + 185}" text-anchor="middle" class="author ink" font-size="11" letter-spacing="3">— ${p.author} —</text>` : ''}
+
+<!-- Footer -->
+<text x="${CX}" y="${H - M - 22}" text-anchor="middle" class="small" font-size="9" fill="#1a1814" letter-spacing="6">${p.id.split('-')[0]}  ·  bloom archive  ·  open-eye meditation</text>
+
+</svg>`;
+}
+
+// ── BUILD GRID ────────────────────────────────────────────────────
+
+const grid = document.getElementById('grid');
+
+function downloadSVG(filename, svgString) {
+  const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename + '.svg';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+POSTERS.forEach(p => {
+  const svg = buildPoster(p);
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = svg + `<div class="info"><span class="name">${p.title}</span><button data-id="${p.id}">download</button></div>`;
+  grid.appendChild(card);
+  card.querySelector('button').addEventListener('click', () => downloadSVG(p.id, svg));
+});
+
+document.getElementById('download-all').addEventListener('click', () => {
+  POSTERS.forEach((p, i) => {
+    setTimeout(() => downloadSVG(p.id, buildPoster(p)), i * 220);
+  });
+});
+</script>
+</body>
+</html>
