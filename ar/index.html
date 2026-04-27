@@ -160,6 +160,25 @@
   /* ── Permission denied state ───────────────────────────────── */
   #intro.denied .denied-msg { display: block; }
   .denied-msg { display: none; font-size: 11px; color: rgba(232,225,210,0.40); margin-top: 6px; max-width: 280px; line-height: 1.6; }
+
+  /* ── Diagnostic readout — top-right corner. Tap to dismiss. ── */
+  #status {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 8px);
+    right: 8px;
+    z-index: 50;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 9px; line-height: 1.5;
+    color: rgba(220, 200, 130, 0.85);
+    background: rgba(0,0,0,0.55);
+    padding: 6px 9px;
+    border-radius: 4px;
+    text-align: right;
+    pointer-events: auto;
+    max-width: 200px;
+    transition: opacity 0.4s;
+  }
+  #status.hide { opacity: 0; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -167,6 +186,7 @@
 <!-- Camera passthrough — shows the real world behind the mandala -->
 <video id="cam" autoplay playsinline muted disablepictureinpicture></video>
 <div id="vignette"></div>
+<div id="status">init…</div>
 
 <div id="stage">
   <div id="depth">
@@ -197,6 +217,27 @@
 // AR-style live mandala. One animated piece per QR-printed poster.
 // Three styles: geometric · thread · interwoven (matches first 3 posters).
 // ──────────────────────────────────────────────────────────────────
+
+// Diagnostic readout — visible on screen so we can debug from any phone.
+// Tap to dismiss.
+const statusEl = document.getElementById('status');
+const statusLog = [];
+function setStatus(line, level = 'info') {
+  if (!statusEl) return;
+  const tag = level === 'err' ? '✗' : level === 'ok' ? '✓' : '·';
+  statusLog.push(`${tag} ${line}`);
+  if (statusLog.length > 10) statusLog.shift();
+  statusEl.textContent = statusLog.join('\n');
+  statusEl.style.whiteSpace = 'pre-line';
+}
+if (statusEl) statusEl.addEventListener('click', () => statusEl.classList.toggle('hide'));
+
+// First diagnostic — environment info
+setStatus(`v=${new Date().toISOString().slice(11,19)}`);
+setStatus(`url=${location.host}`);
+setStatus(`https=${location.protocol === 'https:' ? 'yes' : 'no'}`, location.protocol === 'https:' ? 'ok' : 'err');
+setStatus(`mediaDevices=${navigator.mediaDevices ? 'yes' : 'no'}`, navigator.mediaDevices ? 'ok' : 'err');
+setStatus(`getUserMedia=${navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? 'yes' : 'no'}`, navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? 'ok' : 'err');
 
 const POSTERS = {
   '01-geometric':  { title: 'geometric',       quote: 'stillness is the altar of spirit',     hue: 38,  drone: { fund: 174, fifth: 261 }, draw: drawGeometric },
@@ -537,29 +578,33 @@ function handleOrientation(e) {
 // ── CAMERA PASSTHROUGH ────────────────────────────────────────────
 
 async function startCamera() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+  setStatus('camera: requesting…');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setStatus('camera: API missing', 'err');
+    return false;
+  }
   const video = document.getElementById('cam');
   try {
-    // Rear camera at modest resolution — we only need it as a backdrop,
-    // higher res just burns battery and CPU.
-    camStream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        facingMode: { ideal: 'environment' },
-        width:  { ideal: 1280 },
-        height: { ideal: 720  },
-      },
-    });
+    // First try the ideal rear camera. If that fails (some in-app webviews
+    // can't pick a specific camera), retry with any video device.
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+    } catch (firstErr) {
+      setStatus('camera: retry generic…');
+      camStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+    }
     video.srcObject = camStream;
-    // iOS Safari: must call play() explicitly even with autoplay attribute
-    // when the element is muted+playsinline. Promise rejects if no user gesture
-    // led here, but startExperience is called from a click handler so we're fine.
     await video.play();
     camActive = true;
     document.body.classList.add('cam-on');
+    setStatus('camera: ON', 'ok');
     return true;
   } catch (err) {
-    console.warn('Camera unavailable:', err);
+    setStatus(`camera: ${err.name || 'fail'}`, 'err');
+    if (err.message) setStatus(err.message.slice(0, 60), 'err');
     return false;
   }
 }
@@ -578,23 +623,25 @@ document.addEventListener('visibilitychange', () => {
 });
 
 async function requestMotionPermission() {
-  // iOS 13+ requires explicit permission via user gesture
+  setStatus('motion: requesting…');
   if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
     try {
       const result = await DeviceOrientationEvent.requestPermission();
       if (result === 'granted') {
         window.addEventListener('deviceorientation', handleOrientation);
+        setStatus('motion: ON', 'ok');
         return true;
       }
+      setStatus(`motion: ${result}`, 'err');
       return false;
     } catch (err) {
-      console.warn('Motion permission error:', err);
+      setStatus(`motion: ${err.name || 'fail'}`, 'err');
       return false;
     }
   }
-  // Android & desktop — just listen
   window.addEventListener('deviceorientation', handleOrientation);
+  setStatus('motion: listening', 'ok');
   return true;
 }
 
@@ -704,19 +751,18 @@ const beginBtn = document.getElementById('begin');
 async function startExperience() {
   beginBtn.disabled = true;
   beginBtn.textContent = 'opening…';
+  setStatus('begin tapped');
 
-  // 1. Camera first — this is the AR. We want it visible before the intro fades.
   let camOK = false;
   try { camOK = await startCamera(); }
-  catch (e) { console.warn('camera init failed:', e); }
+  catch (e) { setStatus(`cam exc: ${e.message?.slice(0,40)}`, 'err'); }
 
-  // 2. Audio
-  try { audio.start(); } catch (e) { console.warn('audio init failed:', e); }
+  try { audio.start(); setStatus('audio: started', 'ok'); }
+  catch (e) { setStatus('audio: failed', 'err'); }
 
-  // 3. Motion permission (iOS prompts here; Android/desktop just listens)
   let motionOK = false;
   try { motionOK = await requestMotionPermission(); }
-  catch (e) { console.warn('motion init failed:', e); }
+  catch (e) { setStatus(`motion exc: ${e.message?.slice(0,40)}`, 'err'); }
 
   if (!camOK || !motionOK) intro.classList.add('denied');
 
