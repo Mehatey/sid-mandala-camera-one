@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>bloom AR — image tracking test</title>
+
+<!--
+  STEP 1: VERIFY MINDAR PIPELINE ON THIS PHONE
+  ────────────────────────────────────────────
+  This page uses MindAR's official example card target so we can confirm
+  AR works on the user's specific phone+browser before investing in
+  custom-compiled mandala targets.
+
+  TEST PROCEDURE:
+  1. Display the test card image on a laptop or print it. The card image is at:
+     https://raw.githubusercontent.com/hiukim/mind-ar-js/master/examples/image-tracking/assets/card-example/card.png
+  2. Open this page on phone.
+  3. Allow camera permission.
+  4. Point phone at the card.
+  5. Three rotating gold rings + "bloom" text should appear ON the card,
+     locking onto its position as you move the phone.
+
+  If step 5 works → MindAR pipeline is good → build custom mandala targets.
+  If step 5 fails → MindAR can't run on this phone+browser → stop.
+-->
+
+<!-- A-Frame: declarative 3D scene framework -->
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<!-- MindAR: marker-less image tracking using local feature detection -->
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden; touch-action: none;
+    background: #000;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  /* ── Scanning prompt — fades out when target is found ─────────── */
+  #prompt {
+    position: fixed; top: max(28px, env(safe-area-inset-top));
+    left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.62);
+    border: 1px solid rgba(232,225,210,0.18);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    color: rgba(232,225,210,0.92);
+    padding: 14px 26px; border-radius: 999px;
+    font-style: italic; font-size: 15px;
+    z-index: 999; text-align: center;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+    max-width: calc(100vw - 40px);
+  }
+  #prompt.hidden { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+
+  /* ── Test card hint — what to point camera at ─────────────────── */
+  #hint {
+    position: fixed; bottom: max(28px, env(safe-area-inset-bottom));
+    left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.62);
+    border: 1px solid rgba(232,225,210,0.14);
+    color: rgba(232,225,210,0.65);
+    padding: 10px 18px; border-radius: 6px;
+    font-size: 11px; letter-spacing: 0.18em; text-transform: lowercase;
+    z-index: 999; text-align: center; line-height: 1.6;
+    transition: opacity 0.4s;
+    pointer-events: none;
+    max-width: calc(100vw - 40px);
+  }
+  #hint.hidden { opacity: 0; }
+
+  /* ── On-screen status ─────────────────────────────────────────── */
+  #status {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 8px);
+    right: 8px;
+    z-index: 1000;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 9px; line-height: 1.5;
+    color: rgba(220, 200, 130, 0.85);
+    background: rgba(0,0,0,0.55);
+    padding: 6px 9px; border-radius: 4px;
+    text-align: right;
+    pointer-events: auto;
+    max-width: 200px;
+    white-space: pre-line;
+    transition: opacity 0.4s;
+  }
+  #status.hide { opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div id="prompt">point your camera at the card</div>
+<div id="hint">test card → laptop screen, full-size, then point phone at it</div>
+<div id="status">init…</div>
+
+<a-scene
+  mindar-image="
+    imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind;
+    uiLoading: no;
+    uiError: no;
+    uiScanning: no;
+    autoStart: false;
+  "
+  color-space="sRGB"
+  renderer="colorManagement: true, physicallyCorrectLights: true"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+  embedded>
+
+  <a-assets></a-assets>
+
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+  <a-entity id="target" mindar-image-target="targetIndex: 0">
+
+    <!-- Three nested rotating tori — visual placeholder for the eventual mandala -->
+    <a-torus
+      color="#e6c87a" radius="0.30" radius-tubular="0.014"
+      position="0 0 0.01"
+      animation="property: rotation; to: 0 0 360; dur: 12000; loop: true; easing: linear"
+      material="emissive: #b08c2c; emissiveIntensity: 0.4; metalness: 0.4; roughness: 0.5"
+    ></a-torus>
+
+    <a-torus
+      color="#f0d990" radius="0.40" radius-tubular="0.010"
+      position="0 0 0.02"
+      rotation="0 0 30"
+      animation="property: rotation; from: 30 0 0; to: 30 0 -360; dur: 18000; loop: true; easing: linear"
+      material="emissive: #b08c2c; emissiveIntensity: 0.3; metalness: 0.3; roughness: 0.6"
+    ></a-torus>
+
+    <a-torus
+      color="#fcefc6" radius="0.50" radius-tubular="0.007"
+      position="0 0 0.03"
+      animation="property: rotation; to: 0 0 360; dur: 24000; loop: true; easing: linear"
+      material="emissive: #b08c2c; emissiveIntensity: 0.25; metalness: 0.3; roughness: 0.7"
+    ></a-torus>
+
+    <!-- Glowing center -->
+    <a-sphere
+      color="#fff5d4"
+      radius="0.04"
+      position="0 0 0.05"
+      material="emissive: #fff0b4; emissiveIntensity: 1.0"
+      animation="property: scale; from: 1 1 1; to: 1.4 1.4 1.4; dir: alternate; dur: 1800; loop: true; easing: easeInOutQuad"
+    ></a-sphere>
+
+    <a-text
+      value="bloom"
+      position="0 -0.42 0.1"
+      align="center"
+      color="#fff5d4"
+      scale="0.4 0.4 0.4"
+      font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
+    ></a-text>
+
+  </a-entity>
+</a-scene>
+
+<script>
+  // ── Diagnostic readout ──────────────────────────────────────────
+  const statusEl = document.getElementById('status');
+  const log = [];
+  function status(line, level = 'info') {
+    const tag = level === 'err' ? '✗' : level === 'ok' ? '✓' : '·';
+    log.push(`${tag} ${line}`);
+    if (log.length > 12) log.shift();
+    statusEl.textContent = log.join('\n');
+  }
+  statusEl.addEventListener('click', () => statusEl.classList.toggle('hide'));
+
+  status(`v=${new Date().toISOString().slice(11,19)}`);
+  status(`https=${location.protocol === 'https:' ? 'yes' : 'no'}`, location.protocol === 'https:' ? 'ok' : 'err');
+  status(`mediaDev=${navigator.mediaDevices ? 'yes' : 'no'}`, navigator.mediaDevices ? 'ok' : 'err');
+  status(`aframe=${typeof AFRAME !== 'undefined' ? 'yes' : 'no'}`, typeof AFRAME !== 'undefined' ? 'ok' : 'err');
+
+  // ── Scene events ────────────────────────────────────────────────
+  const scene  = document.querySelector('a-scene');
+  const target = document.querySelector('#target');
+  const prompt = document.getElementById('prompt');
+  const hint   = document.getElementById('hint');
+
+  scene.addEventListener('loaded', () => {
+    status('scene loaded', 'ok');
+    status(`mindar=${typeof MINDAR !== 'undefined' ? 'yes' : 'no'}`, typeof MINDAR !== 'undefined' ? 'ok' : 'err');
+  });
+
+  scene.addEventListener('renderstart', () => status('render start', 'ok'));
+
+  // MindAR fires 'arReady' when camera + tracking is initialized
+  scene.addEventListener('arReady', () => {
+    status('AR ready — scan card', 'ok');
+  });
+
+  scene.addEventListener('arError', (e) => {
+    status('AR error: ' + (e?.detail?.error || 'unknown'), 'err');
+  });
+
+  // Target lifecycle
+  target.addEventListener('targetFound',  () => {
+    status('TARGET FOUND', 'ok');
+    prompt.classList.add('hidden');
+    hint.classList.add('hidden');
+  });
+  target.addEventListener('targetLost', () => {
+    status('target lost');
+    prompt.classList.remove('hidden');
+    hint.classList.remove('hidden');
+  });
+
+  // Manually start MindAR after scene loads (autoStart: false above).
+  // This gives us control over timing and lets the camera prompt fire
+  // from a clean lifecycle point.
+  scene.addEventListener('loaded', async () => {
+    try {
+      const sys = scene.systems['mindar-image-system'];
+      if (sys && sys.start) {
+        status('starting mindar…');
+        await sys.start();
+        status('mindar started', 'ok');
+      } else {
+        status('mindar system missing', 'err');
+      }
+    } catch (err) {
+      status(`start fail: ${(err.name || err.message || 'unknown').slice(0,30)}`, 'err');
+    }
+  });
+</script>
+
+</body>
+</html>
