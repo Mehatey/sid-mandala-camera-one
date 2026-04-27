@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>bloom — a small book about very large things</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap" rel="stylesheet">
+
+<style>
+  /* ── Print setup — letter portrait, no browser margins ──────── */
+  @page { size: letter portrait; margin: 0; }
+  @media print {
+    body { margin: 0; background: #fff; }
+    .page { page-break-after: always; page-break-inside: avoid; box-shadow: none !important; margin: 0 !important; }
+    .page:last-child { page-break-after: auto; }
+    .screen-only { display: none !important; }
+  }
+
+  /* ── Screen preview ────────────────────────────────────────── */
+  @media screen {
+    body { background: #1a1612; margin: 0; padding: 40px 0 80px; }
+    .page { box-shadow: 0 12px 48px rgba(0,0,0,0.45); margin: 0 auto 24px; }
+  }
+
+  * { box-sizing: border-box; }
+
+  body { font-family: 'Cormorant Garamond', 'Garamond', Georgia, serif; color: #1a1814; }
+
+  .page {
+    width: 8.5in;
+    height: 11in;
+    background: #f4ecdc;            /* warm cream — meant to be near-invisible against handmade paper */
+    padding: 1.25in 1.1in;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Subtle page texture — adds organic feel even on plain printer paper. */
+  .page::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      radial-gradient(rgba(120,90,40,0.018) 1px, transparent 1px),
+      radial-gradient(rgba(120,90,40,0.014) 1px, transparent 1px);
+    background-size: 5px 5px, 9px 9px;
+    background-position: 0 0, 2px 3px;
+  }
+
+  /* ── Layout helpers ────────────────────────────────────────── */
+  .center  { display: flex; flex-direction: column; justify-content: center; align-items: center; flex: 1; text-align: center; }
+  .top     { display: flex; flex-direction: column; align-items: center; }
+  .bottom  { margin-top: auto; display: flex; flex-direction: column; align-items: center; }
+  .between { display: flex; flex-direction: column; justify-content: space-between; flex: 1; align-items: center; }
+
+  /* ── Typography ────────────────────────────────────────────── */
+  .mark {
+    font-size: 9pt; letter-spacing: 0.46em; text-transform: lowercase;
+    color: rgba(26,24,20,0.55); font-weight: 400;
+  }
+  .folio {
+    position: absolute; bottom: 0.55in; left: 0; right: 0;
+    text-align: center;
+    font-size: 8pt; letter-spacing: 0.32em; text-transform: lowercase;
+    color: rgba(26,24,20,0.32);
+  }
+  h1.title {
+    font-size: 56pt; font-weight: 400; font-style: italic;
+    margin: 0; line-height: 1.1; letter-spacing: -0.005em;
+  }
+  .subtitle {
+    font-size: 12pt; font-style: italic; font-weight: 300;
+    color: rgba(26,24,20,0.65); letter-spacing: 0.04em;
+    margin-top: 16px; max-width: 4.5in; line-height: 1.55;
+  }
+  p.body {
+    font-size: 16pt; font-style: italic; font-weight: 300;
+    line-height: 1.65; max-width: 4.6in;
+    margin: 0; text-align: center;
+    letter-spacing: 0.01em;
+  }
+  p.body em { font-style: normal; font-weight: 400; }
+  .ornament {
+    font-size: 10pt; color: rgba(26,24,20,0.45);
+    margin-top: 32px;
+  }
+  .caption {
+    font-size: 9pt; letter-spacing: 0.32em; text-transform: lowercase;
+    color: rgba(26,24,20,0.45); margin-top: 24px;
+  }
+  .epigraph {
+    font-size: 13pt; font-style: italic; font-weight: 300;
+    color: rgba(26,24,20,0.62); line-height: 1.55;
+    max-width: 3.6in; text-align: center;
+  }
+  .attrib {
+    font-size: 10pt; letter-spacing: 0.20em; text-transform: lowercase;
+    color: rgba(26,24,20,0.45); margin-top: 14px;
+  }
+
+  /* ── Drawing styles ────────────────────────────────────────── */
+  svg.figure {
+    display: block;
+    color: #1a1814;       /* drawings inherit via currentColor */
+  }
+
+  /* ── Print/screen toggle ───────────────────────────────────── */
+  #print-bar {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 100;
+    background: #2a2520; border: 1px solid rgba(244,236,220,0.18);
+    color: #f4ecdc;
+    padding: 14px 26px; border-radius: 999px;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: lowercase;
+    cursor: pointer; user-select: none;
+  }
+  #print-bar:hover { background: #3a3530; }
+  #print-bar small { display: block; font-size: 10px; opacity: 0.55; margin-top: 2px; letter-spacing: 0.18em; }
+</style>
+</head>
+<body>
+
+<div id="print-bar" class="screen-only" onclick="window.print()">
+  print or save as pdf
+  <small>cmd · p</small>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 1 — COVER
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="top" style="margin-top: 1.4in;">
+    <div class="mark">b l o o m</div>
+  </div>
+  <div class="center">
+    <h1 class="title">bloom</h1>
+    <div class="subtitle">a small book<br>about very large things —<br>and the small ones<br>that are also large</div>
+    <div class="ornament" style="margin-top: 56px;">·</div>
+  </div>
+  <div class="bottom" style="margin-bottom: 0.2in;">
+    <div class="mark" style="letter-spacing: 0.34em;">siddharth mehta · 2026</div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 2 — VERSO / EPIGRAPH
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="center">
+    <p class="epigraph">
+      "you are something the world is doing<br>
+      in the same way that a wave<br>
+      is something the ocean is doing."
+    </p>
+    <div class="attrib">— a thought, not yet your own —</div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 3 — OPENING TEXT (the silence before)
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="top" style="margin-top: 1.0in;"><div class="mark">i.</div></div>
+  <div class="center">
+    <p class="body">
+      Before the words —<br>
+      before the world even —<br>
+      there was just this:
+      <br><br>
+      a quiet that did not know<br>
+      it was quiet,<br>
+      because there was no other thing<br>
+      yet to be<br>
+      otherwise.
+      <br><br>
+      It is hard to describe.<br>
+      Language is a thing<br>
+      the silence had to invent<br>
+      much later,<br>
+      in order to remember<br>
+      where it came from.
+    </p>
+  </div>
+  <div class="folio">i · the silence</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 4 — DRAWING: SINGULARITY (single point on near-empty page)
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="center">
+    <svg class="figure" viewBox="0 0 400 400" width="280" height="280" xmlns="http://www.w3.org/2000/svg">
+      <!-- Vast empty space with a single point — the singularity moment -->
+      <circle cx="200" cy="200" r="3" fill="currentColor"/>
+      <circle cx="200" cy="200" r="20" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.20"/>
+      <circle cx="200" cy="200" r="60" fill="none" stroke="currentColor" stroke-width="0.2" opacity="0.10"/>
+      <circle cx="200" cy="200" r="140" fill="none" stroke="currentColor" stroke-width="0.15" opacity="0.05"/>
+    </svg>
+    <div class="caption">a point, before everything</div>
+  </div>
+  <div class="folio">ii · the point</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 5 — TEXT: the silence sang (big bang / star-stuff)
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="top" style="margin-top: 1.0in;"><div class="mark">ii.</div></div>
+  <div class="center">
+    <p class="body">
+      Then —<br>
+      somehow, somewhere<br>
+      that is also no-where —<br>
+      the silence broke open.
+      <br><br>
+      A note. Then a chord.<br>
+      Then a song<br>
+      thirteen billion years long.
+      <br><br>
+      The carbon in your fingerbones,<br>
+      the iron coloring your blood,<br>
+      the calcium humming in your teeth —
+      <br><br>
+      each one was made<br>
+      inside a star<br>
+      that had to die<br>
+      so that you could,<br>
+      one ordinary morning,<br>
+      brush your teeth.
+    </p>
+  </div>
+  <div class="folio">iii · the singing</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 6 — DRAWING: CONSTELLATION
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="center">
+    <svg class="figure" viewBox="0 0 500 500" width="380" height="380" xmlns="http://www.w3.org/2000/svg">
+      <!-- Procedurally-feeling constellation — connection lines and stars -->
+      <g stroke="currentColor" stroke-width="0.5" opacity="0.45" fill="none" stroke-linecap="round">
+        <line x1="120" y1="80"  x2="200" y2="160"/>
+        <line x1="200" y1="160" x2="280" y2="120"/>
+        <line x1="280" y1="120" x2="350" y2="200"/>
+        <line x1="350" y1="200" x2="420" y2="180"/>
+        <line x1="200" y1="160" x2="180" y2="260"/>
+        <line x1="180" y1="260" x2="280" y2="290"/>
+        <line x1="280" y1="290" x2="350" y2="200"/>
+        <line x1="280" y1="290" x2="240" y2="380"/>
+        <line x1="180" y1="260" x2="100" y2="320"/>
+        <line x1="100" y1="320" x2="160" y2="410"/>
+        <line x1="160" y1="410" x2="240" y2="380"/>
+        <line x1="240" y1="380" x2="340" y2="430"/>
+        <line x1="340" y1="430" x2="420" y2="380"/>
+        <line x1="420" y1="380" x2="430" y2="280"/>
+        <line x1="430" y1="280" x2="350" y2="200"/>
+        <line x1="350" y1="200" x2="380" y2="100"/>
+        <line x1="380" y1="100" x2="420" y2="180"/>
+      </g>
+      <g fill="currentColor">
+        <circle cx="120" cy="80"  r="2.5"/>
+        <circle cx="200" cy="160" r="3.5"/>
+        <circle cx="280" cy="120" r="2.2"/>
+        <circle cx="380" cy="100" r="2.8"/>
+        <circle cx="420" cy="180" r="3.2"/>
+        <circle cx="350" cy="200" r="4.0"/>
+        <circle cx="430" cy="280" r="2.4"/>
+        <circle cx="180" cy="260" r="3.0"/>
+        <circle cx="280" cy="290" r="3.6"/>
+        <circle cx="100" cy="320" r="2.0"/>
+        <circle cx="160" cy="410" r="2.6"/>
+        <circle cx="240" cy="380" r="3.8"/>
+        <circle cx="340" cy="430" r="2.3"/>
+        <circle cx="420" cy="380" r="2.7"/>
+        <!-- background dust -->
+        <circle cx="60"  cy="180" r="0.8" opacity="0.5"/>
+        <circle cx="450" cy="60"  r="0.8" opacity="0.5"/>
+        <circle cx="80"  cy="50"  r="1.0" opacity="0.6"/>
+        <circle cx="470" cy="450" r="1.0" opacity="0.5"/>
+        <circle cx="50"  cy="450" r="0.9" opacity="0.6"/>
+        <circle cx="240" cy="40"  r="0.9" opacity="0.5"/>
+        <circle cx="40"  cy="240" r="1.0" opacity="0.5"/>
+        <circle cx="460" cy="240" r="0.7" opacity="0.5"/>
+        <circle cx="380" cy="460" r="0.8" opacity="0.5"/>
+      </g>
+    </svg>
+    <div class="caption">stars, in some arrangement<br>that means something to someone</div>
+  </div>
+  <div class="folio">iv · the stars</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 7 — TEXT: the universe is fond of spirals
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="top" style="margin-top: 1.0in;"><div class="mark">iii.</div></div>
+  <div class="center">
+    <p class="body">
+      The universe<br>
+      is fond of spirals.
+      <br><br>
+      Galaxies turn into them.<br>
+      Hurricanes turn into them.<br>
+      Snail shells, fern fronds,<br>
+      the curl of a wave,<br>
+      the curl of a cochlea —
+      <br><br>
+      all the same gesture<br>
+      at different scales.
+      <br><br>
+      A pattern is just<br>
+      the cosmos rehearsing<br>
+      how to bloom<br>
+      in front of itself.
+    </p>
+  </div>
+  <div class="folio">v · the spiral</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 8 — DRAWING: GOLDEN SPIRAL with sunflower seeds
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="center">
+    <svg class="figure" viewBox="0 0 500 500" width="380" height="380" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(250,250)">
+        <!-- Phyllotaxis seed pattern — actual fibonacci-derived dot placement -->
+        <g id="seeds" fill="currentColor"></g>
+        <!-- Spiral overlay -->
+        <path d="M 0 0
+                 Q 15 0 15 -15
+                 Q 15 -40 -10 -40
+                 Q -50 -40 -50 0
+                 Q -50 65 15 65
+                 Q 105 65 105 -25
+                 Q 105 -150 -20 -150
+                 Q -190 -150 -190 20
+                 Q -190 240 30 240"
+              fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.40"/>
+      </g>
+      <script>
+        // Inline seed generation kept simple — won't break print
+      </script>
+    </svg>
+    <div class="caption">phyllotaxis · the angle<br>at which the universe likes to count</div>
+  </div>
+  <div class="folio">vi · the spiral</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 9 — TEXT: the first yes (life)
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="top" style="margin-top: 1.0in;"><div class="mark">iv.</div></div>
+  <div class="center">
+    <p class="body">
+      Somewhere,<br>
+      in a shallow place<br>
+      where light met water,<br>
+      matter remembered<br>
+      how to copy itself.
+      <br><br>
+      This was the first yes.<br>
+      Not the angels-and-trumpets yes.<br>
+      The slow yes.<br>
+      The yes that mycelium whispers<br>
+      under a forest floor<br>
+      without anyone clapping.
+      <br><br>
+      Everything that has ever loved<br>
+      anything —<br>
+      the bee for the flower,<br>
+      the moth for the moon,<br>
+      you for whoever you are missing —
+      <br><br>
+      is the unbroken descendant<br>
+      of that first soft yes.
+    </p>
+  </div>
+  <div class="folio">vii · the first yes</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 10 — DRAWING: MYCELIUM (branching)
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="center">
+    <svg class="figure" viewBox="0 0 500 500" width="380" height="380" xmlns="http://www.w3.org/2000/svg">
+      <g id="mycelium" stroke="currentColor" fill="none" stroke-linecap="round"></g>
+      <circle cx="250" cy="250" r="3" fill="currentColor"/>
+    </svg>
+    <div class="caption">a network of yeses<br>under everything that grows</div>
+  </div>
+  <div class="folio">viii · mycelium</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 11 — TEXT: the eye opening (consciousness)
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="top" style="margin-top: 1.0in;"><div class="mark">v.</div></div>
+  <div class="center">
+    <p class="body">
+      At some point —<br>
+      no one is sure when —<br>
+      the universe opened an eye.
+      <br><br>
+      The eye looked<br>
+      and was startled to discover<br>
+      it was the universe<br>
+      looking at itself.
+      <br><br>
+      This is what you are.<br>
+      This is what every <em>you</em><br>
+      has always been.
+      <br><br>
+      A way the cosmos<br>
+      has found to grow a face<br>
+      and ask:<br>
+      <em>what am I?</em>
+      <br><br>
+      The asking is the point.<br>
+      The asking is everything.
+    </p>
+  </div>
+  <div class="folio">ix · the eye</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 12 — DRAWING: AN EYE / IRIS
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="center">
+    <svg class="figure" viewBox="0 0 500 500" width="380" height="380" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(250,250)" stroke="currentColor" fill="none" stroke-linecap="round">
+        <!-- Outer iris ring with subtle break for life -->
+        <ellipse cx="0" cy="0" rx="220" ry="100" stroke-width="1.0"/>
+        <ellipse cx="0" cy="0" rx="180" ry="80" stroke-width="0.5" opacity="0.45"/>
+        <!-- Iris -->
+        <circle r="80" stroke-width="1.4"/>
+        <circle r="65" stroke-width="0.4" opacity="0.35"/>
+        <circle r="50" stroke-width="0.4" opacity="0.30"/>
+        <circle r="32" stroke-width="0.4" opacity="0.25"/>
+        <!-- Iris radial striations -->
+        <g id="iris-rays"></g>
+        <!-- Pupil -->
+        <circle r="22" fill="currentColor" stroke="none"/>
+        <!-- Reflection / catchlight -->
+        <circle cx="-7" cy="-8" r="4" fill="#f4ecdc" stroke="none"/>
+      </g>
+    </svg>
+    <div class="caption">"the cosmos<br>is also within us"</div>
+  </div>
+  <div class="folio">x · the eye</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 13 — TEXT: broken / kintsugi
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="top" style="margin-top: 1.0in;"><div class="mark">vi.</div></div>
+  <div class="center">
+    <p class="body">
+      To be human<br>
+      is to fall in love<br>
+      with what cannot stay.
+      <br><br>
+      This is the first sorrow.<br>
+      It is also the architecture<br>
+      of every joy<br>
+      you have ever had.
+      <br><br>
+      In Japan there is an old practice<br>
+      of mending broken bowls<br>
+      with seams of gold.<br>
+      The crack is not hidden.<br>
+      It is offered light.
+      <br><br>
+      The bowl is more beautiful<br>
+      for the breaking.
+      <br><br>
+      So is the world.<br>
+      So are you.
+    </p>
+  </div>
+  <div class="folio">xi · kintsugi</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 14 — DRAWING: CRACKED MANDALA (kintsugi)
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="center">
+    <svg class="figure" viewBox="0 0 500 500" width="380" height="380" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(250,250)" stroke="currentColor" fill="none" stroke-linecap="round">
+        <g id="kintsugi-mandala"></g>
+      </g>
+    </svg>
+    <div class="caption">the seam holds<br>more light than the bowl</div>
+  </div>
+  <div class="folio">xii · the breaking</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 15 — TEXT: the mandala (return)
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="top" style="margin-top: 1.0in;"><div class="mark">vii.</div></div>
+  <div class="center">
+    <p class="body">
+      The mandala is what<br>
+      the universe draws<br>
+      when it wants to remember<br>
+      that everything begins<br>
+      at the center<br>
+      and ends at the center<br>
+      and is happening<br>
+      right now<br>
+      in the middle.
+      <br><br>
+      Begin.<br>
+      Begin.<br>
+      Begin again.
+      <br><br>
+      The pattern always returns<br>
+      to where it started,<br>
+      having gone<br>
+      everywhere.
+    </p>
+  </div>
+  <div class="folio">xiii · return</div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     PAGE 16 — DRAWING: MANDALA + closing words
+     ────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="top" style="margin-top: 0.6in;">
+    <div class="mark">epilogue</div>
+  </div>
+  <div class="between" style="margin-top: 24px;">
+    <svg class="figure" viewBox="0 0 500 500" width="320" height="320" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(250,250)" stroke="currentColor" fill="none" stroke-linecap="round">
+        <g id="closing-mandala"></g>
+      </g>
+    </svg>
+    <p class="body" style="font-size: 14pt; max-width: 4.2in;">
+      You are not in the world.<br>
+      You are something the world is doing.
+      <br><br>
+      Soon you will close this book.<br>
+      Soon you will look up.
+      <br><br>
+      Whatever you see —<br>
+      the wall, the window,<br>
+      a face, your hands —
+      <br><br>
+      you will be looking at<br>
+      the inside of the same thing<br>
+      you have always been<br>
+      the inside of.
+      <br><br>
+      <span style="font-style: normal; letter-spacing: 0.18em;">it has been very glad to meet you.</span>
+    </p>
+  </div>
+  <div class="folio">xiv · bloom</div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// Inline figure generators — kept here so the file is self-contained
+// and prints from any browser without a server.
+// ─────────────────────────────────────────────────────────────────
+
+const TAU = Math.PI * 2;
+const NS  = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+// ── Phyllotaxis seeds (page 8 spiral) ───────────────────────────
+(function () {
+  const g = document.querySelector('#seeds');
+  if (!g) return;
+  for (let i = 0; i < 220; i++) {
+    const a = i * 137.508 * Math.PI / 180;
+    const r = 6 * Math.sqrt(i);
+    if (r > 220) break;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    const sz = 1.0 + (i / 220) * 1.4;
+    g.appendChild(svgEl('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: sz.toFixed(2), fill: 'currentColor' }));
+  }
+})();
+
+// ── Mycelium (page 10) ──────────────────────────────────────────
+(function () {
+  const g = document.querySelector('#mycelium');
+  if (!g) return;
+  let seed = 19;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  function branch(x, y, ang, len, depth) {
+    if (depth > 5 || len < 4) return;
+    const tx = x + Math.cos(ang) * len;
+    const ty = y + Math.sin(ang) * len;
+    const sw = Math.max(0.25, 1.4 - depth * 0.25);
+    g.appendChild(svgEl('line', { x1: x.toFixed(1), y1: y.toFixed(1), x2: tx.toFixed(1), y2: ty.toFixed(1), 'stroke-width': sw.toFixed(2) }));
+    branch(tx, ty, ang + 0.42 + (rnd() - 0.5) * 0.20, len * 0.72, depth + 1);
+    branch(tx, ty, ang - 0.42 + (rnd() - 0.5) * 0.20, len * 0.72, depth + 1);
+    if (depth < 2 && rnd() < 0.5) branch(tx, ty, ang + (rnd() - 0.5) * 0.25, len * 0.55, depth + 1);
+  }
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * TAU;
+    branch(250, 250, a, 56, 0);
+  }
+})();
+
+// ── Iris radial striations (page 12) ───────────────────────────
+(function () {
+  const g = document.querySelector('#iris-rays');
+  if (!g) return;
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 60) * TAU;
+    const r1 = 26;
+    const r2 = 78 - (i % 3) * 6;
+    g.appendChild(svgEl('line', {
+      x1: (Math.cos(a) * r1).toFixed(1),
+      y1: (Math.sin(a) * r1).toFixed(1),
+      x2: (Math.cos(a) * r2).toFixed(1),
+      y2: (Math.sin(a) * r2).toFixed(1),
+      'stroke-width': 0.35,
+      opacity: 0.55,
+    }));
+  }
+})();
+
+// ── Cracked / Kintsugi mandala (page 14) ────────────────────────
+(function () {
+  const g = document.querySelector('#kintsugi-mandala');
+  if (!g) return;
+  const sides = 12;
+  // Concentric polygons (the mandala)
+  for (let l = 1; l <= 5; l++) {
+    const r = 35 + l * 32;
+    const pts = [];
+    for (let i = 0; i <= sides; i++) {
+      const a = (i / sides) * TAU - Math.PI / 2 + l * 0.05;
+      pts.push(`${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`);
+    }
+    g.appendChild(svgEl('polygon', { points: pts.join(' '), 'stroke-width': 0.8, fill: 'none' }));
+  }
+  // Spokes
+  for (let i = 0; i < sides; i++) {
+    const a = (i / sides) * TAU;
+    g.appendChild(svgEl('line', {
+      x1: (Math.cos(a) * 35).toFixed(1), y1: (Math.sin(a) * 35).toFixed(1),
+      x2: (Math.cos(a) * 195).toFixed(1), y2: (Math.sin(a) * 195).toFixed(1),
+      'stroke-width': 0.4, opacity: 0.6,
+    }));
+  }
+  g.appendChild(svgEl('circle', { r: 28, 'stroke-width': 1.0 }));
+  g.appendChild(svgEl('circle', { r: 10, 'stroke-width': 0.6 }));
+
+  // ── The cracks: thicker, organic curves running across the mandala ──
+  // (Renders darker/heavier so they read as "the gold seams" even in B&W print)
+  let seed = 73;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  for (let c = 0; c < 4; c++) {
+    const a1 = rnd() * TAU;
+    const a2 = a1 + (Math.PI * 0.6) + rnd() * (Math.PI * 0.4);
+    const r1 = 200, r2 = 200;
+    let d = `M ${(Math.cos(a1) * r1).toFixed(1)} ${(Math.sin(a1) * r1).toFixed(1)}`;
+    // Zigzag through the mandala
+    const steps = 5;
+    for (let s = 1; s <= steps; s++) {
+      const t = s / steps;
+      const a = a1 * (1 - t) + a2 * t + (rnd() - 0.5) * 0.6;
+      const r = (1 - Math.abs(t - 0.5) * 1.6) * 180 + (rnd() - 0.5) * 30;
+      d += ` L ${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`;
+    }
+    d += ` L ${(Math.cos(a2) * r2).toFixed(1)} ${(Math.sin(a2) * r2).toFixed(1)}`;
+    g.appendChild(svgEl('path', { d, 'stroke-width': 2.4, fill: 'none', 'stroke-linecap': 'round' }));
+    g.appendChild(svgEl('path', { d, 'stroke-width': 4.0, fill: 'none', 'stroke-linecap': 'round', opacity: 0.18 }));
+  }
+})();
+
+// ── Closing mandala (page 16) ──────────────────────────────────
+(function () {
+  const g = document.querySelector('#closing-mandala');
+  if (!g) return;
+  const sides = 12;
+  for (let l = 1; l <= 4; l++) {
+    const r = 50 + l * 40;
+    const pts = [];
+    for (let i = 0; i <= sides; i++) {
+      const a = (i / sides) * TAU - Math.PI / 2;
+      pts.push(`${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`);
+    }
+    g.appendChild(svgEl('polygon', { points: pts.join(' '), 'stroke-width': 0.6, fill: 'none' }));
+  }
+  for (let i = 0; i < sides; i++) {
+    const a = (i / sides) * TAU;
+    g.appendChild(svgEl('line', {
+      x1: (Math.cos(a) * 50).toFixed(1), y1: (Math.sin(a) * 50).toFixed(1),
+      x2: (Math.cos(a) * 210).toFixed(1), y2: (Math.sin(a) * 210).toFixed(1),
+      'stroke-width': 0.3, opacity: 0.5,
+    }));
+  }
+  g.appendChild(svgEl('circle', { r: 38, 'stroke-width': 0.9 }));
+  g.appendChild(svgEl('circle', { r: 12, 'stroke-width': 0.5 }));
+  g.appendChild(svgEl('circle', { r: 3, 'stroke-width': 0, fill: 'currentColor' }));
+})();
+</script>
+
+</body>
+</html>
