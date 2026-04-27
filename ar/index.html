@@ -205,9 +205,9 @@
   <div class="mark">b l o o m</div>
   <h2 id="intro-title">geometric</h2>
   <p class="q" id="intro-quote">"stillness is the altar of spirit"</p>
-  <p class="hint">point your phone at any surface. the mandala blooms in front of your world.<br><br>tap to add folds. tilt to feel its depth.</p>
+  <p class="hint">point your phone at any surface. the mandala blooms in front of your world.<br><br>tap to add folds. tilt for depth (optional).</p>
   <button id="begin">begin</button>
-  <p class="denied-msg">camera or motion permission denied — the mandala will still appear but without the live world behind it</p>
+  <p class="denied-msg">camera permission denied — the mandala will still appear, but on a dark background instead of your world</p>
 </div>
 
 <script>
@@ -760,11 +760,14 @@ async function startExperience() {
   try { audio.start(); setStatus('audio: started', 'ok'); }
   catch (e) { setStatus('audio: failed', 'err'); }
 
-  let motionOK = false;
-  try { motionOK = await requestMotionPermission(); }
-  catch (e) { setStatus(`motion exc: ${e.message?.slice(0,40)}`, 'err'); }
+  // Motion is OPTIONAL — if it fails, we just skip tilt parallax. Camera AR
+  // works fine without it. Wrap silently so a denied permission never blocks
+  // the user from seeing the mandala.
+  try { await requestMotionPermission(); }
+  catch (e) { setStatus(`motion skipped: ${e.message?.slice(0,40)}`); }
 
-  if (!camOK || !motionOK) intro.classList.add('denied');
+  // Only flag the denied state if camera failed — that's the only required perm.
+  if (!camOK) intro.classList.add('denied');
 
   try { await requestWakeLock(); } catch (e) { /* not critical */ }
 
