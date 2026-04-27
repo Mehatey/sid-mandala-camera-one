@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>bloom — a small book about very large things</title>
+<title>ruminating spaces — a small book about rooms that remember</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap" rel="stylesheet">
@@ -30,7 +30,7 @@
   .page {
     width: 8.5in;
     height: 11in;
-    background: #f4ecdc;            /* warm cream — meant to be near-invisible against handmade paper */
+    background: #f4ecdc;
     padding: 1.25in 1.1in;
     position: relative;
     overflow: hidden;
@@ -38,7 +38,7 @@
     flex-direction: column;
   }
 
-  /* ── Subtle page texture — adds organic feel even on plain printer paper. */
+  /* Subtle organic dot texture — gives even plain printer paper depth. */
   .page::before {
     content: ""; position: absolute; inset: 0; pointer-events: none;
     background-image:
@@ -66,44 +66,42 @@
     color: rgba(26,24,20,0.32);
   }
   h1.title {
-    font-size: 56pt; font-weight: 400; font-style: italic;
-    margin: 0; line-height: 1.1; letter-spacing: -0.005em;
+    font-size: 48pt; font-weight: 400; font-style: italic;
+    margin: 0; line-height: 1.05; letter-spacing: -0.005em;
   }
   .subtitle {
     font-size: 12pt; font-style: italic; font-weight: 300;
     color: rgba(26,24,20,0.65); letter-spacing: 0.04em;
-    margin-top: 16px; max-width: 4.5in; line-height: 1.55;
+    margin-top: 24px; max-width: 4.5in; line-height: 1.55;
   }
   p.body {
-    font-size: 16pt; font-style: italic; font-weight: 300;
-    line-height: 1.65; max-width: 4.6in;
+    font-size: 15.5pt; font-style: italic; font-weight: 300;
+    line-height: 1.7; max-width: 4.6in;
     margin: 0; text-align: center;
     letter-spacing: 0.01em;
   }
-  p.body em { font-style: normal; font-weight: 400; }
+  p.body em       { font-style: normal; font-weight: 400; }
+  p.body .quoted  { font-style: normal; letter-spacing: 0.02em; }
   .ornament {
     font-size: 10pt; color: rgba(26,24,20,0.45);
     margin-top: 32px;
   }
   .caption {
     font-size: 9pt; letter-spacing: 0.32em; text-transform: lowercase;
-    color: rgba(26,24,20,0.45); margin-top: 24px;
+    color: rgba(26,24,20,0.45); margin-top: 24px; line-height: 1.7;
   }
   .epigraph {
-    font-size: 13pt; font-style: italic; font-weight: 300;
-    color: rgba(26,24,20,0.62); line-height: 1.55;
-    max-width: 3.6in; text-align: center;
+    font-size: 13.5pt; font-style: italic; font-weight: 300;
+    color: rgba(26,24,20,0.65); line-height: 1.6;
+    max-width: 3.8in; text-align: center;
   }
   .attrib {
     font-size: 10pt; letter-spacing: 0.20em; text-transform: lowercase;
-    color: rgba(26,24,20,0.45); margin-top: 14px;
+    color: rgba(26,24,20,0.42); margin-top: 18px;
   }
 
-  /* ── Drawing styles ────────────────────────────────────────── */
-  svg.figure {
-    display: block;
-    color: #1a1814;       /* drawings inherit via currentColor */
-  }
+  /* ── Drawings inherit color via currentColor ───────────────── */
+  svg.figure { display: block; color: #1a1814; }
 
   /* ── Print/screen toggle ───────────────────────────────────── */
   #print-bar {
@@ -131,13 +129,17 @@
      PAGE 1 — COVER
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
-  <div class="top" style="margin-top: 1.4in;">
-    <div class="mark">b l o o m</div>
+  <div class="top" style="margin-top: 1.2in;">
+    <div class="mark">a small book</div>
   </div>
   <div class="center">
-    <h1 class="title">bloom</h1>
-    <div class="subtitle">a small book<br>about very large things —<br>and the small ones<br>that are also large</div>
-    <div class="ornament" style="margin-top: 56px;">·</div>
+    <h1 class="title">ruminating<br>spaces</h1>
+    <div class="subtitle">
+      a small book about rooms<br>
+      that remember, and the strangers<br>
+      who quietly shape them
+    </div>
+    <div class="ornament" style="margin-top: 64px;">·</div>
   </div>
   <div class="bottom" style="margin-bottom: 0.2in;">
     <div class="mark" style="letter-spacing: 0.34em;">siddharth mehta · 2026</div>
@@ -150,16 +152,17 @@
 <div class="page">
   <div class="center">
     <p class="epigraph">
-      "you are something the world is doing<br>
-      in the same way that a wave<br>
-      is something the ocean is doing."
+      "the room is held<br>
+      by the people<br>
+      who were there<br>
+      before you."
     </p>
     <div class="attrib">— a thought, not yet your own —</div>
   </div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 3 — OPENING TEXT (the silence before)
+     PAGE 3 — i. the silence (cosmic opening)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="top" style="margin-top: 1.0in;"><div class="mark">i.</div></div>
@@ -169,14 +172,13 @@
       before the world even —<br>
       there was just this:
       <br><br>
-      a quiet that did not know<br>
-      it was quiet,<br>
+      a quiet<br>
+      that did not know it was quiet,<br>
       because there was no other thing<br>
-      yet to be<br>
-      otherwise.
+      yet to be otherwise.
       <br><br>
       It is hard to describe.<br>
-      Language is a thing<br>
+      Language is something<br>
       the silence had to invent<br>
       much later,<br>
       in order to remember<br>
@@ -187,60 +189,58 @@
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 4 — DRAWING: SINGULARITY (single point on near-empty page)
+     PAGE 4 — DRAWING: singularity (a point in vast empty space)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="center">
     <svg class="figure" viewBox="0 0 400 400" width="280" height="280" xmlns="http://www.w3.org/2000/svg">
-      <!-- Vast empty space with a single point — the singularity moment -->
       <circle cx="200" cy="200" r="3" fill="currentColor"/>
-      <circle cx="200" cy="200" r="20" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.20"/>
-      <circle cx="200" cy="200" r="60" fill="none" stroke="currentColor" stroke-width="0.2" opacity="0.10"/>
+      <circle cx="200" cy="200" r="20"  fill="none" stroke="currentColor" stroke-width="0.30" opacity="0.20"/>
+      <circle cx="200" cy="200" r="60"  fill="none" stroke="currentColor" stroke-width="0.20" opacity="0.10"/>
       <circle cx="200" cy="200" r="140" fill="none" stroke="currentColor" stroke-width="0.15" opacity="0.05"/>
     </svg>
     <div class="caption">a point, before everything</div>
   </div>
-  <div class="folio">ii · the point</div>
+  <div class="folio">ii · the seed</div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 5 — TEXT: the silence sang (big bang / star-stuff)
+     PAGE 5 — ii. the song (cosmic → personal: star stuff in service of meeting)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="top" style="margin-top: 1.0in;"><div class="mark">ii.</div></div>
   <div class="center">
     <p class="body">
       Then —<br>
-      somehow, somewhere<br>
-      that is also no-where —<br>
-      the silence broke open.
-      <br><br>
-      A note. Then a chord.<br>
-      Then a song<br>
-      thirteen billion years long.
+      somewhere that is also<br>
+      no-where —<br>
+      the silence broke open,<br>
+      and a song began<br>
+      that has not yet finished<br>
+      singing.
       <br><br>
       The carbon in your fingerbones,<br>
-      the iron coloring your blood,<br>
+      the iron in your blood,<br>
       the calcium humming in your teeth —
       <br><br>
       each one was made<br>
       inside a star<br>
       that had to die<br>
       so that you could,<br>
-      one ordinary morning,<br>
-      brush your teeth.
+      one ordinary afternoon,<br>
+      sit down across from a stranger<br>
+      and be understood.
     </p>
   </div>
-  <div class="folio">iii · the singing</div>
+  <div class="folio">iii · the song</div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 6 — DRAWING: CONSTELLATION
+     PAGE 6 — DRAWING: a constellation (the strangers, distributed)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="center">
     <svg class="figure" viewBox="0 0 500 500" width="380" height="380" xmlns="http://www.w3.org/2000/svg">
-      <!-- Procedurally-feeling constellation — connection lines and stars -->
       <g stroke="currentColor" stroke-width="0.5" opacity="0.45" fill="none" stroke-linecap="round">
         <line x1="120" y1="80"  x2="200" y2="160"/>
         <line x1="200" y1="160" x2="280" y2="120"/>
@@ -275,7 +275,6 @@
         <circle cx="240" cy="380" r="3.8"/>
         <circle cx="340" cy="430" r="2.3"/>
         <circle cx="420" cy="380" r="2.7"/>
-        <!-- background dust -->
         <circle cx="60"  cy="180" r="0.8" opacity="0.5"/>
         <circle cx="450" cy="60"  r="0.8" opacity="0.5"/>
         <circle cx="80"  cy="50"  r="1.0" opacity="0.6"/>
@@ -287,49 +286,59 @@
         <circle cx="380" cy="460" r="0.8" opacity="0.5"/>
       </g>
     </svg>
-    <div class="caption">stars, in some arrangement<br>that means something to someone</div>
+    <div class="caption">a city, in some arrangement<br>that means something to someone</div>
   </div>
-  <div class="folio">iv · the stars</div>
+  <div class="folio">iv · the strangers</div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 7 — TEXT: the universe is fond of spirals
+     PAGE 7 — iii. the unread (universal: passing strangers, what they carry)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="top" style="margin-top: 1.0in;"><div class="mark">iii.</div></div>
   <div class="center">
     <p class="body">
-      The universe<br>
-      is fond of spirals.
+      Most lives go unread.<br>
+      This is the great quiet sorrow<br>
+      of being a person in a city.
       <br><br>
-      Galaxies turn into them.<br>
-      Hurricanes turn into them.<br>
-      Snail shells, fern fronds,<br>
-      the curl of a wave,<br>
-      the curl of a cochlea —
+      You walk past someone<br>
+      and never know<br>
+      what they are carrying.<br>
+      They walk past you<br>
+      and never know<br>
+      what you are carrying<br>
+      either.
       <br><br>
-      all the same gesture<br>
-      at different scales.
+      Sometimes, by accident,<br>
+      the right kind of silence<br>
+      opens<br>
+      between two people<br>
+      and everything<br>
+      comes pouring out:
       <br><br>
-      A pattern is just<br>
-      the cosmos rehearsing<br>
-      how to bloom<br>
-      in front of itself.
+      the grief, the small joys,<br>
+      what they thought was beautiful<br>
+      and what was broken.
+      <br><br>
+      There is no name<br>
+      for this place.<br>
+      It is older than language.<br>
+      It is what we are,<br>
+      underneath.
     </p>
   </div>
-  <div class="folio">v · the spiral</div>
+  <div class="folio">v · the unread</div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 8 — DRAWING: GOLDEN SPIRAL with sunflower seeds
+     PAGE 8 — DRAWING: phyllotaxis spiral
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="center">
     <svg class="figure" viewBox="0 0 500 500" width="380" height="380" xmlns="http://www.w3.org/2000/svg">
       <g transform="translate(250,250)">
-        <!-- Phyllotaxis seed pattern — actual fibonacci-derived dot placement -->
         <g id="seeds" fill="currentColor"></g>
-        <!-- Spiral overlay -->
         <path d="M 0 0
                  Q 15 0 15 -15
                  Q 15 -40 -10 -40
@@ -341,9 +350,6 @@
                  Q -190 240 30 240"
               fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.40"/>
       </g>
-      <script>
-        // Inline seed generation kept simple — won't break print
-      </script>
     </svg>
     <div class="caption">phyllotaxis · the angle<br>at which the universe likes to count</div>
   </div>
@@ -351,40 +357,46 @@
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 9 — TEXT: the first yes (life)
+     PAGE 9 — iv. the disappearing (impermanence as devotion)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="top" style="margin-top: 1.0in;"><div class="mark">iv.</div></div>
   <div class="center">
     <p class="body">
-      Somewhere,<br>
-      in a shallow place<br>
-      where light met water,<br>
-      matter remembered<br>
-      how to copy itself.
+      There are patterns<br>
+      made to disappear.
       <br><br>
-      This was the first yes.<br>
-      Not the angels-and-trumpets yes.<br>
-      The slow yes.<br>
-      The yes that mycelium whispers<br>
-      under a forest floor<br>
-      without anyone clapping.
+      In some places,<br>
+      on some mornings,<br>
+      people kneel down on stone<br>
+      and press colored powder<br>
+      into the shape of a flower<br>
+      that will not last past evening.
       <br><br>
-      Everything that has ever loved<br>
-      anything —<br>
-      the bee for the flower,<br>
-      the moth for the moon,<br>
-      you for whoever you are missing —
+      By dusk, someone has walked<br>
+      through it.<br>
+      The flower is gone.<br>
+      The making was the flower.
       <br><br>
-      is the unbroken descendant<br>
-      of that first soft yes.
+      This is older<br>
+      than anything we call art.<br>
+      This is what the universe does,<br>
+      on a longer schedule:<br>
+      forms a thing exquisitely,<br>
+      holds it for a while,<br>
+      and then —<br>
+      lets it go,<br>
+      unbothered.
+      <br><br>
+      The disappearance<br>
+      is the point.
     </p>
   </div>
-  <div class="folio">vii · the first yes</div>
+  <div class="folio">vii · the disappearing</div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 10 — DRAWING: MYCELIUM (branching)
+     PAGE 10 — DRAWING: mycelium (network underneath)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="center">
@@ -394,11 +406,11 @@
     </svg>
     <div class="caption">a network of yeses<br>under everything that grows</div>
   </div>
-  <div class="folio">viii · mycelium</div>
+  <div class="folio">viii · underneath</div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 11 — TEXT: the eye opening (consciousness)
+     PAGE 11 — v. the eye opens (Watts' cosmic-eye moment)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="top" style="margin-top: 1.0in;"><div class="mark">v.</div></div>
@@ -406,7 +418,8 @@
     <p class="body">
       At some point —<br>
       no one is sure when —<br>
-      the universe opened an eye.
+      the universe opened<br>
+      an eye.
       <br><br>
       The eye looked<br>
       and was startled to discover<br>
@@ -430,40 +443,45 @@
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 12 — DRAWING: AN EYE / IRIS
+     PAGE 12 — DRAWING: an iris (the witness)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="center">
     <svg class="figure" viewBox="0 0 500 500" width="380" height="380" xmlns="http://www.w3.org/2000/svg">
       <g transform="translate(250,250)" stroke="currentColor" fill="none" stroke-linecap="round">
-        <!-- Outer iris ring with subtle break for life -->
         <ellipse cx="0" cy="0" rx="220" ry="100" stroke-width="1.0"/>
-        <ellipse cx="0" cy="0" rx="180" ry="80" stroke-width="0.5" opacity="0.45"/>
-        <!-- Iris -->
+        <ellipse cx="0" cy="0" rx="180" ry="80"  stroke-width="0.5" opacity="0.45"/>
         <circle r="80" stroke-width="1.4"/>
         <circle r="65" stroke-width="0.4" opacity="0.35"/>
         <circle r="50" stroke-width="0.4" opacity="0.30"/>
         <circle r="32" stroke-width="0.4" opacity="0.25"/>
-        <!-- Iris radial striations -->
         <g id="iris-rays"></g>
-        <!-- Pupil -->
         <circle r="22" fill="currentColor" stroke="none"/>
-        <!-- Reflection / catchlight -->
         <circle cx="-7" cy="-8" r="4" fill="#f4ecdc" stroke="none"/>
       </g>
     </svg>
-    <div class="caption">"the cosmos<br>is also within us"</div>
+    <div class="caption">the room, looking back</div>
   </div>
-  <div class="folio">x · the eye</div>
+  <div class="folio">x · the witness</div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 13 — TEXT: broken / kintsugi
+     PAGE 13 — vi. broken and beautiful (water as imperfect mirror)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="top" style="margin-top: 1.0in;"><div class="mark">vi.</div></div>
   <div class="center">
     <p class="body">
+      Water is a strange mirror.<br>
+      It holds your face<br>
+      and breaks your face<br>
+      in the same moment.
+      <br><br>
+      Every reflection in water<br>
+      is unstable.<br>
+      Every reflection in water<br>
+      is true.
+      <br><br>
       To be human<br>
       is to fall in love<br>
       with what cannot stay.
@@ -486,11 +504,11 @@
       So are you.
     </p>
   </div>
-  <div class="folio">xi · kintsugi</div>
+  <div class="folio">xi · broken and beautiful</div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 14 — DRAWING: CRACKED MANDALA (kintsugi)
+     PAGE 14 — DRAWING: cracked mandala (kintsugi / water distortion)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="center">
@@ -499,43 +517,55 @@
         <g id="kintsugi-mandala"></g>
       </g>
     </svg>
-    <div class="caption">the seam holds<br>more light than the bowl</div>
+    <div class="caption">a mirror that does not lie<br>about being a mirror</div>
   </div>
-  <div class="folio">xii · the breaking</div>
+  <div class="folio">xii · the imperfect mirror</div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 15 — TEXT: the mandala (return)
+     PAGE 15 — vii. inheritance (universal: rooms, attention, residue)
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="top" style="margin-top: 1.0in;"><div class="mark">vii.</div></div>
   <div class="center">
     <p class="body">
-      The mandala is what<br>
-      the universe draws<br>
-      when it wants to remember<br>
-      that everything begins<br>
-      at the center<br>
-      and ends at the center<br>
-      and is happening<br>
-      right now<br>
-      in the middle.
+      Some rooms remember.
       <br><br>
-      Begin.<br>
-      Begin.<br>
-      Begin again.
+      Not because they were made to,<br>
+      but because everything<br>
+      that has happened in a room<br>
+      leaves a softness behind,<br>
+      and softness, accumulated,<br>
+      begins to feel<br>
+      like welcome.
       <br><br>
-      The pattern always returns<br>
-      to where it started,<br>
-      having gone<br>
-      everywhere.
+      You did not arrive empty.<br>
+      You have inherited<br>
+      the small accumulated kindnesses<br>
+      of everyone<br>
+      who was there before you —<br>
+      their patience,<br>
+      their breath,<br>
+      the residue of their attention.
+      <br><br>
+      You will leave something too.<br>
+      Not a name.<br>
+      Not a story.<br>
+      A quality<br>
+      the next person<br>
+      will not be able to identify<br>
+      but will quietly trust.
+      <br><br>
+      You are not <em>in</em> the world.<br>
+      You are something<br>
+      the world is doing.
     </p>
   </div>
-  <div class="folio">xiii · return</div>
+  <div class="folio">xiii · inheritance</div>
 </div>
 
 <!-- ──────────────────────────────────────────────────────────────
-     PAGE 16 — DRAWING: MANDALA + closing words
+     PAGE 16 — DRAWING: closing mandala + farewell
      ────────────────────────────────────────────────────────────── -->
 <div class="page">
   <div class="top" style="margin-top: 0.6in;">
@@ -547,10 +577,7 @@
         <g id="closing-mandala"></g>
       </g>
     </svg>
-    <p class="body" style="font-size: 14pt; max-width: 4.2in;">
-      You are not in the world.<br>
-      You are something the world is doing.
-      <br><br>
+    <p class="body" style="font-size: 13.5pt; max-width: 4.2in;">
       Soon you will close this book.<br>
       Soon you will look up.
       <br><br>
@@ -563,18 +590,16 @@
       you have always been<br>
       the inside of.
       <br><br>
-      <span style="font-style: normal; letter-spacing: 0.18em;">it has been very glad to meet you.</span>
+      <span class="quoted">go gently.<br>
+      you have always been<br>
+      bloom.</span>
     </p>
   </div>
   <div class="folio">xiv · bloom</div>
 </div>
 
 <script>
-// ─────────────────────────────────────────────────────────────────
-// Inline figure generators — kept here so the file is self-contained
-// and prints from any browser without a server.
-// ─────────────────────────────────────────────────────────────────
-
+'use strict';
 const TAU = Math.PI * 2;
 const NS  = 'http://www.w3.org/2000/svg';
 function svgEl(tag, attrs) {
@@ -583,7 +608,7 @@ function svgEl(tag, attrs) {
   return el;
 }
 
-// ── Phyllotaxis seeds (page 8 spiral) ───────────────────────────
+// ── Phyllotaxis seeds ───────────────────────────────────────────
 (function () {
   const g = document.querySelector('#seeds');
   if (!g) return;
@@ -598,7 +623,7 @@ function svgEl(tag, attrs) {
   }
 })();
 
-// ── Mycelium (page 10) ──────────────────────────────────────────
+// ── Mycelium ─────────────────────────────────────────────────────
 (function () {
   const g = document.querySelector('#mycelium');
   if (!g) return;
@@ -620,7 +645,7 @@ function svgEl(tag, attrs) {
   }
 })();
 
-// ── Iris radial striations (page 12) ───────────────────────────
+// ── Iris striations ─────────────────────────────────────────────
 (function () {
   const g = document.querySelector('#iris-rays');
   if (!g) return;
@@ -639,12 +664,11 @@ function svgEl(tag, attrs) {
   }
 })();
 
-// ── Cracked / Kintsugi mandala (page 14) ────────────────────────
+// ── Cracked / Kintsugi mandala ──────────────────────────────────
 (function () {
   const g = document.querySelector('#kintsugi-mandala');
   if (!g) return;
   const sides = 12;
-  // Concentric polygons (the mandala)
   for (let l = 1; l <= 5; l++) {
     const r = 35 + l * 32;
     const pts = [];
@@ -654,7 +678,6 @@ function svgEl(tag, attrs) {
     }
     g.appendChild(svgEl('polygon', { points: pts.join(' '), 'stroke-width': 0.8, fill: 'none' }));
   }
-  // Spokes
   for (let i = 0; i < sides; i++) {
     const a = (i / sides) * TAU;
     g.appendChild(svgEl('line', {
@@ -666,8 +689,6 @@ function svgEl(tag, attrs) {
   g.appendChild(svgEl('circle', { r: 28, 'stroke-width': 1.0 }));
   g.appendChild(svgEl('circle', { r: 10, 'stroke-width': 0.6 }));
 
-  // ── The cracks: thicker, organic curves running across the mandala ──
-  // (Renders darker/heavier so they read as "the gold seams" even in B&W print)
   let seed = 73;
   const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
   for (let c = 0; c < 4; c++) {
@@ -675,7 +696,6 @@ function svgEl(tag, attrs) {
     const a2 = a1 + (Math.PI * 0.6) + rnd() * (Math.PI * 0.4);
     const r1 = 200, r2 = 200;
     let d = `M ${(Math.cos(a1) * r1).toFixed(1)} ${(Math.sin(a1) * r1).toFixed(1)}`;
-    // Zigzag through the mandala
     const steps = 5;
     for (let s = 1; s <= steps; s++) {
       const t = s / steps;
@@ -689,7 +709,7 @@ function svgEl(tag, attrs) {
   }
 })();
 
-// ── Closing mandala (page 16) ──────────────────────────────────
+// ── Closing mandala ─────────────────────────────────────────────
 (function () {
   const g = document.querySelector('#closing-mandala');
   if (!g) return;
