@@ -704,13 +704,52 @@ function downloadSVG(filename, svgString) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// ── PNG export — for AR target compilation ─────────────────────
+// Renders the SVG to canvas at 2x resolution and downloads as PNG.
+// Use this PNG as input to MindAR's online compiler to make the .mind
+// target file. Print the same PNG and the AR will detect it.
+function downloadPNG(filename, svgString, scale = 2) {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const img  = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width  = W * scale;
+      canvas.height = H * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#f6f1e6';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(pngBlob => {
+        const pngUrl = URL.createObjectURL(pngBlob);
+        const a = document.createElement('a');
+        a.href = pngUrl; a.download = filename + '.png';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+        resolve();
+      }, 'image/png');
+    };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+    img.src = url;
+  });
+}
+
 POSTERS.forEach(p => {
   const svg = buildPoster(p);
   const card = document.createElement('div');
   card.className = 'card';
-  card.innerHTML = svg + `<div class="info"><span class="name">${p.title}</span><button data-id="${p.id}">download</button></div>`;
+  card.innerHTML = svg + `<div class="info">
+    <span class="name">${p.title}</span>
+    <span style="display:flex; gap:6px;">
+      <button data-act="svg" data-id="${p.id}">svg</button>
+      <button data-act="png" data-id="${p.id}">png</button>
+    </span>
+  </div>`;
   grid.appendChild(card);
-  card.querySelector('button').addEventListener('click', () => downloadSVG(p.id, svg));
+  card.querySelector('[data-act="svg"]').addEventListener('click', () => downloadSVG(p.id, svg));
+  card.querySelector('[data-act="png"]').addEventListener('click', () => downloadPNG(p.id, svg));
 });
 
 document.getElementById('download-all').addEventListener('click', () => {
