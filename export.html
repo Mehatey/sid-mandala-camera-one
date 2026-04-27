@@ -704,6 +704,43 @@ function downloadSVG(filename, svgString) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// ── AR-optimized SVG transform ──────────────────────────────────
+// Line-art mandalas on cream paper are feature-poor for MindAR's
+// tracker. This transform boosts trackability while keeping the
+// design intent: pure black ink, pure white bg, thicker strokes,
+// plus stipple texture in the corners for asymmetric anchor features.
+function arOptimize(svgString) {
+  let s = svgString;
+  // Background: cream → pure white (max contrast)
+  s = s.replace(/fill="#f6f1e6"/g, 'fill="#ffffff"');
+  // Ink: warm-black → pure black
+  s = s.replace(/stroke="#1a1814"/g, 'stroke="#000000"');
+  s = s.replace(/fill="#1a1814"/g, 'fill="#000000"');
+  // All stroke widths: 2.5x for stronger feature edges
+  s = s.replace(/stroke-width="([\d.]+)"/g, (_, w) => `stroke-width="${(parseFloat(w) * 2.5).toFixed(2)}"`);
+  // Inject deterministic stipple patches in the 4 corners — gives the
+  // tracker 100+ asymmetric anchor points outside the symmetric mandala.
+  let stipple = '';
+  let seed = 47;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  const patches = [
+    { x:  80, y:  80, w: 220, h: 60  },
+    { x: 550, y:  80, w: 220, h: 60  },
+    { x:  80, y: 980, w: 220, h: 60  },
+    { x: 550, y: 980, w: 220, h: 60  },
+  ];
+  for (const p of patches) {
+    for (let i = 0; i < 60; i++) {
+      const x = p.x + rnd() * p.w;
+      const y = p.y + rnd() * p.h;
+      const r = 1.2 + rnd() * 1.6;
+      stipple += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="#000"/>`;
+    }
+  }
+  s = s.replace('</svg>', stipple + '</svg>');
+  return s;
+}
+
 // ── PNG export — for AR target compilation ─────────────────────
 // Renders the SVG to canvas at 2x resolution and downloads as PNG.
 // Use this PNG as input to MindAR's online compiler to make the .mind
@@ -745,11 +782,13 @@ POSTERS.forEach(p => {
     <span style="display:flex; gap:6px;">
       <button data-act="svg" data-id="${p.id}">svg</button>
       <button data-act="png" data-id="${p.id}">png</button>
+      <button data-act="ar"  data-id="${p.id}" style="background:rgba(120,90,40,0.12);border-color:rgba(120,90,40,0.5);color:#5a4422;">ar png</button>
     </span>
   </div>`;
   grid.appendChild(card);
   card.querySelector('[data-act="svg"]').addEventListener('click', () => downloadSVG(p.id, svg));
   card.querySelector('[data-act="png"]').addEventListener('click', () => downloadPNG(p.id, svg));
+  card.querySelector('[data-act="ar"]' ).addEventListener('click', () => downloadPNG(p.id + '-ar', arOptimize(svg)));
 });
 
 document.getElementById('download-all').addEventListener('click', () => {
