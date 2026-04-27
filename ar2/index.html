@@ -312,17 +312,18 @@
   <button id="begin-btn">begin</button>
 </div>
 
-<div id="prompt">point your camera at the card</div>
-<div id="hint">test card → laptop screen, full-size, then point phone at it</div>
+<div id="prompt">point your camera at the mandala</div>
+<div id="hint">show the geometric mandala on a screen or print, then point camera at it</div>
 <div id="status">init…</div>
 
 <a-scene
   mindar-image="
-    imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind;
+    imageTargetSrc: ./targets.mind;
     uiLoading: no;
     uiError: no;
     uiScanning: no;
     autoStart: false;
+    maxTrack: 1;
   "
   color-space="sRGB"
   renderer="colorManagement: true; alpha: true; antialias: true"
