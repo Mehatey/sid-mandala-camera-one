@@ -20,6 +20,24 @@
     touch-action: none;
     overscroll-behavior: none;
   }
+
+  /* ── Camera passthrough — your real world as the canvas ─────── */
+  #cam {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: -2;
+    background: #000;
+    /* slight desaturation + darken so the mandala glow reads clearly on top */
+    filter: saturate(0.78) brightness(0.72) contrast(1.05);
+    transform: translateZ(0);                /* GPU layer */
+  }
+  #cam.active { opacity: 1; }
+  /* Vignette over the camera so edges fade into black — gives a "viewport" feel */
+  #vignette {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%);
+  }
   body {
     font-family: 'Cormorant Garamond', Georgia, serif;
     color: rgba(232,225,210,0.85);
@@ -37,13 +55,16 @@
     transform-style: preserve-3d;
     will-change: transform;
   }
-  /* Background nebula glow — parallax background */
+  /* Background nebula glow — only shown when camera is unavailable */
   #nebula {
     position: absolute; inset: -10%;
     background: radial-gradient(ellipse at 50% 50%, rgba(40,30,55,0.35) 0%, rgba(0,0,0,0) 60%);
     transform: translateZ(-300px) scale(1.4);
     will-change: transform;
+    opacity: 1; transition: opacity 1s ease;
   }
+  body.cam-on #nebula { opacity: 0; }
+  body.cam-on #stars  { opacity: 0; transition: opacity 1s ease; }
   /* Mid-plane stars — subtle */
   #stars {
     position: absolute; inset: 0;
@@ -57,7 +78,12 @@
     transform: translate(-50%, -50%) translateZ(0);
     will-change: transform;
   }
-  canvas#cv { display: block; }
+  canvas#cv {
+    display: block;
+    /* Screen blend = pure additive light. Black pixels disappear, the
+       mandala glows on top of the camera feed. Core AR illusion. */
+    mix-blend-mode: screen;
+  }
 
   /* ── Foreground UI ──────────────────────────────────────────── */
   #title {
@@ -138,6 +164,10 @@
 </head>
 <body>
 
+<!-- Camera passthrough — shows the real world behind the mandala -->
+<video id="cam" autoplay playsinline muted disablepictureinpicture></video>
+<div id="vignette"></div>
+
 <div id="stage">
   <div id="depth">
     <div id="nebula"></div>
@@ -155,9 +185,9 @@
   <div class="mark">b l o o m</div>
   <h2 id="intro-title">geometric</h2>
   <p class="q" id="intro-quote">"stillness is the altar of spirit"</p>
-  <p class="hint">a live mandala. tap to add folds. tilt the phone to feel its depth.</p>
+  <p class="hint">point your phone at any surface. the mandala blooms in front of your world.<br><br>tap to add folds. tilt to feel its depth.</p>
   <button id="begin">begin</button>
-  <p class="denied-msg">motion permission denied — you'll still see the mandala but it won't tilt with the phone</p>
+  <p class="denied-msg">camera or motion permission denied — the mandala will still appear but without the live world behind it</p>
 </div>
 
 <script>
@@ -234,6 +264,8 @@ let foldFlash   = 0;
 let tiltX = 0, tiltY = 0;
 let smoothX = 0, smoothY = 0;
 let baseline = null;
+let camActive = false;
+let camStream = null;
 
 // ── PATTERN: GEOMETRIC ────────────────────────────────────────────
 
@@ -407,8 +439,12 @@ function frame(now) {
   smoothX += (tiltX - smoothX) * 0.10;
   smoothY += (tiltY - smoothY) * 0.10;
 
-  // Layered parallax — different depths shift at different rates
-  cvWrap.style.transform = `translate(-50%, -50%) translateZ(0) rotateY(${smoothX * 6}deg) rotateX(${-smoothY * 6}deg)`;
+  // Layered parallax — stronger when camera is on (sells the AR illusion).
+  // The mandala translates AGAINST the phone tilt — feels world-locked,
+  // as if floating in space and the phone is a window onto it.
+  const tiltScale = camActive ? 120 : 30;       // px translation per unit tilt
+  const rotScale  = camActive ? 10  : 6;        // deg rotation per unit tilt
+  cvWrap.style.transform = `translate(-50%, -50%) translate(${-smoothX * tiltScale}px, ${-smoothY * tiltScale * 0.6}px) rotateY(${smoothX * rotScale}deg) rotateX(${-smoothY * rotScale}deg)`;
   nebula.style.transform = `translateZ(-300px) scale(1.4) translate(${-smoothX * 30}px, ${-smoothY * 30}px)`;
   stars.style.transform  = `translateZ(-100px) translate(${-smoothX * 14}px, ${-smoothY * 14}px)`;
 
@@ -416,9 +452,13 @@ function frame(now) {
   folds     += (targetFolds - folds) * 0.10;
   foldFlash *= 0.93;
 
-  // Trail fade — gives the mandala a soft persistence
-  ctx.fillStyle = 'rgba(0, 0, 6, 0.10)';
+  // Trail fade — destination-out gradually erases existing pixels' alpha.
+  // Works correctly with mix-blend-mode: screen (rgba fill would leave dark
+  // residue that screen blend can't subtract). Soft persistence, true clear.
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.14)';
   ctx.fillRect(0, 0, S, S);
+  ctx.globalCompositeOperation = 'source-over';
 
   // Drive audio breath from foldFlash
   if (audio.ready) audio.pulse(foldFlash);
@@ -494,6 +534,49 @@ function handleOrientation(e) {
   tiltY = Math.max(-1, Math.min(1, dBeta  / 30));
 }
 
+// ── CAMERA PASSTHROUGH ────────────────────────────────────────────
+
+async function startCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+  const video = document.getElementById('cam');
+  try {
+    // Rear camera at modest resolution — we only need it as a backdrop,
+    // higher res just burns battery and CPU.
+    camStream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 1280 },
+        height: { ideal: 720  },
+      },
+    });
+    video.srcObject = camStream;
+    // iOS Safari: must call play() explicitly even with autoplay attribute
+    // when the element is muted+playsinline. Promise rejects if no user gesture
+    // led here, but startExperience is called from a click handler so we're fine.
+    await video.play();
+    camActive = true;
+    document.body.classList.add('cam-on');
+    return true;
+  } catch (err) {
+    console.warn('Camera unavailable:', err);
+    return false;
+  }
+}
+
+// Release camera when tab is hidden — saves battery and respects privacy
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && camStream) {
+    camStream.getTracks().forEach(t => t.stop());
+    camStream = null;
+    camActive = false;
+    document.body.classList.remove('cam-on');
+  } else if (document.visibilityState === 'visible' && !camStream && intro && intro.classList.contains('gone')) {
+    // Re-acquire if we previously had it
+    startCamera();
+  }
+});
+
 async function requestMotionPermission() {
   // iOS 13+ requires explicit permission via user gesture
   if (typeof DeviceOrientationEvent !== 'undefined' &&
@@ -537,7 +620,6 @@ document.addEventListener('visibilitychange', () => {
 const audio = {
   ctx: null,
   master: null,
-  pulseGain: null,
   ready: false,
 
   start() {
@@ -588,11 +670,6 @@ const audio = {
     makeVoice(config.drone.fifth,  0.055, 0.07);
     makeVoice(config.drone.fund/2, 0.045, 0.03);    // sub-octave depth
 
-    // Pulse-driven gain (responds to fold flash)
-    this.pulseGain = ac.createGain();
-    this.pulseGain.gain.value = 1.0;
-    this.master.gain.value = 0.16;
-
     this.ready = true;
   },
 
@@ -628,14 +705,20 @@ async function startExperience() {
   beginBtn.disabled = true;
   beginBtn.textContent = 'opening…';
 
-  // Audio init wrapped — never block the rest of the flow on audio failure
+  // 1. Camera first — this is the AR. We want it visible before the intro fades.
+  let camOK = false;
+  try { camOK = await startCamera(); }
+  catch (e) { console.warn('camera init failed:', e); }
+
+  // 2. Audio
   try { audio.start(); } catch (e) { console.warn('audio init failed:', e); }
 
-  // Motion permission — wrapped, never blocking
+  // 3. Motion permission (iOS prompts here; Android/desktop just listens)
   let motionOK = false;
   try { motionOK = await requestMotionPermission(); }
   catch (e) { console.warn('motion init failed:', e); }
-  if (!motionOK) intro.classList.add('denied');
+
+  if (!camOK || !motionOK) intro.classList.add('denied');
 
   try { await requestWakeLock(); } catch (e) { /* not critical */ }
 
