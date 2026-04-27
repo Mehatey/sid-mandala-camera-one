@@ -32,6 +32,169 @@
 <!-- MindAR: marker-less image tracking using local feature detection -->
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
+<!-- ── 3D water-glass mandala component ──────────────────────────
+     Procedurally builds an extruded mandala with MeshPhysicalMaterial
+     transmission/refraction (real Three.js glass shader). The material
+     refracts whatever is behind it — including the camera passthrough,
+     which is what gives the mandala its "looking through water" feel.
+     Tap-driven ripple cascade is wired via window.bloomTapBurst. -->
+<script>
+  window.bloomTapBurst = 0;     // global, set by tap handler in main script
+
+  AFRAME.registerComponent('mandala-glass', {
+    schema: {
+      sides:  { type: 'number', default: 12 },
+      layers: { type: 'number', default: 4  },
+    },
+    init: function () {
+      const group  = new THREE.Group();
+      const sides  = this.data.sides;
+      const layers = this.data.layers;
+
+      // ── Water-glass material recipe ─────────────────────────────
+      // transmission: 1.0    — full see-through volume (refracts background)
+      // ior: 1.33           — water (glass would be 1.5)
+      // thickness: 0.5      — virtual depth for refraction
+      // clearcoat: 1.0      — wet/glossy outer surface
+      // attenuationColor    — slight tint as light passes through volume
+      const makeGlassMat = (tint, thickness = 0.5) => new THREE.MeshPhysicalMaterial({
+        color: tint,
+        metalness: 0.0,
+        roughness: 0.06,
+        transmission: 1.0,
+        thickness: thickness,
+        ior: 1.33,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.04,
+        attenuationColor: new THREE.Color(0xa8d4ff),
+        attenuationDistance: 1.2,
+        envMapIntensity: 1.2,
+        side: THREE.DoubleSide,
+        transparent: true,
+      });
+
+      // ── Concentric polygon rings (extruded with bevel) ─────────
+      const ringMeshes = [];
+      for (let l = 0; l < layers; l++) {
+        const outerR = 0.16 + l * 0.10;
+        const innerR = outerR - 0.022;
+
+        const shape = new THREE.Shape();
+        for (let i = 0; i <= sides; i++) {
+          const a = (i / sides) * Math.PI * 2;
+          const x = Math.cos(a) * outerR;
+          const y = Math.sin(a) * outerR;
+          if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+        }
+        const hole = new THREE.Path();
+        for (let i = sides; i >= 0; i--) {
+          const a = (i / sides) * Math.PI * 2;
+          const x = Math.cos(a) * innerR;
+          const y = Math.sin(a) * innerR;
+          if (i === sides) hole.moveTo(x, y); else hole.lineTo(x, y);
+        }
+        shape.holes.push(hole);
+
+        const geom = new THREE.ExtrudeGeometry(shape, {
+          depth: 0.028,
+          bevelEnabled: true,
+          bevelThickness: 0.005,
+          bevelSize: 0.005,
+          bevelSegments: 3,
+          curveSegments: 24,
+        });
+
+        // Tint slightly per-layer — outer rings cooler, inner warmer
+        const t = l / Math.max(1, layers - 1);
+        const tint = new THREE.Color().lerpColors(
+          new THREE.Color(0x9fc8ff),    // outer (cool blue)
+          new THREE.Color(0xc8e4ff),    // inner (icy white-blue)
+          t
+        );
+
+        const mesh = new THREE.Mesh(geom, makeGlassMat(tint));
+        mesh.position.z = 0.005 + l * 0.012;
+        mesh.userData.layer = l;
+        mesh.userData.dir   = (l % 2 === 0) ? 1 : -1;
+        mesh.userData.baseScale = 1.0;
+        group.add(mesh);
+        ringMeshes.push(mesh);
+      }
+
+      // ── Radial spokes (slim glass bars, half the rings count) ──
+      const spokeCount = sides;
+      const outerSpoke = 0.16 + (layers - 1) * 0.10;
+      for (let i = 0; i < spokeCount; i++) {
+        const a = (i / spokeCount) * Math.PI * 2;
+        const len = outerSpoke - 0.025;
+        const spokeGeom = new THREE.BoxGeometry(len, 0.006, 0.018);
+        // Bevel via slight scaling: skip bevel for perf, the box is fine
+        const spoke = new THREE.Mesh(spokeGeom, makeGlassMat(0xb8d8ff, 0.3));
+        spoke.position.x = Math.cos(a) * (len / 2 + 0.025);
+        spoke.position.y = Math.sin(a) * (len / 2 + 0.025);
+        spoke.position.z = 0.014;
+        spoke.rotation.z = a;
+        group.add(spoke);
+      }
+
+      // ── Center water droplet sphere ────────────────────────────
+      const dropGeom = new THREE.SphereGeometry(0.045, 48, 24);
+      const dropMat  = new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        metalness: 0.0,
+        roughness: 0.0,
+        transmission: 1.0,
+        thickness: 0.7,
+        ior: 1.45,                  // slightly heavier than water
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.0,
+        envMapIntensity: 1.5,
+      });
+      const drop = new THREE.Mesh(dropGeom, dropMat);
+      drop.position.z = 0.06;
+      drop.userData.center = true;
+      group.add(drop);
+
+      this.el.setObject3D('mesh', group);
+      this._ringMeshes = ringMeshes;
+      this._drop = drop;
+      this._startTime = performance.now();
+    },
+
+    tick: function () {
+      const obj = this.el.getObject3D('mesh');
+      if (!obj) return;
+      const t = (performance.now() - this._startTime) / 1000;
+
+      // Decay tap burst — set to 1.0 elsewhere on tap, decays each frame
+      window.bloomTapBurst *= 0.94;
+      const burst = window.bloomTapBurst;
+
+      // Each ring rotates at its own speed/direction
+      for (const mesh of this._ringMeshes) {
+        const layer = mesh.userData.layer;
+        const dir   = mesh.userData.dir;
+        const speed = 0.08 * (1 + layer * 0.18);
+        mesh.rotation.z = t * speed * dir;
+
+        // Tap ripple — outward cascade. Each layer scales up briefly with a
+        // delay equal to its depth from center.
+        const delay = layer * 0.08;
+        const localBurst = Math.max(0, burst - delay);
+        const scale = 1.0 + localBurst * 0.18;
+        mesh.scale.setScalar(scale);
+      }
+
+      // Center droplet pulses with breath
+      const pulse = 1.0 + Math.sin(t * 1.4) * 0.08 + burst * 0.4;
+      this._drop.scale.setScalar(pulse);
+
+      // Whole mandala bobs gently in Z
+      obj.position.z = Math.sin(t * 0.55) * 0.006;
+    },
+  });
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
@@ -172,39 +335,16 @@
 
   <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
+  <!-- Lighting: directional + ambient, needed for MeshPhysicalMaterial transmission to look right -->
+  <a-light type="ambient" color="#ffffff" intensity="0.55"></a-light>
+  <a-light type="directional" color="#fff8f0" intensity="2.0" position="1 1.5 1"></a-light>
+  <a-light type="directional" color="#88b0ff" intensity="0.7" position="-1 0.6 0.8"></a-light>
+  <a-light type="point"       color="#ffffff" intensity="0.8" position="0 0 0.4"></a-light>
+
   <a-entity id="target" mindar-image-target="targetIndex: 0">
 
-    <!-- Three nested rotating tori — visual placeholder for the eventual mandala -->
-    <a-torus
-      color="#e6c87a" radius="0.30" radius-tubular="0.014"
-      position="0 0 0.01"
-      animation="property: rotation; to: 0 0 360; dur: 12000; loop: true; easing: linear"
-      material="emissive: #b08c2c; emissiveIntensity: 0.4; metalness: 0.4; roughness: 0.5"
-    ></a-torus>
-
-    <a-torus
-      color="#f0d990" radius="0.40" radius-tubular="0.010"
-      position="0 0 0.02"
-      rotation="0 0 30"
-      animation="property: rotation; from: 30 0 0; to: 30 0 -360; dur: 18000; loop: true; easing: linear"
-      material="emissive: #b08c2c; emissiveIntensity: 0.3; metalness: 0.3; roughness: 0.6"
-    ></a-torus>
-
-    <a-torus
-      color="#fcefc6" radius="0.50" radius-tubular="0.007"
-      position="0 0 0.03"
-      animation="property: rotation; to: 0 0 360; dur: 24000; loop: true; easing: linear"
-      material="emissive: #b08c2c; emissiveIntensity: 0.25; metalness: 0.3; roughness: 0.7"
-    ></a-torus>
-
-    <!-- Glowing center -->
-    <a-sphere
-      color="#fff5d4"
-      radius="0.04"
-      position="0 0 0.05"
-      material="emissive: #fff0b4; emissiveIntensity: 1.0"
-      animation="property: scale; from: 1 1 1; to: 1.4 1.4 1.4; dir: alternate; dur: 1800; loop: true; easing: easeInOutQuad"
-    ></a-sphere>
+    <!-- 3D water-glass mandala — built procedurally in mandala-glass component -->
+    <a-entity mandala-glass="sides: 12; layers: 4"></a-entity>
 
     <a-text
       value="bloom"
@@ -308,6 +448,14 @@
   // Bind to BOTH click and touchend — touchend is more reliable on mobile
   beginBtn.addEventListener('click', startAR);
   beginBtn.addEventListener('touchend', e => { e.preventDefault(); startAR(); }, { passive: false });
+
+  // ── Tap-anywhere ripple — only fires after AR is running ─────────
+  function fireTap() {
+    if (overlay.classList.contains('gone') === false) return;   // intro still up
+    window.bloomTapBurst = 1.0;
+  }
+  document.addEventListener('click', fireTap);
+  document.addEventListener('touchend', fireTap);
 </script>
 
 </body>
