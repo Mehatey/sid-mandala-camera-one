@@ -466,8 +466,9 @@ function onTap(e) {
   clearTimeout(foldPipEl._hideTimer);
   foldPipEl._hideTimer = setTimeout(() => foldPipEl.classList.remove('visible'), 1800);
 }
-document.addEventListener('touchstart', onTap, { passive: false });
-document.addEventListener('click', onTap);
+// Tap listeners attached AFTER intro is dismissed (see beginBtn handler).
+// If they're attached now, the touchstart preventDefault swallows the
+// begin button's click event on mobile.
 
 // Mouse parallax fallback (desktop)
 window.addEventListener('mousemove', e => {
@@ -623,25 +624,39 @@ const audio = {
 const intro    = document.getElementById('intro');
 const beginBtn = document.getElementById('begin');
 
-beginBtn.addEventListener('click', async () => {
+async function startExperience() {
   beginBtn.disabled = true;
   beginBtn.textContent = 'opening…';
 
-  audio.start();
-  const motionOK = await requestMotionPermission();
+  // Audio init wrapped — never block the rest of the flow on audio failure
+  try { audio.start(); } catch (e) { console.warn('audio init failed:', e); }
+
+  // Motion permission — wrapped, never blocking
+  let motionOK = false;
+  try { motionOK = await requestMotionPermission(); }
+  catch (e) { console.warn('motion init failed:', e); }
   if (!motionOK) intro.classList.add('denied');
 
-  await requestWakeLock();
+  try { await requestWakeLock(); } catch (e) { /* not critical */ }
 
   intro.classList.add('gone');
   setTimeout(() => intro.remove(), 1100);
 
-  // Reveal fold pip briefly so user notices it
+  // NOW it's safe to attach the global tap listeners. If we attached them
+  // earlier, the touchstart preventDefault would swallow the begin click.
+  document.addEventListener('touchstart', onTap, { passive: false });
+  document.addEventListener('click', onTap);
+
   setTimeout(() => {
     foldPipEl.classList.add('visible');
     setTimeout(() => foldPipEl.classList.remove('visible'), 2400);
   }, 1400);
-});
+}
+
+// Bind to BOTH click and touchend — some mobile browsers occasionally drop
+// the synthetic click. touchend is the most reliable mobile gesture event.
+beginBtn.addEventListener('click',    startExperience);
+beginBtn.addEventListener('touchend', e => { e.preventDefault(); startExperience(); }, { passive: false });
 </script>
 
 </body>
