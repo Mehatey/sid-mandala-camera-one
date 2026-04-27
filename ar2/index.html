@@ -78,6 +78,30 @@
   }
   #hint.hidden { opacity: 0; }
 
+  /* ── Begin overlay — tap-triggered AR start (required for iOS) ── */
+  #begin-overlay {
+    position: fixed; inset: 0; z-index: 1100;
+    background: rgba(0,0,0,0.96);
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    gap: 20px; padding: 0 32px; text-align: center;
+    color: rgba(232,225,210,0.92);
+    transition: opacity 0.6s ease;
+  }
+  #begin-overlay.gone { opacity: 0; pointer-events: none; }
+  #begin-overlay .mark { font-size: 10px; letter-spacing: 0.46em; text-transform: lowercase; color: rgba(232,225,210,0.45); }
+  #begin-overlay h1 { font-style: italic; font-weight: 300; font-size: clamp(28px, 9vw, 42px); margin: 0; }
+  #begin-overlay p { font-size: 14px; color: rgba(232,225,210,0.55); max-width: 320px; line-height: 1.6; font-style: italic; margin: 0; }
+  #begin-overlay button {
+    margin-top: 8px; background: none;
+    border: 1px solid rgba(232,225,210,0.35);
+    color: rgba(232,225,210,0.92);
+    padding: 16px 38px;
+    font-family: inherit; font-size: 12px; letter-spacing: 0.32em; text-transform: lowercase;
+    cursor: pointer; transition: all 0.25s;
+  }
+  #begin-overlay button:hover, #begin-overlay button:active { background: rgba(232,225,210,0.06); letter-spacing: 0.40em; }
+  #begin-overlay button:disabled { opacity: 0.5; cursor: default; }
+
   /* ── On-screen status ─────────────────────────────────────────── */
   #status {
     position: fixed;
@@ -100,6 +124,13 @@
 </head>
 <body>
 
+<div id="begin-overlay">
+  <span class="mark">b l o o m   ·   AR test</span>
+  <h1>image tracking</h1>
+  <p>display the test card on your laptop, then tap begin.<br>after begin, point your phone at the card.</p>
+  <button id="begin-btn">begin</button>
+</div>
+
 <div id="prompt">point your camera at the card</div>
 <div id="hint">test card → laptop screen, full-size, then point phone at it</div>
 <div id="status">init…</div>
@@ -113,7 +144,7 @@
     autoStart: false;
   "
   color-space="sRGB"
-  renderer="colorManagement: true, physicallyCorrectLights: true"
+  renderer="colorManagement: true"
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false"
   embedded>
@@ -186,29 +217,31 @@
   status(`aframe=${typeof AFRAME !== 'undefined' ? 'yes' : 'no'}`, typeof AFRAME !== 'undefined' ? 'ok' : 'err');
 
   // ── Scene events ────────────────────────────────────────────────
-  const scene  = document.querySelector('a-scene');
-  const target = document.querySelector('#target');
-  const prompt = document.getElementById('prompt');
-  const hint   = document.getElementById('hint');
+  const scene    = document.querySelector('a-scene');
+  const target   = document.querySelector('#target');
+  const prompt   = document.getElementById('prompt');
+  const hint     = document.getElementById('hint');
+  const overlay  = document.getElementById('begin-overlay');
+  const beginBtn = document.getElementById('begin-btn');
 
-  scene.addEventListener('loaded', () => {
+  // Single 'loaded' handler with hasLoaded check (handles race condition where
+  // AFrame finishes initializing before this script runs).
+  function onSceneLoaded() {
     status('scene loaded', 'ok');
-    status(`mindar=${typeof MINDAR !== 'undefined' ? 'yes' : 'no'}`, typeof MINDAR !== 'undefined' ? 'ok' : 'err');
-  });
-
-  scene.addEventListener('renderstart', () => status('render start', 'ok'));
+    status(`mindar=${typeof MINDAR !== 'undefined' ? 'yes' : 'no'}`,
+           typeof MINDAR !== 'undefined' ? 'ok' : 'err');
+  }
+  if (scene.hasLoaded) onSceneLoaded();
+  else scene.addEventListener('loaded', onSceneLoaded, { once: true });
 
   // MindAR fires 'arReady' when camera + tracking is initialized
-  scene.addEventListener('arReady', () => {
-    status('AR ready — scan card', 'ok');
-  });
-
+  scene.addEventListener('arReady', () => status('AR ready — scan card', 'ok'));
   scene.addEventListener('arError', (e) => {
     status('AR error: ' + (e?.detail?.error || 'unknown'), 'err');
   });
 
   // Target lifecycle
-  target.addEventListener('targetFound',  () => {
+  target.addEventListener('targetFound', () => {
     status('TARGET FOUND', 'ok');
     prompt.classList.add('hidden');
     hint.classList.add('hidden');
@@ -219,23 +252,43 @@
     hint.classList.remove('hidden');
   });
 
-  // Manually start MindAR after scene loads (autoStart: false above).
-  // This gives us control over timing and lets the camera prompt fire
-  // from a clean lifecycle point.
-  scene.addEventListener('loaded', async () => {
-    try {
-      const sys = scene.systems['mindar-image-system'];
-      if (sys && sys.start) {
-        status('starting mindar…');
-        await sys.start();
-        status('mindar started', 'ok');
-      } else {
-        status('mindar system missing', 'err');
-      }
-    } catch (err) {
-      status(`start fail: ${(err.name || err.message || 'unknown').slice(0,30)}`, 'err');
+  // ── BEGIN — must be tap-triggered for iOS getUserMedia to succeed ──
+  async function startAR() {
+    beginBtn.disabled = true;
+    beginBtn.textContent = 'starting…';
+    status('begin tapped');
+
+    // Wait for scene to be ready (either it already is, or wait for event)
+    if (!scene.hasLoaded) {
+      status('waiting for scene…');
+      await new Promise(r => scene.addEventListener('loaded', r, { once: true }));
     }
-  });
+
+    const sys = scene.systems['mindar-image-system'];
+    if (!sys) {
+      status('mindar system missing', 'err');
+      beginBtn.disabled = false;
+      beginBtn.textContent = 'try again';
+      return;
+    }
+
+    try {
+      status('starting mindar…');
+      await sys.start();        // triggers camera permission prompt
+      status('mindar started', 'ok');
+      overlay.classList.add('gone');
+      setTimeout(() => overlay.style.display = 'none', 700);
+    } catch (err) {
+      const msg = err?.name || err?.message || 'unknown';
+      status(`start fail: ${msg.slice(0, 40)}`, 'err');
+      beginBtn.disabled = false;
+      beginBtn.textContent = 'try again';
+    }
+  }
+
+  // Bind to BOTH click and touchend — touchend is more reliable on mobile
+  beginBtn.addEventListener('click', startAR);
+  beginBtn.addEventListener('touchend', e => { e.preventDefault(); startAR(); }, { passive: false });
 </script>
 
 </body>
