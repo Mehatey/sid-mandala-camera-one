@@ -45,6 +45,24 @@
     font-family: 'Cormorant Garamond', Georgia, serif;
   }
 
+  /* ── Force MindAR's injected <video> element to fill the screen ─
+     MindAR creates a <video> element with default ~640x480 sizing and
+     positions it weirdly. Force it to fill the viewport, behind the
+     canvas. Combined with the canvas being alpha:true, this makes the
+     camera feed visible as the AR background. */
+  body > video {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    width: 100vw !important; height: 100vh !important;
+    object-fit: cover !important;
+    z-index: 0 !important;
+  }
+  /* AFrame canvas sits ABOVE the video, transparent so video shows through */
+  .a-canvas {
+    z-index: 1 !important;
+    background: transparent !important;
+  }
+
   /* ── Scanning prompt — fades out when target is found ─────────── */
   #prompt {
     position: fixed; top: max(28px, env(safe-area-inset-top));
