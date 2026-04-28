@@ -16,7 +16,6 @@
     .page:last-child { page-break-after: auto; }
     .screen-only { display: none !important; }
   }
-
   @media screen {
     body { background: #15110d; margin: 0; padding: 40px 0 80px; }
     .page { box-shadow: 0 16px 56px rgba(0,0,0,0.55); margin: 0 auto 24px; }
@@ -24,12 +23,7 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    color: #18130d;
-    -webkit-font-smoothing: antialiased;
-  }
-
+  body { font-family: 'Cormorant Garamond', Georgia, serif; color: #18130d; -webkit-font-smoothing: antialiased; }
   .mono   { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
   .ital   { font-style: italic; }
   .upper  { text-transform: uppercase; letter-spacing: 0.32em; }
@@ -37,14 +31,11 @@
 
   /* ── Page base ─────────────────────────────────────────── */
   .page {
-    width: 8.5in;
-    height: 11in;
+    width: 8.5in; height: 11in;
     background: #f3eadb;
-    position: relative;
-    overflow: hidden;
+    position: relative; overflow: hidden;
     color: #18130d;
   }
-  /* Fine-grain organic texture */
   .page::before {
     content: ""; position: absolute; inset: 0; pointer-events: none;
     background-image:
@@ -54,21 +45,24 @@
     background-position: 0 0, 2px 3px;
     z-index: 1;
   }
-  /* Universal page chrome — tick marks at corners give it a "field guide" feel */
-  .ticks {
-    position: absolute; inset: 0.45in; pointer-events: none; z-index: 2;
-  }
+  /* Corner tick marks — field-guide chrome */
+  .ticks { position: absolute; inset: 0.45in; pointer-events: none; z-index: 2; }
   .ticks::before, .ticks::after,
   .ticks > i::before, .ticks > i::after {
     content: ""; position: absolute; width: 9px; height: 9px;
     border: 0 solid #18130d; opacity: 0.30;
   }
-  .ticks::before        { top: 0; left: 0;  border-left-width: 0.5px;  border-top-width: 0.5px; }
-  .ticks::after         { top: 0; right: 0; border-right-width: 0.5px; border-top-width: 0.5px; }
-  .ticks > i::before    { bottom: 0; left: 0;  border-left-width: 0.5px;  border-bottom-width: 0.5px; }
-  .ticks > i::after     { bottom: 0; right: 0; border-right-width: 0.5px; border-bottom-width: 0.5px; }
+  .ticks::before     { top: 0; left: 0;  border-left-width: 0.5px; border-top-width: 0.5px; }
+  .ticks::after      { top: 0; right: 0; border-right-width: 0.5px; border-top-width: 0.5px; }
+  .ticks > i::before { bottom: 0; left: 0; border-left-width: 0.5px; border-bottom-width: 0.5px; }
+  .ticks > i::after  { bottom: 0; right: 0; border-right-width: 0.5px; border-bottom-width: 0.5px; }
 
-  /* Folio in vertical right margin (rotated mono) */
+  /* Tiny mandala glyph in page corners — recurs as house mark */
+  .corner-glyph {
+    position: absolute; bottom: 0.45in; left: 0.5in;
+    z-index: 3; opacity: 0.42;
+  }
+
   .folio-v {
     position: absolute; right: 0.32in; bottom: 0.55in;
     transform: rotate(-90deg); transform-origin: right bottom;
@@ -77,61 +71,52 @@
     color: rgba(24,19,13,0.42); white-space: nowrap;
     z-index: 3;
   }
-  /* Section badge top-left */
   .badge {
     position: absolute; top: 0.48in; left: 0.5in;
     font-family: 'JetBrains Mono', monospace; font-size: 8.5pt;
     letter-spacing: 0.30em; text-transform: uppercase;
-    color: rgba(24,19,13,0.55);
-    z-index: 3;
+    color: rgba(24,19,13,0.55); z-index: 3;
   }
-  /* Top-right marker */
   .marker {
     position: absolute; top: 0.48in; right: 0.5in;
     font-family: 'JetBrains Mono', monospace; font-size: 8.5pt;
     letter-spacing: 0.20em;
-    color: rgba(24,19,13,0.42);
-    z-index: 3;
+    color: rgba(24,19,13,0.42); z-index: 3;
   }
-  /* Inner content holder */
   .inner {
     position: absolute; inset: 1.0in 0.95in;
     z-index: 4;
     display: flex; flex-direction: column;
   }
 
-  /* ── Display type ──────────────────────────────────────── */
+  /* Display type */
   .display {
     font-family: 'Cormorant Garamond', Georgia, serif;
     font-style: italic; font-weight: 400;
-    line-height: 0.95;
-    letter-spacing: -0.012em;
+    line-height: 0.95; letter-spacing: -0.012em;
   }
-  .display-xl  { font-size: 144pt; }
-  .display-lg  { font-size: 110pt; }
-  .display-md  { font-size: 78pt; }
-  .display-sm  { font-size: 56pt; }
   .roman { font-style: normal; font-weight: 500; }
 
-  /* Tiny technical label */
   .label {
     font-family: 'JetBrains Mono', monospace; font-size: 7.5pt;
     letter-spacing: 0.22em; text-transform: uppercase;
     color: rgba(24,19,13,0.55);
   }
-
-  /* Text body (used sparingly) */
   .body-sm {
     font-family: 'Cormorant Garamond', serif;
     font-style: italic; font-weight: 300; font-size: 13pt;
     line-height: 1.55; color: rgba(24,19,13,0.78);
-    letter-spacing: 0.005em;
   }
 
-  /* SVG figures inherit color */
+  /* Decorative ornament rule with center dot */
+  .rule-dot { display: flex; align-items: center; gap: 12px; opacity: 0.45; }
+  .rule-dot::before, .rule-dot::after {
+    content: ""; flex: 1; height: 0.5px; background: #18130d;
+  }
+  .rule-dot span { font-size: 7pt; }
+
   svg { display: block; color: #18130d; }
 
-  /* ── Print bar ─────────────────────────────────────────── */
   #print-bar {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
     z-index: 100; background: #2a2520; border: 1px solid rgba(243,234,219,0.18);
@@ -150,17 +135,26 @@
   <small>cmd · p</small>
 </div>
 
+<!-- A reusable corner glyph SVG — dropped on every page -->
+<svg style="display:none">
+  <symbol id="glyph" viewBox="0 0 32 32">
+    <g transform="translate(16,16)" stroke="currentColor" fill="none" stroke-width="0.4">
+      <circle r="2"/><circle r="6"/><circle r="11"/><circle r="14"/>
+      <line x1="-14" y1="0" x2="14" y2="0"/>
+      <line x1="0" y1="-14" x2="0" y2="14"/>
+      <line x1="-10" y1="-10" x2="10" y2="10"/>
+      <line x1="-10" y1="10"  x2="10" y2="-10"/>
+    </g>
+  </symbol>
+</svg>
+
 <!-- ─────────────────────────────────────────────────────────────
      PAGE 1 — COVER
-     Big asymmetric typographic cover. Tiny mark, huge title, small
-     subtitle pinned to the bottom. Like a Pelican or Penguin classics
-     reissue.
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">field notes ·  no. 01</div>
   <div class="marker">2026</div>
-
   <div class="inner" style="justify-content: space-between;">
     <div></div>
     <div>
@@ -169,74 +163,73 @@
       <div class="label" style="margin-top: 32px; opacity: 0.7;">— and the small ones<br>that are also large</div>
     </div>
     <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-      <div>
-        <svg width="64" height="64" viewBox="0 0 64 64">
-          <g transform="translate(32,32)" stroke="currentColor" fill="none" stroke-width="0.6">
-            <circle r="6"/><circle r="14"/><circle r="22"/><circle r="29"/>
-            <line x1="-29" y1="0" x2="29" y2="0"/>
-            <line x1="0" y1="-29" x2="0" y2="29"/>
-            <line x1="-21" y1="-21" x2="21" y2="21"/>
-            <line x1="-21" y1="21"  x2="21" y2="-21"/>
-          </g>
-        </svg>
-      </div>
+      <svg width="68" height="68" viewBox="0 0 68 68">
+        <g transform="translate(34,34)" stroke="currentColor" fill="none" stroke-width="0.5">
+          <g id="cover-mark"></g>
+        </g>
+      </svg>
       <div class="label" style="text-align: right;">siddharth mehta<br><span style="opacity: 0.55;">parsons · nyc</span></div>
     </div>
   </div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 2 — CONTENTS / FIELD GUIDE INDEX
-     Looks like a scientific paper TOC. All caps mono labels, thin rules.
+     PAGE 2 — CONTENTS
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">contents</div>
   <div class="marker">02</div>
-
   <div class="inner">
-    <div class="label" style="margin-bottom: 60px; opacity: 0.55;">a field guide to<br>the inside of a moment</div>
+    <div class="label" style="margin-bottom: 56px; opacity: 0.55;">a field guide to<br>the inside of a moment</div>
 
-    <div style="display: grid; grid-template-columns: 1fr auto auto; row-gap: 22px; column-gap: 28px; align-items: baseline; max-width: 5.4in;">
+    <div style="display: grid; grid-template-columns: auto 1fr auto auto; row-gap: 18px; column-gap: 24px; align-items: baseline; max-width: 5.6in;">
       <span class="label" style="opacity: 0.55;">i</span>
       <span class="display ital" style="font-size: 22pt;">before</span>
-      <span class="mono" style="font-size: 9pt; opacity: 0.45;">p · 03</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">fig. 01</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">p · 03</span>
 
       <span class="label" style="opacity: 0.55;">ii</span>
       <span class="display ital" style="font-size: 22pt;">the singing</span>
-      <span class="mono" style="font-size: 9pt; opacity: 0.45;">p · 05</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">fig. 02</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">p · 05</span>
 
       <span class="label" style="opacity: 0.55;">iii</span>
       <span class="display ital" style="font-size: 22pt;">the unread</span>
-      <span class="mono" style="font-size: 9pt; opacity: 0.45;">p · 07</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">fig. 03</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">p · 07</span>
 
       <span class="label" style="opacity: 0.55;">iv</span>
       <span class="display ital" style="font-size: 22pt;">the disappearing</span>
-      <span class="mono" style="font-size: 9pt; opacity: 0.45;">p · 09</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">fig. 04</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">p · 09</span>
 
       <span class="label" style="opacity: 0.55;">v</span>
       <span class="display ital" style="font-size: 22pt;">the eye</span>
-      <span class="mono" style="font-size: 9pt; opacity: 0.45;">p · 11</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">fig. 05</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">p · 11</span>
 
       <span class="label" style="opacity: 0.55;">vi</span>
       <span class="display ital" style="font-size: 22pt;">broken &amp; beautiful</span>
-      <span class="mono" style="font-size: 9pt; opacity: 0.45;">p · 13</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">fig. 06</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">p · 13</span>
 
       <span class="label" style="opacity: 0.55;">vii</span>
       <span class="display ital" style="font-size: 22pt;">inheritance</span>
-      <span class="mono" style="font-size: 9pt; opacity: 0.45;">p · 15</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">fig. 09</span>
+      <span class="mono" style="font-size: 8.5pt; opacity: 0.45;">p · 17</span>
     </div>
+
     <div style="margin-top: auto;">
-      <hr style="border: none; border-top: 0.5px solid rgba(24,19,13,0.30); margin-bottom: 18px;">
-      <div class="label" style="opacity: 0.45;">letter portrait · 16 pp · monochrome</div>
+      <div class="rule-dot" style="margin-bottom: 14px;"><span>·</span></div>
+      <div class="label" style="opacity: 0.45;">letter portrait · 20 pp · 9 figures · monochrome</div>
     </div>
   </div>
-  <div class="folio-v">02 — contents</div>
+  <svg class="corner-glyph" width="22" height="22"><use href="#glyph"/></svg>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 3 — DIAGRAM: singularity. A single point, lots of empty.
-     Heavy negative space. Tiny fig number annotation.
+     PAGE 3 — FIG. 01: singularity
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
@@ -244,17 +237,16 @@
   <div class="marker">fig. 01 — the point</div>
 
   <div class="inner" style="position: relative;">
-    <!-- The point itself, exactly centered -->
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);">
       <svg width="500" height="500" viewBox="0 0 500 500">
-        <circle cx="250" cy="250" r="200" fill="none" stroke="currentColor" stroke-width="0.18" opacity="0.06"/>
-        <circle cx="250" cy="250" r="120" fill="none" stroke="currentColor" stroke-width="0.20" opacity="0.10"/>
-        <circle cx="250" cy="250" r="60"  fill="none" stroke="currentColor" stroke-width="0.25" opacity="0.18"/>
-        <circle cx="250" cy="250" r="20"  fill="none" stroke="currentColor" stroke-width="0.35" opacity="0.30"/>
-        <circle cx="250" cy="250" r="3.2" fill="currentColor"/>
+        <circle cx="250" cy="250" r="220" fill="none" stroke="currentColor" stroke-width="0.18" opacity="0.05"/>
+        <circle cx="250" cy="250" r="160" fill="none" stroke="currentColor" stroke-width="0.20" opacity="0.08"/>
+        <circle cx="250" cy="250" r="100" fill="none" stroke="currentColor" stroke-width="0.22" opacity="0.13"/>
+        <circle cx="250" cy="250" r="50"  fill="none" stroke="currentColor" stroke-width="0.30" opacity="0.22"/>
+        <circle cx="250" cy="250" r="18"  fill="none" stroke="currentColor" stroke-width="0.40" opacity="0.34"/>
+        <circle cx="250" cy="250" r="3.4" fill="currentColor"/>
       </svg>
     </div>
-    <!-- Diagonal annotation arrow + label, lower-left -->
     <div style="position: absolute; left: 0; bottom: 0.4in; max-width: 2.6in;">
       <svg width="120" height="50" viewBox="0 0 120 50" style="display: block; margin-bottom: 10px;">
         <path d="M 0 48 L 100 12" stroke="currentColor" stroke-width="0.5" fill="none" opacity="0.55"/>
@@ -263,18 +255,17 @@
       <div class="label">a quiet that did not yet<br>know it was quiet</div>
     </div>
   </div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
   <div class="folio-v">03 — i — fig. 01</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 4 — DISPLAY TEXT: "before / there was / only this."
-     Massive italic, set hard left, lots of bottom space.
+     PAGE 4 — DISPLAY: "before"
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">i · before</div>
   <div class="marker">— silence —</div>
-
   <div class="inner" style="justify-content: center;">
     <div class="display tight" style="font-size: 88pt; line-height: 0.95; max-width: 6.2in;">
       before<br>
@@ -287,145 +278,92 @@
       to be otherwise.
     </div>
   </div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
   <div class="folio-v">04 — i — silence</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 5 — DIAGRAM: full-bleed constellation.
-     Stars labeled with monospace fig numbers like an astronomy plate.
+     PAGE 5 — FIG. 02: FLOWER OF LIFE  (NEW elaborate sacred geometry)
      ───────────────────────────────────────────────────────────── -->
-<div class="page" style="background: #f3eadb;">
+<div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">ii · the singing</div>
-  <div class="marker">fig. 02 — strangers</div>
+  <div class="marker">fig. 02 — flower of life</div>
 
-  <!-- Full-bleed constellation drawing -->
-  <svg viewBox="0 0 850 1100" preserveAspectRatio="xMidYMid slice"
+  <svg viewBox="0 0 850 1100" preserveAspectRatio="xMidYMid meet"
        style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;">
-    <g stroke="currentColor" stroke-width="0.6" opacity="0.40" fill="none" stroke-linecap="round">
-      <line x1="180" y1="220" x2="320" y2="380"/>
-      <line x1="320" y1="380" x2="450" y2="290"/>
-      <line x1="450" y1="290" x2="600" y2="420"/>
-      <line x1="600" y1="420" x2="700" y2="380"/>
-      <line x1="320" y1="380" x2="280" y2="560"/>
-      <line x1="280" y1="560" x2="450" y2="620"/>
-      <line x1="450" y1="620" x2="600" y2="420"/>
-      <line x1="450" y1="620" x2="380" y2="800"/>
-      <line x1="280" y1="560" x2="120" y2="680"/>
-      <line x1="120" y1="680" x2="240" y2="850"/>
-      <line x1="240" y1="850" x2="380" y2="800"/>
-      <line x1="380" y1="800" x2="540" y2="900"/>
-      <line x1="540" y1="900" x2="700" y2="800"/>
-      <line x1="700" y1="800" x2="720" y2="600"/>
-      <line x1="720" y1="600" x2="600" y2="420"/>
-      <line x1="600" y1="420" x2="660" y2="240"/>
-      <line x1="660" y1="240" x2="700" y2="380"/>
-    </g>
-    <g fill="currentColor">
-      <circle cx="180" cy="220" r="3"/>
-      <circle cx="320" cy="380" r="4.5"/>
-      <circle cx="450" cy="290" r="2.6"/>
-      <circle cx="660" cy="240" r="3.2"/>
-      <circle cx="700" cy="380" r="3.8"/>
-      <circle cx="600" cy="420" r="5"/>
-      <circle cx="720" cy="600" r="2.8"/>
-      <circle cx="280" cy="560" r="3.6"/>
-      <circle cx="450" cy="620" r="4.4"/>
-      <circle cx="120" cy="680" r="2.4"/>
-      <circle cx="240" cy="850" r="3.2"/>
-      <circle cx="380" cy="800" r="4.8"/>
-      <circle cx="540" cy="900" r="2.7"/>
-      <circle cx="700" cy="800" r="3.4"/>
-      <!-- background dust -->
-      <circle cx="80"  cy="380" r="0.8" opacity="0.55"/>
-      <circle cx="780" cy="180" r="0.9" opacity="0.50"/>
-      <circle cx="100" cy="160" r="1.0" opacity="0.55"/>
-      <circle cx="800" cy="950" r="1.1" opacity="0.50"/>
-      <circle cx="60"  cy="950" r="0.8" opacity="0.50"/>
-      <circle cx="430" cy="120" r="0.9" opacity="0.50"/>
-      <circle cx="60"  cy="500" r="1.0" opacity="0.50"/>
-      <circle cx="800" cy="500" r="0.7" opacity="0.50"/>
-      <circle cx="650" cy="980" r="0.8" opacity="0.50"/>
-    </g>
-    <!-- Tiny mono labels at a few stars -->
-    <g font-family="JetBrains Mono, monospace" font-size="9" fill="currentColor" opacity="0.55">
-      <text x="334" y="375">α</text>
-      <text x="614" y="416">β</text>
-      <text x="464" y="616">γ</text>
-      <text x="394" y="796">δ</text>
-    </g>
+    <g id="flower-of-life" transform="translate(425,550)" stroke="currentColor" fill="none"></g>
   </svg>
 
+  <div style="position: absolute; bottom: 0.55in; left: 0.5in; max-width: 3.4in; z-index: 3;">
+    <div class="label" style="opacity: 0.62; line-height: 1.7;">
+      a single circle, repeated<br>
+      until it becomes everything else
+    </div>
+  </div>
+  <svg class="corner-glyph" width="20" height="20" style="left: auto; right: 0.5in;"><use href="#glyph"/></svg>
   <div class="folio-v">05 — ii — fig. 02</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 6 — DISPLAY TEXT: "the silence / sang."
-     Two lines, second indented, with a tiny note pinned to the side.
+     PAGE 6 — DISPLAY: "the silence sang."
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">ii · the singing</div>
   <div class="marker">— a song, ongoing —</div>
-
   <div class="inner" style="justify-content: center;">
     <div class="display tight" style="font-size: 130pt; line-height: 0.95;">
-      the<br>
-      silence<br>
+      the<br>silence<br>
       <span style="padding-left: 0.5em; opacity: 0.9;">sang.</span>
     </div>
     <div class="label" style="margin-top: 80px; max-width: 3.8in; opacity: 0.62; line-height: 1.7;">
       every star you have ever seen<br>
-      is a note in that song.<br>
-      <br>
+      is a note in that song.<br><br>
       the carbon in your fingerbones<br>
       was made inside one<br>
       that had to die.
     </div>
   </div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
   <div class="folio-v">06 — ii — singing</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 7 — DIAGRAM: phyllotaxis seed pattern (full bleed-ish)
-     Cropped wide, with tiny annotation showing the 137.5° angle.
+     PAGE 7 — FIG. 03: CONSTELLATION (denser, full bleed)
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">iii · the unread</div>
-  <div class="marker">fig. 03 — phyllotaxis</div>
+  <div class="marker">fig. 03 — a city of strangers</div>
 
-  <div class="inner" style="position: relative; justify-content: center; align-items: center;">
-    <svg width="640" height="640" viewBox="-320 -320 640 640" style="max-width: 100%;">
-      <g id="seeds-7" fill="currentColor"></g>
-      <!-- Highlight a single seed and show the angle -->
-      <line x1="0" y1="0" x2="120" y2="0" stroke="currentColor" stroke-width="0.4" opacity="0.4" stroke-dasharray="2 3"/>
-      <line x1="0" y1="0" x2="-87" y2="-83" stroke="currentColor" stroke-width="0.4" opacity="0.4" stroke-dasharray="2 3"/>
-      <path d="M 60 0 A 60 60 0 0 0 -43 -42" stroke="currentColor" stroke-width="0.4" opacity="0.5" fill="none"/>
-      <text x="40" y="-30" font-family="JetBrains Mono, monospace" font-size="8" fill="currentColor" opacity="0.65">137.5°</text>
-    </svg>
+  <svg viewBox="0 0 850 1100" preserveAspectRatio="xMidYMid slice"
+       style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;">
+    <g id="constellation-7"></g>
+  </svg>
 
-    <div class="label" style="position: absolute; bottom: -0.05in; right: 0; max-width: 3.4in; text-align: right; opacity: 0.62;">
-      the angle at which the<br>
-      universe likes to count
+  <div style="position: absolute; top: 0.55in; right: 0.5in; max-width: 2.6in; z-index: 3; text-align: right; padding-top: 30px;"></div>
+  <div style="position: absolute; bottom: 0.55in; left: 0.5in; max-width: 3.4in; z-index: 3;">
+    <div class="label" style="opacity: 0.62; line-height: 1.7;">
+      every life, a small bright thing.<br>
+      every connection, a thread<br>
+      we mostly never see.
     </div>
   </div>
+  <svg class="corner-glyph" width="20" height="20" style="left: auto; right: 0.5in;"><use href="#glyph"/></svg>
   <div class="folio-v">07 — iii — fig. 03</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 8 — DISPLAY TEXT: "what people / carry past / each other."
-     Heavy left-aligned, small note at bottom.
+     PAGE 8 — DISPLAY: "what people / carry past / each other."
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">iii · the unread</div>
   <div class="marker">— passing —</div>
-
   <div class="inner" style="justify-content: flex-end; padding-bottom: 0.3in;">
     <div class="display tight" style="font-size: 96pt; line-height: 0.96; max-width: 6.4in;">
-      what people<br>
-      carry<br>
+      what people<br>carry<br>
       <span style="opacity: 0.86;">past each other.</span>
     </div>
     <div class="label" style="margin-top: 64px; max-width: 4.0in; opacity: 0.62; line-height: 1.7;">
@@ -434,105 +372,143 @@
       of being a person in a city.
     </div>
   </div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
   <div class="folio-v">08 — iii — passing</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 9 — DISPLAY: "the disappearance / is the point."
-     With a fading-out pattern as background motif.
+     PAGE 9 — FIG. 04: PHYLLOTAXIS (denser, with thread overlay)
+     ───────────────────────────────────────────────────────────── -->
+<div class="page">
+  <i class="ticks"><i></i></i>
+  <div class="badge">iv · the disappearing</div>
+  <div class="marker">fig. 04 — phyllotaxis</div>
+
+  <div class="inner" style="position: relative; justify-content: center; align-items: center;">
+    <svg width="640" height="640" viewBox="-320 -320 640 640" style="max-width: 100%;">
+      <!-- Outer enclosing ring -->
+      <circle r="305" fill="none" stroke="currentColor" stroke-width="0.4" opacity="0.35"/>
+      <circle r="295" fill="none" stroke="currentColor" stroke-width="0.2" opacity="0.20"/>
+
+      <g id="seeds-9" fill="currentColor"></g>
+
+      <!-- Subtle 137.5° angle indicator -->
+      <line x1="0" y1="0" x2="120" y2="0"   stroke="currentColor" stroke-width="0.4" opacity="0.4" stroke-dasharray="2 3"/>
+      <line x1="0" y1="0" x2="-87" y2="-83" stroke="currentColor" stroke-width="0.4" opacity="0.4" stroke-dasharray="2 3"/>
+      <path d="M 70 0 A 70 70 0 0 0 -50 -49" stroke="currentColor" stroke-width="0.45" opacity="0.55" fill="none"/>
+      <text x="48" y="-32" font-family="JetBrains Mono, monospace" font-size="9" fill="currentColor" opacity="0.7">137.5°</text>
+    </svg>
+
+    <div class="label" style="position: absolute; bottom: -0.05in; right: 0; max-width: 3.4in; text-align: right; opacity: 0.62; line-height: 1.7;">
+      the angle at which the<br>
+      universe likes to count
+    </div>
+  </div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
+  <div class="folio-v">09 — iv — fig. 04</div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────
+     PAGE 10 — DISPLAY: "the disappearance / is the point."
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">iv · the disappearing</div>
   <div class="marker">— impermanence —</div>
 
-  <!-- Background pattern that fades from full to gone, top-right to bottom-left -->
   <svg viewBox="0 0 850 1100" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; opacity: 0.85;">
     <defs>
       <linearGradient id="fade-tl" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%"  stop-color="white" stop-opacity="0"/>
+        <stop offset="0%"   stop-color="white" stop-opacity="0"/>
         <stop offset="100%" stop-color="white" stop-opacity="1"/>
       </linearGradient>
-      <mask id="m-tl">
-        <rect width="850" height="1100" fill="url(#fade-tl)"/>
-      </mask>
+      <mask id="m-tl"><rect width="850" height="1100" fill="url(#fade-tl)"/></mask>
     </defs>
-    <g mask="url(#m-tl)" fill="currentColor" id="dots-fade"></g>
+    <g mask="url(#m-tl)" fill="currentColor" id="dots-fade-10"></g>
   </svg>
 
   <div class="inner" style="justify-content: center; position: relative; z-index: 3;">
     <div class="display tight" style="font-size: 84pt; line-height: 0.96;">
-      the<br>
-      disappearance<br>
+      the<br>disappearance<br>
       <span style="padding-left: 0.4em;">is the</span><br>
       <span style="padding-left: 1.2em; opacity: 0.85;">point.</span>
     </div>
   </div>
-  <div class="folio-v">09 — iv — disappear</div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
+  <div class="folio-v">10 — iv — disappear</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 10 — DIAGRAM: mycelium — full bleed.
+     PAGE 11 — FIG. 05: SAND MANDALA (NEW — intricate concentric)
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">iv · the disappearing</div>
-  <div class="marker">fig. 04 — mycelium</div>
+  <div class="marker">fig. 05 — sand mandala</div>
 
-  <svg viewBox="0 0 850 1100" preserveAspectRatio="xMidYMid slice"
+  <svg viewBox="0 0 850 1100" preserveAspectRatio="xMidYMid meet"
        style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;">
-    <g id="mycelium-10" stroke="currentColor" fill="none" stroke-linecap="round"></g>
-    <circle cx="425" cy="550" r="4" fill="currentColor"/>
+    <g id="sand-mandala" transform="translate(425,550)" stroke="currentColor"></g>
   </svg>
 
-  <div class="label" style="position: absolute; bottom: 0.55in; left: 0.5in; max-width: 3.0in; opacity: 0.62; z-index: 3;">
-    a network of yeses<br>
-    under everything that grows
+  <div style="position: absolute; bottom: 0.55in; right: 0.5in; max-width: 3.4in; text-align: right; z-index: 3;">
+    <div class="label" style="opacity: 0.62; line-height: 1.7;">
+      monks spend weeks<br>
+      assembling the universe<br>
+      from colored powder —<br>
+      and then sweep it<br>
+      into a river.
+    </div>
   </div>
-  <div class="folio-v">10 — iv — fig. 04</div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
+  <div class="folio-v">11 — iv — fig. 05</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 11 — DIAGRAM: the eye — full bleed, dramatic.
+     PAGE 12 — FIG. 06: THE EYE (full bleed, enhanced)
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">v · the eye</div>
-  <div class="marker">fig. 05 — the witness</div>
+  <div class="marker">fig. 06 — the witness</div>
 
   <svg viewBox="0 0 850 1100" preserveAspectRatio="xMidYMid slice"
        style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;">
     <g transform="translate(425,550)" stroke="currentColor" fill="none" stroke-linecap="round">
-      <ellipse cx="0" cy="0" rx="380" ry="170" stroke-width="1.4"/>
-      <ellipse cx="0" cy="0" rx="320" ry="140" stroke-width="0.5" opacity="0.45"/>
-      <ellipse cx="0" cy="0" rx="270" ry="115" stroke-width="0.3" opacity="0.30"/>
-      <circle r="140" stroke-width="2.0"/>
-      <circle r="120" stroke-width="0.5" opacity="0.40"/>
-      <circle r="100" stroke-width="0.4" opacity="0.35"/>
-      <circle r="78"  stroke-width="0.4" opacity="0.30"/>
-      <circle r="56"  stroke-width="0.4" opacity="0.25"/>
-      <g id="iris-rays-11"></g>
-      <circle r="42" fill="currentColor" stroke="none"/>
-      <circle cx="-12" cy="-14" r="8" fill="#f3eadb" stroke="none"/>
+      <ellipse cx="0" cy="0" rx="380" ry="170" stroke-width="1.6"/>
+      <ellipse cx="0" cy="0" rx="340" ry="150" stroke-width="0.4" opacity="0.40"/>
+      <ellipse cx="0" cy="0" rx="295" ry="125" stroke-width="0.3" opacity="0.30"/>
+      <ellipse cx="0" cy="0" rx="240" ry="100" stroke-width="0.3" opacity="0.20"/>
+      <circle r="148" stroke-width="2.0"/>
+      <circle r="125" stroke-width="0.5" opacity="0.40"/>
+      <circle r="105" stroke-width="0.4" opacity="0.35"/>
+      <circle r="82"  stroke-width="0.4" opacity="0.30"/>
+      <circle r="62"  stroke-width="0.4" opacity="0.25"/>
+      <g id="iris-rays-12"></g>
+      <circle r="44" fill="currentColor" stroke="none"/>
+      <circle r="30" fill="none" stroke="#f3eadb" stroke-width="0.4" opacity="0.4"/>
+      <circle cx="-13" cy="-15" r="9" fill="#f3eadb" stroke="none"/>
+      <circle cx="-13" cy="-15" r="9" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.5"/>
     </g>
   </svg>
 
-  <div class="label" style="position: absolute; bottom: 0.55in; right: 0.5in; max-width: 2.8in; text-align: right; opacity: 0.62; z-index: 3;">
-    the cosmos opened an eye<br>
-    and saw itself
+  <div style="position: absolute; bottom: 0.55in; right: 0.5in; max-width: 2.8in; text-align: right; z-index: 3;">
+    <div class="label" style="opacity: 0.62; line-height: 1.7;">
+      the cosmos opened an eye<br>
+      and saw itself
+    </div>
   </div>
-  <div class="folio-v">11 — v — fig. 05</div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
+  <div class="folio-v">12 — v — fig. 06</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 12 — DISPLAY: "what / am / I?"
-     The asking. Largest type in the book.
+     PAGE 13 — DISPLAY: "what / am / I?"
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">v · the eye</div>
   <div class="marker">— the asking —</div>
-
   <div class="inner" style="justify-content: center; align-items: flex-end;">
     <div class="display tight" style="font-size: 196pt; line-height: 0.88; text-align: right;">
       what<br>
@@ -541,86 +517,147 @@
     </div>
     <div class="label" style="margin-top: 56px; opacity: 0.55;">the asking is everything</div>
   </div>
-  <div class="folio-v">12 — v — the asking</div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
+  <div class="folio-v">13 — v — the asking</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 13 — DIAGRAM: kintsugi mandala — full bleed.
+     PAGE 14 — FIG. 07: THREAD MANDALA (NEW — string-art)
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">vi · broken &amp; beautiful</div>
-  <div class="marker">fig. 06 — kintsugi</div>
+  <div class="marker">fig. 07 — thread of being</div>
+
+  <svg viewBox="0 0 850 1100" preserveAspectRatio="xMidYMid meet"
+       style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;">
+    <g id="thread-mandala" transform="translate(425,550)" stroke="currentColor"></g>
+  </svg>
+
+  <div style="position: absolute; bottom: 0.55in; left: 0.5in; max-width: 3.4in; z-index: 3;">
+    <div class="label" style="opacity: 0.62; line-height: 1.7;">
+      every point is connected<br>
+      to every other point.<br>
+      most of those threads<br>
+      are invisible.
+    </div>
+  </div>
+  <svg class="corner-glyph" width="20" height="20" style="left: auto; right: 0.5in;"><use href="#glyph"/></svg>
+  <div class="folio-v">14 — vi — fig. 07</div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────
+     PAGE 15 — FIG. 08: KINTSUGI MANDALA (more elaborate)
+     ───────────────────────────────────────────────────────────── -->
+<div class="page">
+  <i class="ticks"><i></i></i>
+  <div class="badge">vi · broken &amp; beautiful</div>
+  <div class="marker">fig. 08 — kintsugi</div>
 
   <svg viewBox="0 0 850 1100" preserveAspectRatio="xMidYMid slice"
        style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;">
     <g transform="translate(425,550)" stroke="currentColor" fill="none" stroke-linecap="round">
-      <g id="kintsugi-13"></g>
+      <g id="kintsugi-15"></g>
     </g>
   </svg>
 
-  <div class="label" style="position: absolute; bottom: 0.55in; left: 0.5in; max-width: 3.0in; opacity: 0.62; z-index: 3;">
-    the seam holds more light<br>
-    than the unbroken bowl
+  <div style="position: absolute; bottom: 0.55in; left: 0.5in; max-width: 3.0in; z-index: 3;">
+    <div class="label" style="opacity: 0.62; line-height: 1.7;">
+      the seam holds more light<br>
+      than the unbroken bowl
+    </div>
   </div>
-  <div class="folio-v">13 — vi — fig. 06</div>
+  <svg class="corner-glyph" width="20" height="20" style="left: auto; right: 0.5in;"><use href="#glyph"/></svg>
+  <div class="folio-v">15 — vi — fig. 08</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 14 — DISPLAY: "broken / & / beautiful."
-     The "&" set massive, the words smaller. Asymmetric.
+     PAGE 16 — DISPLAY: "broken / & / beautiful."
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">vi · broken &amp; beautiful</div>
   <div class="marker">— first sorrow, first joy —</div>
-
   <div class="inner" style="justify-content: center;">
     <div class="display tight" style="font-size: 96pt; line-height: 0.96;">broken</div>
     <div class="display tight" style="font-size: 280pt; line-height: 0.85; padding-left: 0.6em; opacity: 0.92;">&amp;</div>
     <div class="display tight" style="font-size: 96pt; line-height: 0.96; text-align: right;">beautiful.</div>
   </div>
-  <div class="folio-v">14 — vi — both at once</div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
+  <div class="folio-v">16 — vi — both at once</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 15 — MIXED: closing mandala + brief inheritance line.
+     PAGE 17 — FIG. 09: FROST CRYSTAL (NEW — 6-fold fractal)
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
   <div class="badge">vii · inheritance</div>
-  <div class="marker">fig. 07 — the room</div>
+  <div class="marker">fig. 09 — frost</div>
 
-  <div class="inner" style="justify-content: space-between;">
-    <div></div>
-    <!-- Mandala roughly centered but slightly above middle for asymmetric balance -->
-    <div style="display: flex; justify-content: center;">
-      <svg width="540" height="540" viewBox="0 0 540 540">
-        <g transform="translate(270,270)" stroke="currentColor" fill="none" stroke-linecap="round">
-          <g id="closing-mandala-15"></g>
-        </g>
-      </svg>
-    </div>
-    <div>
-      <div class="display tight" style="font-size: 56pt; line-height: 1.0;">
-        you did not<br>
-        arrive<br>
-        <span style="opacity: 0.85;">empty.</span>
-      </div>
-      <div class="label" style="margin-top: 28px; max-width: 4.4in; opacity: 0.62; line-height: 1.7;">
-        you have inherited the small accumulated kindnesses<br>
-        of everyone who was here before you. you will leave<br>
-        something too. not a name. not a story. a quality<br>
-        the next person will quietly trust.
-      </div>
+  <svg viewBox="0 0 850 1100" preserveAspectRatio="xMidYMid meet"
+       style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;">
+    <g id="frost-crystal" transform="translate(425,550)" stroke="currentColor" fill="none" stroke-linecap="round"></g>
+  </svg>
+
+  <div style="position: absolute; bottom: 0.55in; right: 0.5in; max-width: 3.4in; text-align: right; z-index: 3;">
+    <div class="label" style="opacity: 0.62; line-height: 1.7;">
+      every snowflake is making<br>
+      the same six decisions<br>
+      a slightly different way
     </div>
   </div>
-  <div class="folio-v">15 — vii — fig. 07</div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
+  <div class="folio-v">17 — vii — fig. 09</div>
 </div>
 
 <!-- ─────────────────────────────────────────────────────────────
-     PAGE 16 — COLOPHON / CLOSING
-     Pure typography, generous space, single farewell.
+     PAGE 18 — DISPLAY: "you did not / arrive empty."
+     ───────────────────────────────────────────────────────────── -->
+<div class="page">
+  <i class="ticks"><i></i></i>
+  <div class="badge">vii · inheritance</div>
+  <div class="marker">— you have inherited —</div>
+  <div class="inner" style="justify-content: center;">
+    <div class="display tight" style="font-size: 84pt; line-height: 0.96;">
+      you did not<br>
+      <span style="opacity: 0.9; padding-left: 0.3em;">arrive</span><br>
+      <span style="padding-left: 1.0em;">empty.</span>
+    </div>
+    <div class="label" style="margin-top: 70px; max-width: 4.4in; opacity: 0.62; line-height: 1.7;">
+      you have inherited the small accumulated kindnesses<br>
+      of everyone who was there before you. you will leave<br>
+      something too. not a name. not a story. a quality<br>
+      the next person will quietly trust.
+    </div>
+  </div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
+  <div class="folio-v">18 — vii — inheritance</div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────
+     PAGE 19 — FIG. 10: FINAL ELABORATE MANDALA
+     ───────────────────────────────────────────────────────────── -->
+<div class="page">
+  <i class="ticks"><i></i></i>
+  <div class="badge">vii · inheritance</div>
+  <div class="marker">fig. 10 — return</div>
+
+  <svg viewBox="0 0 850 1100" preserveAspectRatio="xMidYMid meet"
+       style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;">
+    <g id="final-mandala" transform="translate(425,550)" stroke="currentColor" fill="none" stroke-linecap="round"></g>
+  </svg>
+
+  <div style="position: absolute; bottom: 0.55in; left: 50%; transform: translateX(-50%); z-index: 3; text-align: center;">
+    <div class="display ital" style="font-size: 28pt; line-height: 1.1;">begin again.</div>
+    <div class="label" style="margin-top: 16px; opacity: 0.55;">the pattern always returns to where it started, having gone everywhere</div>
+  </div>
+  <svg class="corner-glyph" width="20" height="20"><use href="#glyph"/></svg>
+  <div class="folio-v">19 — vii — fig. 10</div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────
+     PAGE 20 — COLOPHON
      ───────────────────────────────────────────────────────────── -->
 <div class="page">
   <i class="ticks"><i></i></i>
@@ -641,12 +678,9 @@
     </div>
 
     <div style="text-align: center;">
-      <div class="display tight" style="font-size: 110pt; line-height: 0.96;">
-        go gently.
-      </div>
+      <div class="display tight" style="font-size: 110pt; line-height: 0.96;">go gently.</div>
       <div class="display tight" style="font-size: 56pt; line-height: 1.0; margin-top: 24px; opacity: 0.7;">
-        you have always been<br>
-        bloom.
+        you have always been<br>bloom.
       </div>
     </div>
 
@@ -656,16 +690,13 @@
         siddharth mehta · 2026<br>
         printed for the thesis exhibition
       </div>
-      <svg width="44" height="44" viewBox="0 0 44 44">
-        <g transform="translate(22,22)" stroke="currentColor" fill="none" stroke-width="0.5">
-          <circle r="3"/><circle r="9"/><circle r="15"/><circle r="20"/>
-          <line x1="-20" y1="0" x2="20" y2="0"/>
-          <line x1="0" y1="-20" x2="0" y2="20"/>
+      <svg width="56" height="56" viewBox="0 0 56 56">
+        <g transform="translate(28,28)" stroke="currentColor" fill="none" stroke-width="0.5">
+          <g id="colophon-mark"></g>
         </g>
       </svg>
     </div>
   </div>
-  <div class="folio-v">16 — colophon</div>
 </div>
 
 
@@ -678,151 +709,507 @@ function svgEl(tag, attrs) {
   for (const k in attrs) el.setAttribute(k, attrs[k]);
   return el;
 }
+function poly(g, sides, r, opts = {}) {
+  const pts = [];
+  const rot = opts.rot || 0;
+  for (let i = 0; i <= sides; i++) {
+    const a = (i / sides) * TAU - Math.PI / 2 + rot;
+    pts.push(`${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`);
+  }
+  g.appendChild(svgEl('polygon', {
+    points: pts.join(' '),
+    'stroke-width': opts.sw || 0.6,
+    fill: 'none',
+    opacity: opts.opacity != null ? opts.opacity : 1,
+  }));
+}
 
-// ── Phyllotaxis seeds (page 7) ─────────────────────────────────
+// ── Cover & colophon: small composite mandala mark ─────────────
+function compositeMark(g) {
+  poly(g, 12, 24, { sw: 0.4 });
+  poly(g, 12, 18, { sw: 0.3, opacity: 0.5 });
+  poly(g, 6,  12, { sw: 0.4, rot: Math.PI/12 });
+  g.appendChild(svgEl('circle', { r: 6, 'stroke-width': 0.4, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: 2, 'stroke-width': 0, fill: 'currentColor' }));
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * TAU;
+    g.appendChild(svgEl('line', {
+      x1: (Math.cos(a) * 6).toFixed(1),  y1: (Math.sin(a) * 6).toFixed(1),
+      x2: (Math.cos(a) * 24).toFixed(1), y2: (Math.sin(a) * 24).toFixed(1),
+      'stroke-width': 0.25, opacity: 0.55,
+    }));
+  }
+}
+compositeMark(document.querySelector('#cover-mark'));
+compositeMark(document.querySelector('#colophon-mark'));
+
+// ─────────────────────────────────────────────────────────────────
+// FIG. 02 — FLOWER OF LIFE (sacred geometry, p.5)
+// ─────────────────────────────────────────────────────────────────
 (function () {
-  const g = document.querySelector('#seeds-7');
+  const g = document.querySelector('#flower-of-life');
   if (!g) return;
-  for (let i = 0; i < 360; i++) {
-    const a = i * 137.508 * Math.PI / 180;
-    const r = 8 * Math.sqrt(i);
-    if (r > 290) break;
-    const x = Math.cos(a) * r;
-    const y = Math.sin(a) * r;
-    const sz = 1.0 + (i / 360) * 1.6;
-    g.appendChild(svgEl('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: sz.toFixed(2) }));
+  const r = 64;
+  const sw = 0.7;
+
+  // Generate hex grid up to 4 rings out
+  const positions = [{ x: 0, y: 0 }];
+  const seen = new Set(['0,0']);
+  const hexDirs = [[1,0],[0.5,Math.sqrt(3)/2],[-0.5,Math.sqrt(3)/2],[-1,0],[-0.5,-Math.sqrt(3)/2],[0.5,-Math.sqrt(3)/2]];
+  function add(x, y) {
+    const k = `${Math.round(x*100)},${Math.round(y*100)}`;
+    if (seen.has(k)) return;
+    seen.add(k);
+    positions.push({ x, y });
+  }
+  // Build outward in rings
+  for (let ring = 1; ring <= 4; ring++) {
+    let x = ring * r, y = 0;
+    for (let d = 0; d < 6; d++) {
+      const [dx, dy] = hexDirs[(d + 2) % 6];
+      for (let s = 0; s < ring; s++) {
+        add(x, y);
+        x += dx * r;
+        y += dy * r;
+      }
+    }
+  }
+
+  // Draw all circles (clip to a max distance for clean edge)
+  const maxD = r * 4.2;
+  for (const p of positions) {
+    if (Math.hypot(p.x, p.y) > maxD) continue;
+    g.appendChild(svgEl('circle', {
+      cx: p.x.toFixed(1), cy: p.y.toFixed(1), r,
+      'stroke-width': sw,
+    }));
+  }
+
+  // Outer enclosing circles
+  g.appendChild(svgEl('circle', { r: r * 4.5, 'stroke-width': 1.4 }));
+  g.appendChild(svgEl('circle', { r: r * 4.7, 'stroke-width': 0.4, opacity: 0.5 }));
+})();
+
+// ─────────────────────────────────────────────────────────────────
+// FIG. 03 — CONSTELLATION (denser, p.7)
+// ─────────────────────────────────────────────────────────────────
+(function () {
+  const g = document.querySelector('#constellation-7');
+  if (!g) return;
+
+  let seed = 11;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+
+  const W = 850, H = 1100;
+  const stars = [];
+  for (let i = 0; i < 90; i++) {
+    stars.push({
+      x: 60 + rnd() * (W - 120),
+      y: 100 + rnd() * (H - 200),
+      sz: 1.2 + rnd() * 3.4,
+    });
+  }
+
+  // Connection lines — only between stars within a distance
+  const lines = svgEl('g', { stroke: 'currentColor', 'stroke-width': 0.45, opacity: 0.30, 'stroke-linecap': 'round' });
+  const D = 200;
+  for (let i = 0; i < stars.length; i++) {
+    for (let j = i + 1; j < stars.length; j++) {
+      const d = Math.hypot(stars[i].x - stars[j].x, stars[i].y - stars[j].y);
+      if (d < D && rnd() < 0.55) {
+        lines.appendChild(svgEl('line', {
+          x1: stars[i].x.toFixed(1), y1: stars[i].y.toFixed(1),
+          x2: stars[j].x.toFixed(1), y2: stars[j].y.toFixed(1),
+        }));
+      }
+    }
+  }
+  g.appendChild(lines);
+
+  // Stars
+  const starsG = svgEl('g', { fill: 'currentColor' });
+  for (const s of stars) {
+    starsG.appendChild(svgEl('circle', {
+      cx: s.x.toFixed(1), cy: s.y.toFixed(1), r: s.sz.toFixed(2),
+    }));
+  }
+  g.appendChild(starsG);
+
+  // A few faint dust dots
+  for (let i = 0; i < 80; i++) {
+    g.appendChild(svgEl('circle', {
+      cx: (rnd() * W).toFixed(1),
+      cy: (rnd() * H).toFixed(1),
+      r: (0.6 + rnd() * 0.8).toFixed(2),
+      fill: 'currentColor',
+      opacity: (0.30 + rnd() * 0.30).toFixed(2),
+    }));
   }
 })();
 
-// ── Fading dot pattern (page 9 background) ─────────────────────
+// ─────────────────────────────────────────────────────────────────
+// FIG. 04 — PHYLLOTAXIS (denser, p.9)
+// ─────────────────────────────────────────────────────────────────
 (function () {
-  const g = document.querySelector('#dots-fade');
+  const g = document.querySelector('#seeds-9');
+  if (!g) return;
+  for (let i = 0; i < 480; i++) {
+    const a = i * 137.508 * Math.PI / 180;
+    const r = 8 * Math.sqrt(i);
+    if (r > 295) break;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    const sz = 0.9 + (i / 480) * 1.8;
+    g.appendChild(svgEl('circle', {
+      cx: x.toFixed(1), cy: y.toFixed(1), r: sz.toFixed(2),
+    }));
+  }
+})();
+
+// ─────────────────────────────────────────────────────────────────
+// p.10 — fading dots
+// ─────────────────────────────────────────────────────────────────
+(function () {
+  const g = document.querySelector('#dots-fade-10');
   if (!g) return;
   let seed = 47;
   const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-  for (let i = 0; i < 500; i++) {
-    const x = rnd() * 850;
-    const y = rnd() * 1100;
-    const sz = 1.0 + rnd() * 2.2;
-    g.appendChild(svgEl('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: sz.toFixed(2) }));
-  }
-})();
-
-// ── Mycelium (page 10, full bleed) ─────────────────────────────
-(function () {
-  const g = document.querySelector('#mycelium-10');
-  if (!g) return;
-  let seed = 19;
-  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-  function branch(x, y, ang, len, depth) {
-    if (depth > 6 || len < 4) return;
-    const tx = x + Math.cos(ang) * len;
-    const ty = y + Math.sin(ang) * len;
-    const sw = Math.max(0.25, 1.6 - depth * 0.25);
-    g.appendChild(svgEl('line', {
-      x1: x.toFixed(1), y1: y.toFixed(1),
-      x2: tx.toFixed(1), y2: ty.toFixed(1),
-      'stroke-width': sw.toFixed(2),
+  for (let i = 0; i < 600; i++) {
+    g.appendChild(svgEl('circle', {
+      cx: (rnd() * 850).toFixed(1), cy: (rnd() * 1100).toFixed(1),
+      r: (1.0 + rnd() * 2.4).toFixed(2),
     }));
-    branch(tx, ty, ang + 0.42 + (rnd() - 0.5) * 0.20, len * 0.74, depth + 1);
-    branch(tx, ty, ang - 0.42 + (rnd() - 0.5) * 0.20, len * 0.74, depth + 1);
-    if (depth < 2 && rnd() < 0.6) branch(tx, ty, ang + (rnd() - 0.5) * 0.25, len * 0.55, depth + 1);
-  }
-  for (let i = 0; i < 18; i++) {
-    const a = (i / 18) * TAU;
-    branch(425, 550, a, 110, 0);
   }
 })();
 
-// ── Iris striations (page 11) ──────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// FIG. 05 — SAND MANDALA (p.11)
+// Concentric rings + radial dots + outer petals + inner cross
+// ─────────────────────────────────────────────────────────────────
 (function () {
-  const g = document.querySelector('#iris-rays-11');
+  const g = document.querySelector('#sand-mandala');
   if (!g) return;
-  for (let i = 0; i < 96; i++) {
-    const a = (i / 96) * TAU;
+  const R = 360;
+
+  // Outer enclosing circles
+  g.appendChild(svgEl('circle', { r: R * 1.10, 'stroke-width': 1.1, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: R * 1.06, 'stroke-width': 0.5, fill: 'none', opacity: 0.5 }));
+
+  // Outer ring of petals (alternating large/small)
+  const outerPetals = 24;
+  for (let i = 0; i < outerPetals; i++) {
+    const a = (i / outerPetals) * TAU;
+    const isLarge = i % 2 === 0;
+    const tipR = isLarge ? R * 1.18 : R * 1.12;
+    const baseSpread = isLarge ? 0.075 : 0.045;
+    const tx = Math.cos(a) * tipR;
+    const ty = Math.sin(a) * tipR;
+    const c1x = Math.cos(a + baseSpread) * R * 1.04;
+    const c1y = Math.sin(a + baseSpread) * R * 1.04;
+    const c2x = Math.cos(a - baseSpread) * R * 1.04;
+    const c2y = Math.sin(a - baseSpread) * R * 1.04;
+    g.appendChild(svgEl('path', {
+      d: `M ${c1x.toFixed(1)} ${c1y.toFixed(1)} Q ${tx.toFixed(1)} ${ty.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)}`,
+      'stroke-width': 0.9, fill: 'none',
+    }));
+  }
+
+  // Concentric rings
+  const rings = 9;
+  for (let r = 1; r <= rings; r++) {
+    const rr = R * r / rings;
+    g.appendChild(svgEl('circle', { r: rr.toFixed(1), 'stroke-width': 0.4, fill: 'none', opacity: 0.7 }));
+  }
+  // Heavier accent rings
+  g.appendChild(svgEl('circle', { r: R * 0.78, 'stroke-width': 0.9, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: R * 0.42, 'stroke-width': 0.9, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: R * 0.18, 'stroke-width': 0.7, fill: 'none' }));
+
+  // Radial dots on alternating rings
+  const dotRings = [
+    { r: R * 0.95, count: 64 },
+    { r: R * 0.78, count: 48 },
+    { r: R * 0.65, count: 36 },
+    { r: R * 0.50, count: 24 },
+    { r: R * 0.32, count: 16 },
+  ];
+  for (const ring of dotRings) {
+    for (let i = 0; i < ring.count; i++) {
+      const a = (i / ring.count) * TAU;
+      const x = Math.cos(a) * ring.r;
+      const y = Math.sin(a) * ring.r;
+      g.appendChild(svgEl('circle', {
+        cx: x.toFixed(1), cy: y.toFixed(1), r: 1.6, fill: 'currentColor',
+      }));
+    }
+  }
+
+  // Inner 8-petal lotus
+  const innerPetals = 8;
+  for (let i = 0; i < innerPetals; i++) {
+    const a = (i / innerPetals) * TAU;
+    const r1 = R * 0.18, r2 = R * 0.32;
+    const tipX = Math.cos(a) * r2, tipY = Math.sin(a) * r2;
+    const c1x = Math.cos(a + 0.30) * (r2 * 0.78);
+    const c1y = Math.sin(a + 0.30) * (r2 * 0.78);
+    const c2x = Math.cos(a - 0.30) * (r2 * 0.78);
+    const c2y = Math.sin(a - 0.30) * (r2 * 0.78);
+    g.appendChild(svgEl('path', {
+      d: `M 0 0 Q ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${tipX.toFixed(1)} ${tipY.toFixed(1)} Q ${c2x.toFixed(1)} ${c2y.toFixed(1)} 0 0`,
+      'stroke-width': 0.6, fill: 'none',
+    }));
+  }
+
+  // Center
+  g.appendChild(svgEl('circle', { r: 5, fill: 'currentColor' }));
+  g.appendChild(svgEl('circle', { r: 9, 'stroke-width': 0.5, fill: 'none' }));
+})();
+
+// ─────────────────────────────────────────────────────────────────
+// p.12 — Eye iris striations
+// ─────────────────────────────────────────────────────────────────
+(function () {
+  const g = document.querySelector('#iris-rays-12');
+  if (!g) return;
+  for (let i = 0; i < 120; i++) {
+    const a = (i / 120) * TAU;
     const r1 = 50;
-    const r2 = 138 - (i % 3) * 8;
+    const r2 = 142 - (i % 4) * 8;
     g.appendChild(svgEl('line', {
       x1: (Math.cos(a) * r1).toFixed(1),
       y1: (Math.sin(a) * r1).toFixed(1),
       x2: (Math.cos(a) * r2).toFixed(1),
       y2: (Math.sin(a) * r2).toFixed(1),
-      'stroke-width': 0.45,
+      'stroke-width': 0.4,
       opacity: 0.55,
     }));
   }
 })();
 
-// ── Kintsugi mandala (page 13, full bleed) ─────────────────────
+// ─────────────────────────────────────────────────────────────────
+// FIG. 07 — THREAD MANDALA (p.14, string-art)
+// All-pairs lines between vertices on a circle
+// ─────────────────────────────────────────────────────────────────
 (function () {
-  const g = document.querySelector('#kintsugi-13');
+  const g = document.querySelector('#thread-mandala');
   if (!g) return;
-  const sides = 12;
-  for (let l = 1; l <= 6; l++) {
-    const r = 50 + l * 56;
-    const pts = [];
-    for (let i = 0; i <= sides; i++) {
-      const a = (i / sides) * TAU - Math.PI / 2 + l * 0.04;
-      pts.push(`${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`);
-    }
-    g.appendChild(svgEl('polygon', { points: pts.join(' '), 'stroke-width': 1.1, fill: 'none' }));
+  const R = 360;
+  const N = 24;
+  const points = [];
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * TAU - Math.PI / 2;
+    points.push({ x: Math.cos(a) * R, y: Math.sin(a) * R });
   }
-  for (let i = 0; i < sides; i++) {
-    const a = (i / sides) * TAU;
-    g.appendChild(svgEl('line', {
-      x1: (Math.cos(a) * 50).toFixed(1), y1: (Math.sin(a) * 50).toFixed(1),
-      x2: (Math.cos(a) * 380).toFixed(1), y2: (Math.sin(a) * 380).toFixed(1),
-      'stroke-width': 0.5, opacity: 0.6,
+
+  // Threads — every pair beyond a min skip, with opacity by chord length
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 3; j < N && j - i <= N / 2; j++) {
+      const span = j - i;
+      const opacity = 0.10 + (span / N) * 0.42;
+      g.appendChild(svgEl('line', {
+        x1: points[i].x.toFixed(1), y1: points[i].y.toFixed(1),
+        x2: points[j].x.toFixed(1), y2: points[j].y.toFixed(1),
+        'stroke-width': 0.30, opacity: opacity.toFixed(2),
+      }));
+    }
+  }
+  // Outer ring
+  g.appendChild(svgEl('circle', { r: R, 'stroke-width': 1.3, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: R + 14, 'stroke-width': 0.4, fill: 'none', opacity: 0.45 }));
+  // Vertex dots
+  for (const p of points) {
+    g.appendChild(svgEl('circle', {
+      cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 2.4, fill: 'currentColor',
     }));
   }
-  g.appendChild(svgEl('circle', { r: 42, 'stroke-width': 1.4 }));
-  g.appendChild(svgEl('circle', { r: 14, 'stroke-width': 0.8 }));
+  // Center
+  g.appendChild(svgEl('circle', { r: 4, fill: 'currentColor' }));
+})();
 
+// ─────────────────────────────────────────────────────────────────
+// FIG. 08 — KINTSUGI MANDALA (p.15, more elaborate)
+// ─────────────────────────────────────────────────────────────────
+(function () {
+  const g = document.querySelector('#kintsugi-15');
+  if (!g) return;
+  const sides = 12;
+
+  // Base: 7 concentric polygons
+  for (let l = 1; l <= 7; l++) {
+    poly(g, sides, 50 + l * 50, { sw: 1.0, rot: l * 0.04 });
+  }
+
+  // Inner secondary 6-fold polygons (rotated 15°)
+  for (let l = 1; l <= 4; l++) {
+    poly(g, 6, 35 + l * 20, { sw: 0.5, opacity: 0.5, rot: Math.PI/12 });
+  }
+
+  // Spokes (full radial lines)
+  for (let i = 0; i < sides * 2; i++) {
+    const a = (i / (sides*2)) * TAU;
+    g.appendChild(svgEl('line', {
+      x1: (Math.cos(a) * 50).toFixed(1), y1: (Math.sin(a) * 50).toFixed(1),
+      x2: (Math.cos(a) * 400).toFixed(1), y2: (Math.sin(a) * 400).toFixed(1),
+      'stroke-width': 0.5, opacity: 0.55,
+    }));
+  }
+
+  // Petals between rings 4 and 5
+  const petals = sides;
+  for (let i = 0; i < petals; i++) {
+    const a = (i / petals) * TAU + (Math.PI / petals);
+    const r1 = 200, r2 = 250;
+    const tipX = Math.cos(a) * r2, tipY = Math.sin(a) * r2;
+    const c1x = Math.cos(a + 0.10) * r1; const c1y = Math.sin(a + 0.10) * r1;
+    const c2x = Math.cos(a - 0.10) * r1; const c2y = Math.sin(a - 0.10) * r1;
+    g.appendChild(svgEl('path', {
+      d: `M ${c1x.toFixed(1)} ${c1y.toFixed(1)} Q ${tipX.toFixed(1)} ${tipY.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)}`,
+      'stroke-width': 0.7, fill: 'none',
+    }));
+  }
+
+  // Inner ring + center
+  g.appendChild(svgEl('circle', { r: 42, 'stroke-width': 1.4, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: 14, 'stroke-width': 0.8, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: 4, fill: 'currentColor' }));
+
+  // The golden cracks — heavier strokes that cross the mandala
   let seed = 73;
   const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-  for (let c = 0; c < 5; c++) {
+  for (let c = 0; c < 6; c++) {
     const a1 = rnd() * TAU;
-    const a2 = a1 + (Math.PI * 0.6) + rnd() * (Math.PI * 0.4);
-    const r1 = 380, r2 = 380;
+    const a2 = a1 + (Math.PI * 0.5) + rnd() * (Math.PI * 0.5);
+    const r1 = 410, r2 = 410;
     let d = `M ${(Math.cos(a1) * r1).toFixed(1)} ${(Math.sin(a1) * r1).toFixed(1)}`;
-    const steps = 6;
+    const steps = 7;
     for (let s = 1; s <= steps; s++) {
       const t = s / steps;
       const a = a1 * (1 - t) + a2 * t + (rnd() - 0.5) * 0.6;
-      const r = (1 - Math.abs(t - 0.5) * 1.6) * 360 + (rnd() - 0.5) * 60;
+      const r = (1 - Math.abs(t - 0.5) * 1.6) * 380 + (rnd() - 0.5) * 60;
       d += ` L ${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`;
     }
     d += ` L ${(Math.cos(a2) * r2).toFixed(1)} ${(Math.sin(a2) * r2).toFixed(1)}`;
-    g.appendChild(svgEl('path', { d, 'stroke-width': 4.0, fill: 'none', 'stroke-linecap': 'round' }));
-    g.appendChild(svgEl('path', { d, 'stroke-width': 7.0, fill: 'none', 'stroke-linecap': 'round', opacity: 0.18 }));
+    g.appendChild(svgEl('path', { d, 'stroke-width': 4.4, fill: 'none', 'stroke-linecap': 'round' }));
+    g.appendChild(svgEl('path', { d, 'stroke-width': 8.0, fill: 'none', 'stroke-linecap': 'round', opacity: 0.16 }));
   }
 })();
 
-// ── Closing mandala (page 15) ──────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// FIG. 09 — FROST CRYSTAL (p.17, 6-fold fractal)
+// ─────────────────────────────────────────────────────────────────
 (function () {
-  const g = document.querySelector('#closing-mandala-15');
+  const g = document.querySelector('#frost-crystal');
+  if (!g) return;
+
+  const R = 360;
+  const arms = 6;
+
+  for (let i = 0; i < arms; i++) {
+    const a = (i / arms) * TAU - Math.PI / 2;
+    const tipX = Math.cos(a) * R, tipY = Math.sin(a) * R;
+
+    // Main arm
+    g.appendChild(svgEl('line', {
+      x1: 0, y1: 0, x2: tipX.toFixed(1), y2: tipY.toFixed(1),
+      'stroke-width': 1.6,
+    }));
+
+    // Sub-branches at fractions along arm — angle 60° to either side
+    for (let f = 0.18; f < 0.96; f += 0.10) {
+      const bx = Math.cos(a) * R * f, by = Math.sin(a) * R * f;
+      const subLen = R * (0.18 - f * 0.10);
+      const a1 = a + 60 * Math.PI / 180;
+      const a2 = a - 60 * Math.PI / 180;
+      const b1x = bx + Math.cos(a1) * subLen, b1y = by + Math.sin(a1) * subLen;
+      const b2x = bx + Math.cos(a2) * subLen, b2y = by + Math.sin(a2) * subLen;
+      g.appendChild(svgEl('line', { x1: bx.toFixed(1), y1: by.toFixed(1), x2: b1x.toFixed(1), y2: b1y.toFixed(1), 'stroke-width': 0.7 }));
+      g.appendChild(svgEl('line', { x1: bx.toFixed(1), y1: by.toFixed(1), x2: b2x.toFixed(1), y2: b2y.toFixed(1), 'stroke-width': 0.7 }));
+
+      // Tertiary branchlets
+      const t1x = b1x + Math.cos(a1) * subLen * 0.45;
+      const t1y = b1y + Math.sin(a1) * subLen * 0.45;
+      const t2x = b2x + Math.cos(a2) * subLen * 0.45;
+      const t2y = b2y + Math.sin(a2) * subLen * 0.45;
+      g.appendChild(svgEl('line', { x1: b1x.toFixed(1), y1: b1y.toFixed(1), x2: t1x.toFixed(1), y2: t1y.toFixed(1), 'stroke-width': 0.4 }));
+      g.appendChild(svgEl('line', { x1: b2x.toFixed(1), y1: b2y.toFixed(1), x2: t2x.toFixed(1), y2: t2y.toFixed(1), 'stroke-width': 0.4 }));
+    }
+  }
+
+  // Outer hexagonal frame
+  poly(g, 6, R * 1.05, { sw: 0.5, opacity: 0.4, rot: Math.PI / 6 });
+  // Center hex
+  poly(g, 6, 14, { sw: 1.0, rot: Math.PI / 6 });
+  g.appendChild(svgEl('circle', { r: 4, fill: 'currentColor' }));
+})();
+
+// ─────────────────────────────────────────────────────────────────
+// FIG. 10 — FINAL ELABORATE MANDALA (p.19)
+// 12-fold, multiple layers: polygons + petals + spokes + inner rose
+// ─────────────────────────────────────────────────────────────────
+(function () {
+  const g = document.querySelector('#final-mandala');
   if (!g) return;
   const sides = 12;
-  for (let l = 1; l <= 5; l++) {
-    const r = 40 + l * 36;
-    const pts = [];
-    for (let i = 0; i <= sides; i++) {
-      const a = (i / sides) * TAU - Math.PI / 2;
-      pts.push(`${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`);
-    }
-    g.appendChild(svgEl('polygon', { points: pts.join(' '), 'stroke-width': 0.7, fill: 'none' }));
+  const R = 380;
+
+  // Outer enclosing rings
+  g.appendChild(svgEl('circle', { r: R * 1.05, 'stroke-width': 1.0, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: R * 1.02, 'stroke-width': 0.4, fill: 'none', opacity: 0.5 }));
+
+  // Concentric polygons (alternating rotation)
+  for (let l = 1; l <= 6; l++) {
+    poly(g, sides, l * (R / 6), { sw: 0.7, rot: (l % 2) * (Math.PI / sides) });
   }
-  for (let i = 0; i < sides; i++) {
-    const a = (i / sides) * TAU;
-    g.appendChild(svgEl('line', {
-      x1: (Math.cos(a) * 40).toFixed(1), y1: (Math.sin(a) * 40).toFixed(1),
-      x2: (Math.cos(a) * 230).toFixed(1), y2: (Math.sin(a) * 230).toFixed(1),
-      'stroke-width': 0.35, opacity: 0.5,
+
+  // Outer ring of long petals
+  const outerPetals = sides;
+  for (let i = 0; i < outerPetals; i++) {
+    const a = (i / outerPetals) * TAU;
+    const tipX = Math.cos(a) * R, tipY = Math.sin(a) * R;
+    const c1x = Math.cos(a + 0.10) * (R * 0.62);
+    const c1y = Math.sin(a + 0.10) * (R * 0.62);
+    const c2x = Math.cos(a - 0.10) * (R * 0.62);
+    const c2y = Math.sin(a - 0.10) * (R * 0.62);
+    g.appendChild(svgEl('path', {
+      d: `M ${c1x.toFixed(1)} ${c1y.toFixed(1)} Q ${tipX.toFixed(1)} ${tipY.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)}`,
+      'stroke-width': 0.7, fill: 'none',
     }));
   }
-  g.appendChild(svgEl('circle', { r: 32, 'stroke-width': 1.0 }));
-  g.appendChild(svgEl('circle', { r: 10, 'stroke-width': 0.5 }));
-  g.appendChild(svgEl('circle', { r: 3, 'stroke-width': 0, fill: 'currentColor' }));
+
+  // Spokes
+  for (let i = 0; i < sides * 2; i++) {
+    const a = (i / (sides*2)) * TAU;
+    g.appendChild(svgEl('line', {
+      x1: (Math.cos(a) * 24).toFixed(1), y1: (Math.sin(a) * 24).toFixed(1),
+      x2: (Math.cos(a) * R * 0.96).toFixed(1), y2: (Math.sin(a) * R * 0.96).toFixed(1),
+      'stroke-width': 0.3, opacity: 0.55,
+    }));
+  }
+
+  // Inner rose: 8-petal flower
+  const innerPetals = 8;
+  for (let layer = 0; layer < 2; layer++) {
+    const offset = layer * (Math.PI / innerPetals);
+    const r2 = R * (0.30 - layer * 0.10);
+    for (let i = 0; i < innerPetals; i++) {
+      const a = (i / innerPetals) * TAU + offset;
+      const tipX = Math.cos(a) * r2, tipY = Math.sin(a) * r2;
+      const c1x = Math.cos(a + 0.32) * (r2 * 0.78);
+      const c1y = Math.sin(a + 0.32) * (r2 * 0.78);
+      const c2x = Math.cos(a - 0.32) * (r2 * 0.78);
+      const c2y = Math.sin(a - 0.32) * (r2 * 0.78);
+      g.appendChild(svgEl('path', {
+        d: `M 0 0 Q ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${tipX.toFixed(1)} ${tipY.toFixed(1)} Q ${c2x.toFixed(1)} ${c2y.toFixed(1)} 0 0`,
+        'stroke-width': 0.55, fill: 'none', opacity: 0.85,
+      }));
+    }
+  }
+
+  // Center stack
+  g.appendChild(svgEl('circle', { r: 36, 'stroke-width': 1.0, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: 22, 'stroke-width': 0.5, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: 12, 'stroke-width': 0.5, fill: 'none' }));
+  g.appendChild(svgEl('circle', { r: 4, fill: 'currentColor' }));
 })();
 </script>
 
